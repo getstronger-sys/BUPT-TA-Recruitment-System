@@ -1,0 +1,41 @@
+package bupt.ta.model;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * TA applicant profile - skills, availability, etc.
+ */
+public class TAProfile {
+    private String userId;
+    private String studentId;
+    private String phone;
+    private String cvFilePath;  // relative path to uploaded CV
+    private List<String> skills;  // e.g. Java, Python, Teaching
+    private String availability;  // e.g. "Mon/Wed/Fri 9-12"
+    private String introduction;
+
+    public TAProfile() {
+        this.skills = new ArrayList<>();
+    }
+
+    public TAProfile(String userId) {
+        this.userId = userId;
+        this.skills = new ArrayList<>();
+    }
+
+    public String getUserId() { return userId; }
+    public void setUserId(String userId) { this.userId = userId; }
+    public String getStudentId() { return studentId; }
+    public void setStudentId(String studentId) { this.studentId = studentId; }
+    public String getPhone() { return phone; }
+    public void setPhone(String phone) { this.phone = phone; }
+    public String getCvFilePath() { return cvFilePath; }
+    public void setCvFilePath(String cvFilePath) { this.cvFilePath = cvFilePath; }
+    public List<String> getSkills() { return skills; }
+    public void setSkills(List<String> skills) { this.skills = skills != null ? skills : new ArrayList<>(); }
+    public String getAvailability() { return availability; }
+    public void setAvailability(String availability) { this.availability = availability; }
+    public String getIntroduction() { return introduction; }
+    public void setIntroduction(String introduction) { this.introduction = introduction; }
+}
