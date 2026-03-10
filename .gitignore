@@ -1,0 +1,11 @@
+target/
+
+# IDE and OS files (optional, safe to ignore)
+.idea/
+.vscode/
+*.iml
+*.log
+*.tmp
+*.DS_Store
+Thumbs.db
+
