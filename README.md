@@ -2,6 +2,14 @@
 
 EBU6304 Software Engineering Group Project - A lightweight Java Servlet/JSP web application for TA recruitment.
 
+## Team Members
+
+| Student ID | Name       |
+|------------|------------|
+| 2023213677 | Weiyi Li   |
+
+<!-- Other members: add a row in your own pull request. -->
+
 ## Requirements Met
 
 - **Technology**: Java Servlet + JSP (no Spring Boot, no database)
