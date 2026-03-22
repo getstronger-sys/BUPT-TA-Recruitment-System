@@ -10,6 +10,7 @@ EBU6304 Software Engineering Group Project - A lightweight Java Servlet/JSP web 
 | 231223520  | Qingwei Zhang |
 | 231223324  | Jialin Ma     |
 | 231223531  | Tongxin Liu   |
+| 231223553  | Yue Hu        |
 
 <!-- Other members: add a row in your own pull request. -->
 
