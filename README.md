@@ -4,10 +4,11 @@ EBU6304 Software Engineering Group Project - A lightweight Java Servlet/JSP web 
 
 ## Team Members
 
-| Student ID | Name       |
-|------------|------------|
-| 231223771  | Weiyi Li   |
-| 231223520 | Qingwei Zhang |
+| Student ID | Name          |
+| ---------- | ------------- |
+| 231223771  | Weiyi Li      |
+| 231223520  | Qingwei Zhang |
+| 231223324  | Jialin Ma     |
 
 <!-- Other members: add a row in your own pull request. -->
 
@@ -27,7 +28,7 @@ EBU6304 Software Engineering Group Project - A lightweight Java Servlet/JSP web 
 ## Default Accounts
 
 | Role  | Username | Password |
-|-------|----------|----------|
+| ----- | -------- | -------- |
 | TA    | ta1      | ta123    |
 | TA    | ta2      | ta123    |
 | MO    | mo1      | mo123    |
