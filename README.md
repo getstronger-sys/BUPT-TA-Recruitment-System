@@ -6,7 +6,7 @@ EBU6304 Software Engineering Group Project - A lightweight Java Servlet/JSP web 
 
 | Student ID | Name       |
 |------------|------------|
-| 2023213677 | Weiyi Li   |
+| 231223771  | Weiyi Li   |
 | 231223520 | Qingwei Zhang |
 
 <!-- Other members: add a row in your own pull request. -->
