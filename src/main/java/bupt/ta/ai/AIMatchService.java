@@ -143,12 +143,14 @@ public class AIMatchService {
      */
     public static class ApplicantRecommendation {
         public final Application application;
+        public final TAProfile profile;
         public final MatchResult matchResult;
         public final int currentWorkload;
         public final boolean workloadBalanced;  // prefer this TA for balance
 
-        public ApplicantRecommendation(Application app, MatchResult match, int workload, boolean balanced) {
+        public ApplicantRecommendation(Application app, TAProfile profile, MatchResult match, int workload, boolean balanced) {
             this.application = app;
+            this.profile = profile;
             this.matchResult = match;
             this.currentWorkload = workload;
             this.workloadBalanced = balanced;

@@ -17,4 +17,4 @@ if not exist .mvn\wrapper\maven-wrapper.jar (
   exit /b 1
 )
 
-"%JAVA_HOME%\bin\java" -classpath ".mvn\wrapper\maven-wrapper.jar" "-Dmaven.multiModuleProjectDirectory=%CD%" org.apache.maven.wrapper.MavenWrapperMain cargo:run
+"%JAVA_HOME%\bin\java" -classpath ".mvn\wrapper\maven-wrapper.jar" "-Dmaven.multiModuleProjectDirectory=%CD%" org.apache.maven.wrapper.MavenWrapperMain clean package cargo:run

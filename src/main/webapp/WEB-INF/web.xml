@@ -63,6 +63,15 @@
     </servlet-mapping>
 
     <servlet>
+        <servlet-name>ViewCVServlet</servlet-name>
+        <servlet-class>bupt.ta.servlet.ViewCVServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>ViewCVServlet</servlet-name>
+        <url-pattern>/view-cv</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
         <servlet-name>JobSearchServlet</servlet-name>
         <servlet-class>bupt.ta.servlet.JobSearchServlet</servlet-class>
     </servlet>
@@ -115,6 +124,15 @@
     <servlet-mapping>
         <servlet-name>MOJobsServlet</servlet-name>
         <url-pattern>/mo/jobs</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>ApplicantDetailServlet</servlet-name>
+        <servlet-class>bupt.ta.servlet.ApplicantDetailServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>ApplicantDetailServlet</servlet-name>
+        <url-pattern>/mo/applicant-detail</url-pattern>
     </servlet-mapping>
 
     <servlet>

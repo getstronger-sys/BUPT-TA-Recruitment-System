@@ -47,7 +47,7 @@ public class MOJobsServlet extends HttpServlet {
                 AIMatchService.MatchResult match = aiService.matchSkills(profile, j);
                 int workload = workloadByTa.getOrDefault(a.getApplicantId(), 0);
                 boolean balanced = workload <= avgWorkload;
-                recs.add(new AIMatchService.ApplicantRecommendation(a, match, workload, balanced));
+                recs.add(new AIMatchService.ApplicantRecommendation(a, profile, match, workload, balanced));
             }
             recs.sort((r1, r2) -> {
                 int cmp = Double.compare(r2.matchResult.score, r1.matchResult.score);

@@ -13,12 +13,28 @@
 </head>
 <body>
 <div class="container">
-    <div class="nav">
-        <a href="${pageContext.request.contextPath}/mo/jobs">My Jobs</a>
-        <a href="${pageContext.request.contextPath}/mo/post-job">Post Job</a>
+    <div class="nav top-nav">
+        <span class="brand">QM TA Portal</span>
         <span class="user"><%= session.getAttribute("realName") %> | <a href="${pageContext.request.contextPath}/logout">Logout</a></span>
     </div>
+    <div class="page-layout">
+        <div class="left-nav-wrap">
+            <div class="icon-rail">
+                <div class="icon-dot active">J</div>
+                <div class="icon-dot">P</div>
+                <div class="icon-dot">D</div>
+            </div>
+            <aside class="side-nav">
+                <a class="active" href="${pageContext.request.contextPath}/mo/jobs">My Jobs</a>
+                <a href="${pageContext.request.contextPath}/mo/post-job">Post Job</a>
+            </aside>
+        </div>
+        <main class="main-panel">
     <h1>My Posted Jobs</h1>
+    <div class="context-card">
+        <strong>MO Tip</strong>
+        <p>Use AI match score as a reference, then check applicant profile and CV before final decision.</p>
+    </div>
     <p class="ai-hint"><strong>AI Recommendations</strong>: Applicants sorted by skill match score. Workload balance hint shown for fair distribution.</p>
     <% if ("1".equals(request.getParameter("success"))) { %><p class="success">Job posted successfully!</p><% } %>
     <% if ("1".equals(request.getParameter("updated"))) { %><p class="success">Applicant status updated.</p><% } %>
@@ -56,7 +72,7 @@
         <% } %>
         <h4>Applicants (<%= recs.size() %>) - AI sorted by match & workload balance</h4>
         <table>
-            <tr><th>Applicant</th><th>Match</th><th>Missing Skills</th><th>Workload</th><th>Applied</th><th>Status</th><th>Action</th></tr>
+            <tr><th>Applicant</th><th>Profile</th><th>CV</th><th>Match</th><th>Missing Skills</th><th>Workload</th><th>Applied</th><th>Status</th><th>Action</th></tr>
             <% for (AIMatchService.ApplicantRecommendation rec : recs) {
                 Application a = rec.application;
                 String statusClass = "status-pending";
@@ -66,7 +82,26 @@
             <tr>
                 <td><%= a.getApplicantName() != null ? a.getApplicantName() : a.getApplicantId() %>
                     <% if (rec.workloadBalanced && "PENDING".equals(a.getStatus())) { %>
-                    <span class="balance-badge" title="Lower workload - good for balance">âš–</span>
+                    <span class="balance-badge" title="Lower workload - good for balance">âš?/span>
+                    <% } %>
+                    <br>
+                    <a href="${pageContext.request.contextPath}/mo/applicant-detail?applicantId=<%= a.getApplicantId() %>" class="mini-link">View full profile</a>
+                </td>
+                <td class="ai-missing-cell">
+                    <% if (rec.profile != null) { %>
+                    ID: <%= rec.profile.getStudentId() != null && !rec.profile.getStudentId().isEmpty() ? rec.profile.getStudentId() : "-" %><br>
+                    Phone: <%= rec.profile.getPhone() != null && !rec.profile.getPhone().isEmpty() ? rec.profile.getPhone() : "-" %><br>
+                    Skills: <%= rec.profile.getSkills() != null && !rec.profile.getSkills().isEmpty() ? String.join(", ", rec.profile.getSkills()) : "-" %><br>
+                    Intro: <%= rec.profile.getIntroduction() != null && !rec.profile.getIntroduction().isEmpty() ? rec.profile.getIntroduction() : "-" %>
+                    <% } else { %>
+                    No profile submitted.
+                    <% } %>
+                </td>
+                <td>
+                    <% if (rec.profile != null && rec.profile.getCvFilePath() != null && !rec.profile.getCvFilePath().isEmpty()) { %>
+                    <a href="${pageContext.request.contextPath}/view-cv?userId=<%= a.getApplicantId() %>" target="_blank">View CV</a>
+                    <% } else { %>
+                    -
                     <% } %>
                 </td>
                 <td><span class="match-badge" title="<%= rec.matchResult.explanation %>"><%= (int)rec.matchResult.score %>%</span></td>
@@ -92,7 +127,7 @@
             </tr>
             <% } %>
             <% if (recs.isEmpty()) { %>
-            <tr><td colspan="7">No applications yet.</td></tr>
+            <tr><td colspan="9">No applications yet.</td></tr>
             <% } %>
         </table>
     </div>
@@ -100,6 +135,19 @@
        if (jobsWithApps.isEmpty()) { %>
     <p>No jobs posted yet. <a href="${pageContext.request.contextPath}/mo/post-job">Post your first job</a>.</p>
     <% } %>
+        </main>
+        <aside class="right-sidebar">
+            <div class="widget-card">
+                <div class="widget-title">MO Dashboard</div>
+                <p class="widget-line">Track applicant quality and workload balance.</p>
+                <p class="widget-line">Use profile + CV before selecting.</p>
+            </div>
+            <div class="widget-card">
+                <div class="widget-title">Reminder</div>
+                <p class="widget-line">Close jobs after quota is met.</p>
+            </div>
+        </aside>
+    </div>
 </div>
 </body>
 </html>

@@ -2,7 +2,18 @@
 <%@ page import="java.util.List" %>
 <%@ page import="bupt.ta.model.Application" %>
 <%@ page import="bupt.ta.model.Job" %>
-<% List<Object[]> applications = (List<Object[]>) request.getAttribute("applications"); if (applications == null) applications = java.util.Collections.emptyList(); %>
+<%
+    List<Object[]> applications = (List<Object[]>) request.getAttribute("applications");
+    if (applications == null) applications = java.util.Collections.emptyList();
+    Integer pointsObj = (Integer) request.getAttribute("points");
+    int points = pointsObj != null ? pointsObj : 0;
+    Integer selectedObj = (Integer) request.getAttribute("selectedCount");
+    int selectedCount = selectedObj != null ? selectedObj : 0;
+    Integer pendingObj = (Integer) request.getAttribute("pendingCount");
+    int pendingCount = pendingObj != null ? pendingObj : 0;
+    Integer rejectedObj = (Integer) request.getAttribute("rejectedCount");
+    int rejectedCount = rejectedObj != null ? rejectedObj : 0;
+%>
 <!DOCTYPE html>
 <html>
 <head>
@@ -12,53 +23,107 @@
 </head>
 <body>
 <div class="container">
-    <div class="nav">
-        <a href="${pageContext.request.contextPath}/ta/jobs">Find Jobs</a>
-        <a href="${pageContext.request.contextPath}/ta/applications">My Applications</a>
-        <a href="${pageContext.request.contextPath}/ta/profile">My Profile</a>
+    <div class="nav top-nav">
+        <span class="brand">QM TA Portal</span>
         <span class="user"><%= session.getAttribute("realName") %> | <a href="${pageContext.request.contextPath}/logout">Logout</a></span>
     </div>
-    <h1>My Applications</h1>
-    <% if ("1".equals(request.getParameter("success"))) { %><p class="success">Application submitted successfully!</p><% } %>
-    <% if ("1".equals(request.getParameter("withdrawn"))) { %><p class="success">Application withdrawn.</p><% } %>
-    <% if ("already_processed".equals(request.getParameter("error"))) { %><p class="error">Cannot withdraw - already processed.</p><% } %>
-    <% if ("not_found".equals(request.getParameter("error"))) { %><p class="error">Application not found.</p><% } %>
+    <div class="page-layout">
+        <div class="left-nav-wrap">
+            <div class="icon-rail">
+                <div class="icon-dot">F</div>
+                <div class="icon-dot active">A</div>
+                <div class="icon-dot">P</div>
+            </div>
+            <aside class="side-nav">
+                <a href="${pageContext.request.contextPath}/ta/jobs">Find Jobs</a>
+                <a class="active" href="${pageContext.request.contextPath}/ta/applications">My Applications</a>
+                <a href="${pageContext.request.contextPath}/ta/profile">My Profile</a>
+            </aside>
+        </div>
+        <main class="main-panel">
+            <h1>My Applications</h1>
+            <div class="context-card">
+                <strong>Progress Guide</strong>
+                <p>Pending means waiting for MO review. Selected or rejected means this application is complete.</p>
+            </div>
+            <% if ("1".equals(request.getParameter("success"))) { %><p class="success">Application submitted successfully!</p><% } %>
+            <% if ("1".equals(request.getParameter("withdrawn"))) { %><p class="success">Application withdrawn.</p><% } %>
+            <% if ("already_processed".equals(request.getParameter("error"))) { %><p class="error">Cannot withdraw - already processed.</p><% } %>
+            <% if ("not_found".equals(request.getParameter("error"))) { %><p class="error">Application not found.</p><% } %>
 
-    <table>
-        <tr>
-            <th>Job</th>
-            <th>Module</th>
-            <th>Applied At</th>
-            <th>Status</th>
-            <th>Action</th>
-        </tr>
-        <% for (Object[] row : applications) {
-            Application a = (Application) row[0];
-            Job j = (Job) row[1];
-            String statusClass = "status-pending";
-            if ("SELECTED".equals(a.getStatus())) statusClass = "status-selected";
-            else if ("REJECTED".equals(a.getStatus())) statusClass = "status-rejected";
-            else if ("WITHDRAWN".equals(a.getStatus())) statusClass = "status-rejected";
-        %>
-        <tr>
-            <td><%= j != null ? j.getTitle() : a.getJobId() %></td>
-            <td><%= j != null ? j.getModuleCode() : "-" %></td>
-            <td><%= a.getAppliedAt() != null ? a.getAppliedAt() : "-" %></td>
-            <td class="<%= statusClass %>"><%= a.getStatus() %></td>
-            <td>
-                <% if ("PENDING".equals(a.getStatus())) { %>
-                <form action="${pageContext.request.contextPath}/ta/withdraw" method="post" style="display:inline;">
-                    <input type="hidden" name="applicationId" value="<%= a.getId() %>">
-                    <button type="submit" class="btn btn-danger" onclick="return confirm('Withdraw this application?')">Withdraw</button>
-                </form>
+            <div class="stats-row">
+                <div class="stat-card">
+                    <div class="stat-icon">T</div>
+                    <div>
+                        <div class="stat-title">TA Points</div>
+                        <div class="stat-value"><%= points %></div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div>
+                        <div class="stat-title">Status Overview</div>
+                        <div class="stat-meta">Selected <%= selectedCount %> | Pending <%= pendingCount %> | Processed <%= rejectedCount %></div>
+                    </div>
+                </div>
+            </div>
+
+            <table>
+                <tr>
+                    <th>Job</th>
+                    <th>Module</th>
+                    <th>Applied At</th>
+                    <th>Progress</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+                <% for (Object[] row : applications) {
+                    Application a = (Application) row[0];
+                    Job j = (Job) row[1];
+                    String statusClass = "status-pending";
+                    int progress = 60;
+                    if ("SELECTED".equals(a.getStatus())) { statusClass = "status-selected"; progress = 100; }
+                    else if ("REJECTED".equals(a.getStatus())) { statusClass = "status-rejected"; progress = 100; }
+                    else if ("WITHDRAWN".equals(a.getStatus())) { statusClass = "status-rejected"; progress = 100; }
+                %>
+                <tr>
+                    <td><%= j != null ? j.getTitle() : a.getJobId() %></td>
+                    <td><%= j != null ? j.getModuleCode() : "-" %></td>
+                    <td><%= a.getAppliedAt() != null ? a.getAppliedAt() : "-" %></td>
+                    <td>
+                        <div class="progress-wrap">
+                            <div class="progress-bar" style="width:<%= progress %>%"></div>
+                        </div>
+                        <div class="progress-text"><%= progress %>%</div>
+                    </td>
+                    <td class="<%= statusClass %>"><%= a.getStatus() %></td>
+                    <td>
+                        <% if ("PENDING".equals(a.getStatus())) { %>
+                        <form action="${pageContext.request.contextPath}/ta/withdraw" method="post" style="display:inline;">
+                            <input type="hidden" name="applicationId" value="<%= a.getId() %>">
+                            <button type="submit" class="btn btn-danger" onclick="return confirm('Withdraw this application?')">Withdraw</button>
+                        </form>
+                        <% } %>
+                    </td>
+                </tr>
+                <% }
+                   if (applications.isEmpty()) { %>
+                <tr><td colspan="6">No applications yet. <a href="${pageContext.request.contextPath}/ta/jobs">Find jobs</a> to apply.</td></tr>
                 <% } %>
-            </td>
-        </tr>
-        <% }
-           if (applications.isEmpty()) { %>
-        <tr><td colspan="5">No applications yet. <a href="${pageContext.request.contextPath}/ta/jobs">Find jobs</a> to apply.</td></tr>
-        <% } %>
-    </table>
+            </table>
+        </main>
+        <aside class="right-sidebar">
+            <div class="widget-card">
+                <div class="widget-title">TA Points</div>
+                <p class="widget-line">Current: <%= points %></p>
+                <p class="widget-line">Selected: <%= selectedCount %> | Pending: <%= pendingCount %></p>
+            </div>
+            <div class="widget-card">
+                <div class="widget-title">Reminders</div>
+                <p class="widget-line">Pending applications can be withdrawn.</p>
+                <p class="widget-line">Processed records are archived.</p>
+            </div>
+        </aside>
+    </div>
 </div>
 </body>
 </html>

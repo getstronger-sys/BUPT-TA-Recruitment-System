@@ -24,12 +24,23 @@ public class ApplicationStatusServlet extends HttpServlet {
         Map<String, Job> jobMap = allJobs.stream().collect(Collectors.toMap(Job::getId, j -> j));
 
         List<Object[]> enriched = new ArrayList<>();
+        int selectedCount = 0;
+        int pendingCount = 0;
+        int rejectedCount = 0;
         for (Application a : applications) {
             Job j = jobMap.get(a.getJobId());
             enriched.add(new Object[]{a, j});
+            if ("SELECTED".equals(a.getStatus())) selectedCount++;
+            else if ("PENDING".equals(a.getStatus())) pendingCount++;
+            else rejectedCount++;
         }
 
+        int points = selectedCount * 100 + pendingCount * 20;
         req.setAttribute("applications", enriched);
+        req.setAttribute("selectedCount", selectedCount);
+        req.setAttribute("pendingCount", pendingCount);
+        req.setAttribute("rejectedCount", rejectedCount);
+        req.setAttribute("points", points);
         req.getRequestDispatcher("/ta/applications.jsp").forward(req, resp);
     }
 }
