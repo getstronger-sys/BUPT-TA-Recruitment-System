@@ -11,41 +11,73 @@
 </head>
 <body>
 <div class="container">
-    <div class="nav">
-        <a href="${pageContext.request.contextPath}/ta/jobs">Find Jobs</a>
-        <a href="${pageContext.request.contextPath}/ta/applications">My Applications</a>
-        <a href="${pageContext.request.contextPath}/ta/profile">My Profile</a>
+    <div class="nav top-nav">
+        <span class="brand">QM TA Portal</span>
         <span class="user"><%= session.getAttribute("realName") %> | <a href="${pageContext.request.contextPath}/logout">Logout</a></span>
     </div>
-    <h1>My Profile</h1>
-    <% if ("1".equals(request.getParameter("success"))) { %><p class="success">Profile saved.</p><% } %>
-    <% if ("cv_success".equals(request.getParameter("cv_success")) || "1".equals(request.getParameter("cv_success"))) { %><p class="success">CV uploaded successfully.</p><% } %>
-    <% if ("no_file".equals(request.getParameter("error"))) { %><p class="error">Please select a file to upload.</p><% } %>
-    <% if ("invalid_type".equals(request.getParameter("error"))) { %><p class="error">Invalid file type. Use PDF, DOC, DOCX or TXT.</p><% } %>
+    <div class="page-layout">
+        <div class="left-nav-wrap">
+            <div class="icon-rail">
+                <div class="icon-dot">F</div>
+                <div class="icon-dot">A</div>
+                <div class="icon-dot active">P</div>
+            </div>
+            <aside class="side-nav">
+                <a href="${pageContext.request.contextPath}/ta/jobs">Find Jobs</a>
+                <a href="${pageContext.request.contextPath}/ta/applications">My Applications</a>
+                <a class="active" href="${pageContext.request.contextPath}/ta/profile">My Profile</a>
+            </aside>
+        </div>
+        <main class="main-panel">
+            <h1>My Profile</h1>
+            <div class="context-card">
+                <strong>Profile Tip</strong>
+                <p>Profiles with clear skills, availability and CV are easier for MO to review and shortlist.</p>
+            </div>
+            <% if ("1".equals(request.getParameter("success"))) { %><p class="success">Profile saved.</p><% } %>
+            <% if ("cv_success".equals(request.getParameter("cv_success")) || "1".equals(request.getParameter("cv_success"))) { %><p class="success">CV uploaded successfully.</p><% } %>
+            <% if ("no_file".equals(request.getParameter("error"))) { %><p class="error">Please select a file to upload.</p><% } %>
+            <% if ("invalid_type".equals(request.getParameter("error"))) { %><p class="error">Invalid file type. Use PDF, DOC, DOCX or TXT.</p><% } %>
 
-    <form action="${pageContext.request.contextPath}/ta/profile" method="post" class="form">
-        <label>Student ID</label>
-        <input type="text" name="studentId" value="<%= profile.getStudentId() != null ? profile.getStudentId() : "" %>">
-        <label>Phone</label>
-        <input type="tel" name="phone" value="<%= profile.getPhone() != null ? profile.getPhone() : "" %>">
-        <label>Skills (comma-separated, e.g. Java, Python, Teaching)</label>
-        <input type="text" name="skills" value="<%= (profile.getSkills() != null && !profile.getSkills().isEmpty()) ? String.join(", ", profile.getSkills()) : "" %>">
-        <label>Availability</label>
-        <input type="text" name="availability" value="<%= profile.getAvailability() != null ? profile.getAvailability() : "" %>" placeholder="e.g. Mon/Wed/Fri 9-12">
-        <label>Introduction</label>
-        <textarea name="introduction"><%= profile.getIntroduction() != null ? profile.getIntroduction() : "" %></textarea>
-        <button type="submit">Save Profile</button>
-    </form>
+            <form action="${pageContext.request.contextPath}/ta/profile" method="post" class="form">
+                <label>Student ID</label>
+                <input type="text" name="studentId" value="<%= profile.getStudentId() != null ? profile.getStudentId() : "" %>">
+                <label>Phone</label>
+                <input type="tel" name="phone" value="<%= profile.getPhone() != null ? profile.getPhone() : "" %>">
+                <label>Skills (comma-separated, e.g. Java, Python, Teaching)</label>
+                <input type="text" name="skills" value="<%= (profile.getSkills() != null && !profile.getSkills().isEmpty()) ? String.join(", ", profile.getSkills()) : "" %>">
+                <label>Availability</label>
+                <input type="text" name="availability" value="<%= profile.getAvailability() != null ? profile.getAvailability() : "" %>" placeholder="e.g. Mon/Wed/Fri 9-12">
+                <label>Introduction</label>
+                <textarea name="introduction"><%= profile.getIntroduction() != null ? profile.getIntroduction() : "" %></textarea>
+                <button type="submit">Save Profile</button>
+            </form>
 
-    <h2>Upload CV</h2>
-    <% if (profile.getCvFilePath() != null && !profile.getCvFilePath().isEmpty()) { %>
-    <p class="success">Current CV: <%= profile.getCvFilePath() %></p>
-    <% } %>
-    <form action="${pageContext.request.contextPath}/ta/upload-cv" method="post" enctype="multipart/form-data" class="form">
-        <label>Select file (PDF, DOC, DOCX, TXT, max 5MB)</label>
-        <input type="file" name="cvFile" accept=".pdf,.doc,.docx,.txt">
-        <button type="submit">Upload CV</button>
-    </form>
+            <h2>Upload CV</h2>
+            <% if (profile.getCvFilePath() != null && !profile.getCvFilePath().isEmpty()) { %>
+            <p class="success">Current CV uploaded.
+                <a href="${pageContext.request.contextPath}/view-cv?userId=<%= profile.getUserId() %>" target="_blank">View CV</a>
+            </p>
+            <% } %>
+            <form action="${pageContext.request.contextPath}/ta/upload-cv" method="post" enctype="multipart/form-data" class="form">
+                <label>Select file (PDF, DOC, DOCX, TXT, max 5MB)</label>
+                <input type="file" name="cvFile" accept=".pdf,.doc,.docx,.txt">
+                <button type="submit">Upload CV</button>
+            </form>
+        </main>
+        <aside class="right-sidebar">
+            <div class="widget-card">
+                <div class="widget-title">Profile Health</div>
+                <p class="widget-line">Keep phone and availability updated.</p>
+                <p class="widget-line">Add detailed skills for better AI ranking.</p>
+            </div>
+            <div class="widget-card">
+                <div class="widget-title">CV Reminder</div>
+                <p class="widget-line">Accepted: PDF, DOC, DOCX, TXT</p>
+                <p class="widget-line">Max upload size: 5MB</p>
+            </div>
+        </aside>
+    </div>
 </div>
 </body>
 </html>
