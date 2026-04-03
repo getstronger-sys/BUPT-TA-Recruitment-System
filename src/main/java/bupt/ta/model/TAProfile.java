@@ -14,6 +14,12 @@ public class TAProfile {
     private List<String> skills;  // e.g. Java, Python, Teaching
     private String availability;  // e.g. "Mon/Wed/Fri 9-12"
     private String introduction;
+    /** e.g. BSc, MSc, PhD */
+    private String degree;
+    /** Degree programme / major, e.g. Computer Science */
+    private String programme;
+    /** Prior TA or teaching-related experience */
+    private String taExperience;
 
     public TAProfile() {
         this.skills = new ArrayList<>();
@@ -38,4 +44,10 @@ public class TAProfile {
     public void setAvailability(String availability) { this.availability = availability; }
     public String getIntroduction() { return introduction; }
     public void setIntroduction(String introduction) { this.introduction = introduction; }
+    public String getDegree() { return degree; }
+    public void setDegree(String degree) { this.degree = degree; }
+    public String getProgramme() { return programme; }
+    public void setProgramme(String programme) { this.programme = programme; }
+    public String getTaExperience() { return taExperience; }
+    public void setTaExperience(String taExperience) { this.taExperience = taExperience; }
 }

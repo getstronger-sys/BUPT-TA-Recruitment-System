@@ -1,4 +1,5 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ include file="/WEB-INF/jspf/html-esc.jspf" %>
 <%@ page import="java.util.List" %>
 <%@ page import="bupt.ta.model.Job" %>
 <%@ page import="bupt.ta.model.Application" %>
@@ -101,6 +102,10 @@
                         String skillsText = hasProfile && rec.profile.getSkills() != null && !rec.profile.getSkills().isEmpty() ? String.join(", ", rec.profile.getSkills()) : "Not provided";
                         String missingText = rec.matchResult.missing != null && !rec.matchResult.missing.isEmpty() ? String.join(", ", rec.matchResult.missing) : "No major gaps";
                         boolean hasCv = hasProfile && rec.profile.getCvFilePath() != null && !rec.profile.getCvFilePath().isEmpty();
+                        String degreeText = hasProfile && rec.profile.getDegree() != null && !rec.profile.getDegree().isEmpty() ? escHtml(rec.profile.getDegree()) : "-";
+                        String programmeText = hasProfile && rec.profile.getProgramme() != null && !rec.profile.getProgramme().isEmpty() ? escHtml(rec.profile.getProgramme()) : "-";
+                        String taExpText = hasProfile && rec.profile.getTaExperience() != null && !rec.profile.getTaExperience().isEmpty() ? escHtml(rec.profile.getTaExperience()) : "Not provided.";
+                        String templateId = "applicant-tpl-" + j.getId() + "-" + a.getId();
                         String noteText = a.getNotes() != null && !a.getNotes().isEmpty() ? a.getNotes() : "No notes saved for this application.";
                         String profileStateText;
                         if (!hasProfile) {
@@ -121,9 +126,11 @@
                                     <% } %>
                                 </div>
                                 <div class="applicant-links">
+                                    <button type="button" class="btn btn-primary applicant-quick-btn" data-template="<%= templateId %>">Quick view</button>
                                     <a href="${pageContext.request.contextPath}/mo/applicant-detail?applicantId=<%= a.getApplicantId() %>" class="mini-link">Full profile</a>
                                     <% if (hasCv) { %>
-                                    <a href="${pageContext.request.contextPath}/view-cv?userId=<%= a.getApplicantId() %>" target="_blank" class="mini-link">View CV</a>
+                                    <a href="${pageContext.request.contextPath}/view-cv?userId=<%= a.getApplicantId() %>" target="_blank" rel="noopener" class="mini-link">View CV</a>
+                                    <a href="${pageContext.request.contextPath}/view-cv?userId=<%= a.getApplicantId() %>&amp;download=1" class="mini-link">Download CV</a>
                                     <% } else { %>
                                     <span class="muted-inline">CV not uploaded</span>
                                     <% } %>
@@ -183,6 +190,27 @@
                             </div>
                             <% } %>
                         </div>
+                        <template id="<%= templateId %>">
+                            <div class="quick-detail-sheet">
+                                <p class="quick-detail-name"><%= escHtml(applicantName) %></p>
+                                <p><strong>Degree:</strong> <%= degreeText %></p>
+                                <p><strong>Programme:</strong> <%= programmeText %></p>
+                                <p><strong>Skills:</strong> <%= escHtml(skillsText) %></p>
+                                <div class="detail-block-text">
+                                    <strong>TA experience</strong>
+                                    <p class="pre-wrap"><%= taExpText %></p>
+                                </div>
+                                <p><strong>CV:</strong>
+                                    <% if (hasCv) { %>
+                                    <a href="${pageContext.request.contextPath}/view-cv?userId=<%= a.getApplicantId() %>" target="_blank" rel="noopener">View</a>
+                                    <span class="muted-inline"> | </span>
+                                    <a href="${pageContext.request.contextPath}/view-cv?userId=<%= a.getApplicantId() %>&amp;download=1">Download</a>
+                                    <% } else { %>
+                                    <span class="muted-inline">Not uploaded</span>
+                                    <% } %>
+                                </p>
+                            </div>
+                        </template>
                     </article>
                     <% } %>
                 </div>
@@ -205,5 +233,34 @@
         </aside>
     </div>
 </div>
+
+<dialog id="applicantQuickDialog" class="applicant-quick-dialog">
+    <div class="applicant-quick-dialog-inner">
+        <div class="applicant-quick-dialog-head">
+            <h3>Applicant detail</h3>
+            <button type="button" class="dialog-close-btn" aria-label="Close">&times;</button>
+        </div>
+        <div class="applicant-quick-dialog-body"></div>
+    </div>
+</dialog>
+<script>
+(function () {
+    var dialog = document.getElementById('applicantQuickDialog');
+    if (!dialog) return;
+    var body = dialog.querySelector('.applicant-quick-dialog-body');
+    var closeBtn = dialog.querySelector('.dialog-close-btn');
+    if (closeBtn) closeBtn.addEventListener('click', function () { dialog.close(); });
+    dialog.addEventListener('click', function (e) { if (e.target === dialog) dialog.close(); });
+    document.querySelectorAll('.applicant-quick-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var id = btn.getAttribute('data-template');
+            var tpl = id ? document.getElementById(id) : null;
+            if (body) body.innerHTML = '';
+            if (tpl && tpl.content && body) body.appendChild(tpl.content.cloneNode(true));
+            dialog.showModal();
+        });
+    });
+})();
+</script>
 </body>
 </html>

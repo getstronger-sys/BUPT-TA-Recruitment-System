@@ -1,4 +1,5 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ include file="/WEB-INF/jspf/html-esc.jspf" %>
 <%@ page import="bupt.ta.model.TAProfile" %>
 <%@ page import="java.util.List" %>
 <% TAProfile profile = (TAProfile) request.getAttribute("profile"); if (profile == null) profile = new TAProfile(); %>
@@ -41,22 +42,30 @@
 
             <form action="${pageContext.request.contextPath}/ta/profile" method="post" class="form">
                 <label>Student ID</label>
-                <input type="text" name="studentId" value="<%= profile.getStudentId() != null ? profile.getStudentId() : "" %>">
+                <input type="text" name="studentId" value="<%= escHtml(profile.getStudentId() != null ? profile.getStudentId() : "") %>">
                 <label>Phone</label>
-                <input type="tel" name="phone" value="<%= profile.getPhone() != null ? profile.getPhone() : "" %>">
+                <input type="tel" name="phone" value="<%= escHtml(profile.getPhone() != null ? profile.getPhone() : "") %>">
+                <label>Degree</label>
+                <input type="text" name="degree" value="<%= escHtml(profile.getDegree() != null ? profile.getDegree() : "") %>" placeholder="e.g. BSc, MSc">
+                <label>Programme / major</label>
+                <input type="text" name="programme" value="<%= escHtml(profile.getProgramme() != null ? profile.getProgramme() : "") %>" placeholder="e.g. Computer Science">
+                <label>TA or teaching experience</label>
+                <textarea name="taExperience" placeholder="Prior TA roles, tutoring, labs, etc."><%= escHtml(profile.getTaExperience() != null ? profile.getTaExperience() : "") %></textarea>
                 <label>Skills (comma-separated, e.g. Java, Python, Teaching)</label>
-                <input type="text" name="skills" value="<%= (profile.getSkills() != null && !profile.getSkills().isEmpty()) ? String.join(", ", profile.getSkills()) : "" %>">
+                <input type="text" name="skills" value="<%= escHtml((profile.getSkills() != null && !profile.getSkills().isEmpty()) ? String.join(", ", profile.getSkills()) : "") %>">
                 <label>Availability</label>
-                <input type="text" name="availability" value="<%= profile.getAvailability() != null ? profile.getAvailability() : "" %>" placeholder="e.g. Mon/Wed/Fri 9-12">
+                <input type="text" name="availability" value="<%= escHtml(profile.getAvailability() != null ? profile.getAvailability() : "") %>" placeholder="e.g. Mon/Wed/Fri 9-12">
                 <label>Introduction</label>
-                <textarea name="introduction"><%= profile.getIntroduction() != null ? profile.getIntroduction() : "" %></textarea>
+                <textarea name="introduction"><%= escHtml(profile.getIntroduction() != null ? profile.getIntroduction() : "") %></textarea>
                 <button type="submit">Save Profile</button>
             </form>
 
             <h2>Upload CV</h2>
             <% if (profile.getCvFilePath() != null && !profile.getCvFilePath().isEmpty()) { %>
             <p class="success">Current CV uploaded.
-                <a href="${pageContext.request.contextPath}/view-cv?userId=<%= profile.getUserId() %>" target="_blank">View CV</a>
+                <a href="${pageContext.request.contextPath}/view-cv?userId=<%= profile.getUserId() %>" target="_blank" rel="noopener">View</a>
+                <span class="muted-inline"> | </span>
+                <a href="${pageContext.request.contextPath}/view-cv?userId=<%= profile.getUserId() %>&amp;download=1">Download</a>
             </p>
             <% } %>
             <form action="${pageContext.request.contextPath}/ta/upload-cv" method="post" enctype="multipart/form-data" class="form">

@@ -51,7 +51,9 @@ public class ViewCVServlet extends HttpServlet {
         }
 
         resp.setContentType(contentType);
-        resp.setHeader("Content-Disposition", "inline; filename=\"" + filename + "\"");
+        boolean asDownload = "1".equals(req.getParameter("download")) || "true".equalsIgnoreCase(req.getParameter("download"));
+        String disp = asDownload ? "attachment" : "inline";
+        resp.setHeader("Content-Disposition", disp + "; filename=\"" + filename.replace("\"", "") + "\"");
         resp.setContentLengthLong(Files.size(file));
         Files.copy(file, resp.getOutputStream());
     }
