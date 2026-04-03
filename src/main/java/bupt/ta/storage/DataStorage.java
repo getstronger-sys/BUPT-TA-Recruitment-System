@@ -29,8 +29,7 @@ public class DataStorage {
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
     public DataStorage(ServletContext ctx) {
-        String realPath = ctx.getRealPath("/");
-        this.basePath = Paths.get(realPath != null ? realPath : ".", DATA_DIR);
+        this.basePath = resolveServletBasePath(ctx);
         this.gson = new GsonBuilder().setPrettyPrinting().create();
         ensureDataDir();
     }
@@ -39,6 +38,45 @@ public class DataStorage {
         this.basePath = Paths.get(baseDir, DATA_DIR);
         this.gson = new GsonBuilder().setPrettyPrinting().create();
         ensureDataDir();
+    }
+
+    private Path resolveServletBasePath(ServletContext ctx) {
+        String override = firstNonBlank(System.getProperty("ta.data.dir"), System.getenv("TA_DATA_DIR"));
+        if (override != null) {
+            return Paths.get(override).toAbsolutePath().normalize();
+        }
+
+        Path projectDataPath = detectProjectDataPath();
+        if (projectDataPath != null) {
+            return projectDataPath;
+        }
+
+        String realPath = ctx != null ? ctx.getRealPath("/") : null;
+        return Paths.get(realPath != null ? realPath : ".", DATA_DIR).toAbsolutePath().normalize();
+    }
+
+    private String firstNonBlank(String... values) {
+        for (String value : values) {
+            if (value != null && !value.trim().isEmpty()) {
+                return value.trim();
+            }
+        }
+        return null;
+    }
+
+    private Path detectProjectDataPath() {
+        String userDir = System.getProperty("user.dir");
+        if (userDir == null || userDir.trim().isEmpty()) {
+            return null;
+        }
+
+        Path current = Paths.get(userDir).toAbsolutePath().normalize();
+        for (Path path = current; path != null; path = path.getParent()) {
+            if (Files.exists(path.resolve("pom.xml")) && Files.exists(path.resolve("src"))) {
+                return path.resolve(DATA_DIR);
+            }
+        }
+        return null;
     }
 
     private void ensureDataDir() {
