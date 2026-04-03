@@ -10,7 +10,10 @@ if "%JAVA_HOME%"=="" (
 )
 
 set "MAVEN_PROJECTBASEDIR=%~dp0"
-set "WRAPPER_JAR=%MAVEN_PROJECTBASEDIR%.mvn\wrapper\maven-wrapper.jar"
+REM Remove trailing backslash to avoid Windows argument parsing issues in the
+REM quoted -Dmaven.multiModuleProjectDirectory=... parameter.
+if "%MAVEN_PROJECTBASEDIR:~-1%"=="\" set "MAVEN_PROJECTBASEDIR=%MAVEN_PROJECTBASEDIR:~0,-1%"
+set "WRAPPER_JAR=%MAVEN_PROJECTBASEDIR%\.mvn\wrapper\maven-wrapper.jar"
 
 if not exist "%WRAPPER_JAR%" (
   echo Maven wrapper jar not found at %WRAPPER_JAR%
