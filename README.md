@@ -95,7 +95,8 @@ ta-recruitment-system/
 
 ## Data Files
 
-All data is stored in `data/` (relative to Tomcat deployment):
+For local development, data is stored in the project root `data/` directory so accounts, jobs, applications, and uploads survive restarts.
+If needed, you can override the storage location with `-Dta.data.dir=<path>` or environment variable `TA_DATA_DIR`.
 
 - `users.json` - User accounts
 - `profiles.json` - TA profiles (skills, CV path, etc.)
