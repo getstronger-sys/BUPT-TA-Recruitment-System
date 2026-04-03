@@ -36,9 +36,18 @@ public class ViewCVServlet extends HttpServlet {
             return;
         }
 
-        String storedPath = profile.getCvFilePath().replace("\\", "/");
-        String relativePath = storedPath.startsWith("data/") ? storedPath : "data/" + storedPath;
-        Path file = Path.of(getServletContext().getRealPath("/"), relativePath).normalize();
+        String storedPath = profile.getCvFilePath().replace("\\", "/").trim();
+        Path file;
+        Path storageBase = storage.getBasePath();
+        if (Path.of(storedPath).isAbsolute()) {
+            file = Path.of(storedPath).normalize();
+        } else if (storedPath.startsWith("data/")) {
+            // Backward compatibility for old values like data/uploads/xxx.pdf
+            file = storageBase.getParent().resolve(storedPath).normalize();
+        } else {
+            // Current values are relative to data dir, e.g. uploads/xxx.pdf
+            file = storageBase.resolve(storedPath).normalize();
+        }
         if (!Files.exists(file) || !Files.isRegularFile(file)) {
             resp.sendError(HttpServletResponse.SC_NOT_FOUND, "CV file not found");
             return;
@@ -51,7 +60,9 @@ public class ViewCVServlet extends HttpServlet {
         }
 
         resp.setContentType(contentType);
-        resp.setHeader("Content-Disposition", "inline; filename=\"" + filename + "\"");
+        boolean asDownload = "1".equals(req.getParameter("download")) || "true".equalsIgnoreCase(req.getParameter("download"));
+        String disp = asDownload ? "attachment" : "inline";
+        resp.setHeader("Content-Disposition", disp + "; filename=\"" + filename.replace("\"", "") + "\"");
         resp.setContentLengthLong(Files.size(file));
         Files.copy(file, resp.getOutputStream());
     }
