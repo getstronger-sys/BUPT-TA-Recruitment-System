@@ -31,15 +31,16 @@
                 <a href="${pageContext.request.contextPath}/ta/profile">My Profile</a>
             </aside>
         </div>
-        <main class="main-panel">
+        <main class="main-panel ta-main">
             <h1>Find Available Jobs</h1>
+            <p class="ta-page-lead">Browse open positions matched to your profile. Use search filters to narrow by module or skill.</p>
             <div class="context-card">
                 <strong>Quick Tip</strong>
                 <p>Open <strong>View details</strong> for full module info, hours, payment, workload, deadline, and responsibilities—then use <strong>Review and apply</strong> to confirm your profile before submitting.</p>
             </div>
             <p class="ai-hint"><strong>AI Skill Matching</strong>: Jobs are ordered by your match score. Complete your <a href="${pageContext.request.contextPath}/ta/profile">profile skills</a> for better matching.</p>
 
-            <form action="${pageContext.request.contextPath}/ta/jobs" method="get" class="search-form">
+            <form action="${pageContext.request.contextPath}/ta/jobs" method="get" class="search-form search-form--ta">
                 <input type="text" name="keyword" placeholder="Keyword (title, module)" value="<%= request.getParameter("keyword") != null ? request.getParameter("keyword") : "" %>">
                 <input type="text" name="moduleCode" placeholder="Module code" value="<%= request.getParameter("moduleCode") != null ? request.getParameter("moduleCode") : "" %>">
                 <input type="text" name="skill" placeholder="Required skill" value="<%= request.getParameter("skill") != null ? request.getParameter("skill") : "" %>">
@@ -62,7 +63,7 @@
                 Job j = (Job) row[0];
                 AIMatchService.MatchResult match = (AIMatchService.MatchResult) row[1];
             %>
-            <div class="job-card">
+            <div class="job-card ta-job-card">
                 <h3><%= j.getTitle() %> - <%= j.getModuleCode() %>
                     <span class="match-badge" title="<%= match.explanation %>">Match: <%= (int)match.score %>%</span>
                 </h3>
@@ -89,7 +90,7 @@
             </div>
             <% }
                if (jobsWithMatch.isEmpty()) { %>
-            <p>No jobs found. Try adjusting your search.</p>
+            <p class="section-empty section-empty--card ta-empty">No jobs match your search. Try different keywords or clear filters.</p>
             <% } %>
         </main>
         <aside class="right-sidebar">

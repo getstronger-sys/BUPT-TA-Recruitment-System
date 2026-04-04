@@ -74,8 +74,9 @@
                 <a href="${pageContext.request.contextPath}/ta/profile">My Profile</a>
             </aside>
         </div>
-        <main class="main-panel">
+        <main class="main-panel ta-main">
             <h1>My Applications</h1>
+            <p class="ta-page-lead">Track each submission, open interview notices from the organiser, and withdraw while still pending or in interview.</p>
             <div class="context-card">
                 <strong>How it works</strong>
                 <p>Pending &rarr; Interview (see time and location posted by the module organiser) &rarr; Selected or rejected. Notices are in-app only (no email).</p>
@@ -104,6 +105,7 @@
             <p class="applications-table-hint muted-inline">Swipe or drag the bar below to see all columns if the table is wide.</p>
             <div class="applications-table-scroll">
             <table class="applications-table">
+                <thead>
                 <tr>
                     <th class="col-job">Job</th>
                     <th class="col-module">Module</th>
@@ -113,6 +115,8 @@
                     <th class="col-notice">Interview</th>
                     <th class="col-action">Action</th>
                 </tr>
+                </thead>
+                <tbody>
                 <% for (Object[] row : applications) {
                     Application a = (Application) row[0];
                     Job j = (Job) row[1];
@@ -175,8 +179,9 @@
                 </tr>
                 <% }
                    if (applications.isEmpty()) { %>
-                <tr><td colspan="7">No applications yet. <a href="${pageContext.request.contextPath}/ta/jobs">Find jobs</a> to apply.</td></tr>
+                <tr class="applications-empty-row"><td colspan="7" class="applications-empty-cell">No applications yet. <a href="${pageContext.request.contextPath}/ta/jobs">Find jobs</a> to apply.</td></tr>
                 <% } %>
+                </tbody>
             </table>
             </div>
         </main>
