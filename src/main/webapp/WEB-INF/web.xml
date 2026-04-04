@@ -81,6 +81,15 @@
     </servlet-mapping>
 
     <servlet>
+        <servlet-name>TAJobDetailServlet</servlet-name>
+        <servlet-class>bupt.ta.servlet.TAJobDetailServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>TAJobDetailServlet</servlet-name>
+        <url-pattern>/ta/job</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
         <servlet-name>ApplyJobServlet</servlet-name>
         <servlet-class>bupt.ta.servlet.ApplyJobServlet</servlet-class>
     </servlet>
@@ -124,6 +133,15 @@
     <servlet-mapping>
         <servlet-name>MOJobsServlet</servlet-name>
         <url-pattern>/mo/jobs</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>MOPastJobsServlet</servlet-name>
+        <servlet-class>bupt.ta.servlet.MOPastJobsServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>MOPastJobsServlet</servlet-name>
+        <url-pattern>/mo/past-jobs</url-pattern>
     </servlet-mapping>
 
     <servlet>

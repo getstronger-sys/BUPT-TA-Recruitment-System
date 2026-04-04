@@ -44,6 +44,7 @@
             <aside class="side-nav">
                 <a href="${pageContext.request.contextPath}/mo/jobs">My Jobs</a>
                 <a href="${pageContext.request.contextPath}/mo/post-job">Post Job</a>
+                <a href="${pageContext.request.contextPath}/mo/past-jobs">Past postings</a>
             </aside>
         </div>
         <main class="main-panel">

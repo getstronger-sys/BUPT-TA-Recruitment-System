@@ -1,7 +1,37 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ include file="/WEB-INF/jspf/html-esc.jspf" %>
 <%@ page import="java.util.List" %>
 <%@ page import="bupt.ta.model.Application" %>
 <%@ page import="bupt.ta.model.Job" %>
+<%!
+    /** Format stored appliedAt (ISO-like) to yyyy-MM-dd HH:mm */
+    static String formatAppliedAt(String raw) {
+        if (raw == null || raw.trim().isEmpty()) return "-";
+        String t = raw.trim();
+        int tPos = t.indexOf('T');
+        if (tPos < 0) {
+            return t.length() >= 16 ? t.substring(0, 16) : t;
+        }
+        String datePart = t.substring(0, tPos);
+        String timePart = t.substring(tPos + 1);
+        int dot = timePart.indexOf('.');
+        if (dot >= 0) timePart = timePart.substring(0, dot);
+        int plus = timePart.indexOf('+');
+        if (plus >= 0) timePart = timePart.substring(0, plus);
+        int z = timePart.toUpperCase().indexOf('Z');
+        if (z >= 0) timePart = timePart.substring(0, z);
+        String[] segs = timePart.split(":");
+        if (segs.length >= 2) {
+            String h = segs[0];
+            String m = segs[1];
+            if (h.length() == 1) h = "0" + h;
+            if (m.length() >= 2) m = m.substring(0, 2);
+            else if (m.length() == 1) m = "0" + m;
+            return datePart + " " + h + ":" + m;
+        }
+        return datePart + " " + timePart;
+    }
+%>
 <%
     List<Object[]> applications = (List<Object[]>) request.getAttribute("applications");
     if (applications == null) applications = java.util.Collections.emptyList();
@@ -45,8 +75,8 @@
         <main class="main-panel">
             <h1>My Applications</h1>
             <div class="context-card">
-                <strong>流程说明</strong>
-                <p>申请中 → 面试中（可查看 MO 发布的面试时间与地点）→ 录用或拒绝。站内通知，不发邮件。</p>
+                <strong>How it works</strong>
+                <p>Pending &rarr; Interview (see time and location posted by the module organiser) &rarr; Selected or rejected. Notices are in-app only (no email).</p>
             </div>
             <% if ("1".equals(request.getParameter("success"))) { %><p class="success">Application submitted successfully!</p><% } %>
             <% if ("1".equals(request.getParameter("withdrawn"))) { %><p class="success">Application withdrawn.</p><% } %>
@@ -64,20 +94,22 @@
                 <div class="stat-card">
                     <div>
                         <div class="stat-title">Status Overview</div>
-                        <div class="stat-meta">录用 <%= selectedCount %> | 申请中 <%= pendingCount %> | 面试中 <%= interviewCount %> | 已结束 <%= rejectedCount %></div>
+                        <div class="stat-meta">Selected <%= selectedCount %> | Pending <%= pendingCount %> | Interview <%= interviewCount %> | Closed <%= rejectedCount %></div>
                     </div>
                 </div>
             </div>
 
-            <table>
+            <p class="applications-table-hint muted-inline">Swipe or drag the bar below to see all columns if the table is wide.</p>
+            <div class="applications-table-scroll">
+            <table class="applications-table">
                 <tr>
-                    <th>Job</th>
-                    <th>Module</th>
-                    <th>Applied At</th>
-                    <th>Progress</th>
-                    <th>Status</th>
-                    <th>面试通知（站内）</th>
-                    <th>Action</th>
+                    <th class="col-job">Job</th>
+                    <th class="col-module">Module</th>
+                    <th class="col-applied">Applied at</th>
+                    <th class="col-progress">Progress</th>
+                    <th class="col-status">Status</th>
+                    <th class="col-notice">Interview</th>
+                    <th class="col-action">Action</th>
                 </tr>
                 <% for (Object[] row : applications) {
                     Application a = (Application) row[0];
@@ -91,38 +123,50 @@
                     boolean hasNotice = (a.getInterviewTime() != null && !a.getInterviewTime().isEmpty())
                             || (a.getInterviewLocation() != null && !a.getInterviewLocation().isEmpty())
                             || (a.getInterviewAssessment() != null && !a.getInterviewAssessment().isEmpty());
+                    String noticeTplId = "ta-notice-" + a.getId().replaceAll("[^A-Za-z0-9]", "_");
+                    String jobTitle = j != null ? j.getTitle() : a.getJobId();
+                    String timeN = a.getInterviewTime() != null ? a.getInterviewTime() : "";
+                    String locN = a.getInterviewLocation() != null ? a.getInterviewLocation() : "";
+                    String assessN = a.getInterviewAssessment() != null ? a.getInterviewAssessment() : "";
                 %>
                 <tr>
-                    <td><%= j != null ? j.getTitle() : a.getJobId() %></td>
-                    <td><%= j != null ? j.getModuleCode() : "-" %></td>
-                    <td><%= a.getAppliedAt() != null ? a.getAppliedAt() : "-" %></td>
-                    <td>
+                    <td class="col-job"><%= escHtml(jobTitle) %></td>
+                    <td class="col-module"><%= j != null ? escHtml(j.getModuleCode()) : "-" %></td>
+                    <td class="col-applied"><%= formatAppliedAt(a.getAppliedAt()) %></td>
+                    <td class="col-progress">
                         <div class="progress-wrap">
                             <div class="progress-bar" style="width:<%= progress %>%"></div>
                         </div>
                         <div class="progress-text"><%= progress %>%</div>
                     </td>
-                    <td class="<%= statusClass %>"><%= a.getStatus() %></td>
-                    <td class="interview-notice-cell">
+                    <td class="col-status <%= statusClass %>"><%= a.getStatus() %></td>
+                    <td class="col-notice interview-notice-cell">
                         <% if (hasNotice) { %>
-                        <div class="notice-inline">
-                            <span>时间 <%= a.getInterviewTime() != null ? a.getInterviewTime() : "—" %></span><br>
-                            <span>地点 <%= a.getInterviewLocation() != null ? a.getInterviewLocation() : "—" %></span>
-                            <% if (a.getInterviewAssessment() != null && !a.getInterviewAssessment().isEmpty()) { %>
-                            <br><span>考核 <%= a.getInterviewAssessment() %></span>
-                            <% } %>
-                        </div>
+                        <button type="button" class="btn btn-primary btn-sm ta-notice-btn" data-template="<%= noticeTplId %>">View notice</button>
+                        <template id="<%= noticeTplId %>">
+                            <div class="quick-detail-sheet ta-notice-sheet">
+                                <p class="quick-detail-name"><%= escHtml(jobTitle) %></p>
+                                <p><strong>Time:</strong> <%= escHtml(timeN.isEmpty() ? "—" : timeN) %></p>
+                                <p><strong>Location:</strong> <%= escHtml(locN.isEmpty() ? "—" : locN) %></p>
+                                <% if (!assessN.isEmpty()) { %>
+                                <div class="detail-block-text">
+                                    <strong>Assessment</strong>
+                                    <p class="pre-wrap"><%= escHtml(assessN) %></p>
+                                </div>
+                                <% } %>
+                            </div>
+                        </template>
                         <% } else if ("INTERVIEW".equals(a.getStatus())) { %>
-                        <span class="muted-inline">待 MO 发布</span>
+                        <span class="muted-inline">Awaiting organiser</span>
                         <% } else { %>
-                        —
+                        <span class="muted-inline">&mdash;</span>
                         <% } %>
                     </td>
-                    <td>
+                    <td class="col-action">
                         <% if ("PENDING".equals(a.getStatus()) || "INTERVIEW".equals(a.getStatus())) { %>
                         <form action="${pageContext.request.contextPath}/ta/withdraw" method="post" style="display:inline;">
                             <input type="hidden" name="applicationId" value="<%= a.getId() %>">
-                            <button type="submit" class="btn btn-danger" onclick="return confirm('Withdraw this application?')">Withdraw</button>
+                            <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Withdraw this application?')">Withdraw</button>
                         </form>
                         <% } %>
                     </td>
@@ -132,12 +176,13 @@
                 <tr><td colspan="7">No applications yet. <a href="${pageContext.request.contextPath}/ta/jobs">Find jobs</a> to apply.</td></tr>
                 <% } %>
             </table>
+            </div>
         </main>
         <aside class="right-sidebar">
             <div class="widget-card">
                 <div class="widget-title">TA Points</div>
                 <p class="widget-line">Current: <%= points %></p>
-                <p class="widget-line">录用: <%= selectedCount %> | 申请中: <%= pendingCount %> | 面试: <%= interviewCount %></p>
+                <p class="widget-line">Selected: <%= selectedCount %> | Pending: <%= pendingCount %> | Interview: <%= interviewCount %></p>
             </div>
             <div class="widget-card">
                 <div class="widget-title">Reminders</div>
@@ -147,5 +192,34 @@
         </aside>
     </div>
 </div>
+
+<dialog id="taNoticeDialog" class="applicant-quick-dialog">
+    <div class="applicant-quick-dialog-inner">
+        <div class="applicant-quick-dialog-head">
+            <h3>Interview notice</h3>
+            <button type="button" class="dialog-close-btn" aria-label="Close">&times;</button>
+        </div>
+        <div class="applicant-quick-dialog-body ta-notice-dialog-body"></div>
+    </div>
+</dialog>
+<script>
+(function () {
+    var dialog = document.getElementById('taNoticeDialog');
+    if (!dialog) return;
+    var body = dialog.querySelector('.ta-notice-dialog-body');
+    var closeBtn = dialog.querySelector('.dialog-close-btn');
+    if (closeBtn) closeBtn.addEventListener('click', function () { dialog.close(); });
+    dialog.addEventListener('click', function (e) { if (e.target === dialog) dialog.close(); });
+    document.querySelectorAll('.ta-notice-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var id = btn.getAttribute('data-template');
+            var tpl = id ? document.getElementById(id) : null;
+            if (body) body.innerHTML = '';
+            if (tpl && tpl.content && body) body.appendChild(tpl.content.cloneNode(true));
+            dialog.showModal();
+        });
+    });
+})();
+</script>
 </body>
 </html>

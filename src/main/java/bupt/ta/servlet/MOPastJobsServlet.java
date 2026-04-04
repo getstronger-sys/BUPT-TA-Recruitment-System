@@ -15,7 +15,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class MOJobsServlet extends HttpServlet {
+/**
+ * MO view for jobs that are closed or past application deadline (not shown on /mo/jobs).
+ */
+public class MOPastJobsServlet extends HttpServlet {
 
     private static final Set<String> JOB_VIEWS = Collections.unmodifiableSet(
             new HashSet<>(Arrays.asList("pending", "interview", "withdrawn", "outcome")));
@@ -29,7 +32,7 @@ public class MOJobsServlet extends HttpServlet {
 
         List<Job> jobs = storage.loadJobs().stream()
                 .filter(j -> moId.equals(j.getPostedBy()))
-                .filter(JobActivity::isActive)
+                .filter(JobActivity::isInactive)
                 .collect(Collectors.toList());
 
         List<Application> allApps = storage.loadApplications();
@@ -59,18 +62,18 @@ public class MOJobsServlet extends HttpServlet {
         if (!jobListMode) {
             Job sel = storage.getJobById(selectedJobId);
             if (sel == null || !moId.equals(sel.getPostedBy())) {
-                resp.sendRedirect(req.getContextPath() + "/mo/jobs?error=invalid_job");
+                resp.sendRedirect(req.getContextPath() + "/mo/past-jobs?error=invalid_job");
                 return;
             }
-            if (JobActivity.isInactive(sel)) {
-                resp.sendRedirect(req.getContextPath() + JobActivity.PATH_INACTIVE + "?jobId="
+            if (JobActivity.isActive(sel)) {
+                resp.sendRedirect(req.getContextPath() + "/mo/jobs?jobId="
                         + URLEncoder.encode(selectedJobId, StandardCharsets.UTF_8) + "&view=" + view);
                 return;
             }
         }
 
-        req.setAttribute("moPastJobsPage", Boolean.FALSE);
-        req.setAttribute("moJobsBase", req.getContextPath() + JobActivity.PATH_ACTIVE);
+        req.setAttribute("moPastJobsPage", Boolean.TRUE);
+        req.setAttribute("moJobsBase", req.getContextPath() + JobActivity.PATH_INACTIVE);
         req.setAttribute("moJobPickList", enrichedAll);
         req.setAttribute("moJobListMode", jobListMode);
         req.setAttribute("moSelectedJobId", jobListMode ? "" : selectedJobId);

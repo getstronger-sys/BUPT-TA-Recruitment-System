@@ -4,12 +4,29 @@
 <%@ page import="bupt.ta.model.Job" %>
 <%@ page import="bupt.ta.model.Application" %>
 <%@ page import="bupt.ta.ai.AIMatchService" %>
-<% List<Object[]> jobsWithApps = (List<Object[]>) request.getAttribute("jobsWithApps"); if (jobsWithApps == null) jobsWithApps = java.util.Collections.emptyList(); %>
+<% List<Object[]> jobsWithApps = (List<Object[]>) request.getAttribute("jobsWithApps"); if (jobsWithApps == null) jobsWithApps = java.util.Collections.emptyList();
+   List<Object[]> moJobPickList = (List<Object[]>) request.getAttribute("moJobPickList");
+   if (moJobPickList == null) moJobPickList = java.util.Collections.emptyList();
+   boolean moJobListMode = Boolean.TRUE.equals(request.getAttribute("moJobListMode"));
+   String moSelectedJobId = (String) request.getAttribute("moSelectedJobId");
+   if (moSelectedJobId == null) moSelectedJobId = "";
+   String moJobIdQ = moSelectedJobId.isEmpty() ? "" : "&jobId=" + java.net.URLEncoder.encode(moSelectedJobId, "UTF-8");
+   String moView = (String) request.getAttribute("moJobsView");
+   if (moView == null) moView = "pending";
+   int moCntP = request.getAttribute("moJobsCountPending") != null ? (Integer) request.getAttribute("moJobsCountPending") : 0;
+   int moCntI = request.getAttribute("moJobsCountInterview") != null ? (Integer) request.getAttribute("moJobsCountInterview") : 0;
+   int moCntW = request.getAttribute("moJobsCountWithdrawn") != null ? (Integer) request.getAttribute("moJobsCountWithdrawn") : 0;
+   int moCntO = request.getAttribute("moJobsCountOutcome") != null ? (Integer) request.getAttribute("moJobsCountOutcome") : 0;
+   String moJobsBaseAttr = (String) request.getAttribute("moJobsBase");
+   String moBase = moJobsBaseAttr != null ? moJobsBaseAttr : request.getContextPath() + "/mo/jobs";
+   boolean moPastJobsPage = Boolean.TRUE.equals(request.getAttribute("moPastJobsPage"));
+   String moCtx = request.getContextPath();
+%>
 <!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>My Jobs - MO</title>
+    <title><%= moPastJobsPage ? "Past postings - MO" : "My Jobs - MO" %></title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css">
 </head>
 <body>
@@ -26,30 +43,90 @@
                 <div class="icon-dot">D</div>
             </div>
             <aside class="side-nav">
-                <a class="active" href="${pageContext.request.contextPath}/mo/jobs">My Jobs</a>
-                <a href="${pageContext.request.contextPath}/mo/post-job">Post Job</a>
+                <a class="<%= moPastJobsPage ? "" : "active" %>" href="<%= moCtx %>/mo/jobs">My Jobs</a>
+                <a href="<%= moCtx %>/mo/post-job">Post Job</a>
+                <a class="<%= moPastJobsPage ? "active" : "" %>" href="<%= moCtx %>/mo/past-jobs">Past postings</a>
             </aside>
         </div>
         <main class="main-panel">
-            <h1>My Posted Jobs</h1>
-            <div class="context-card">
-                <strong>流程</strong>
-                <p>申请者 → 设为面试者 → 填写面试通知（站内）→ 录用或拒绝。可批量勾选后统一操作。</p>
-            </div>
-            <p class="ai-hint"><strong>AI 参考</strong>：同组内按匹配分与工作量排序。</p>
             <% if ("1".equals(request.getParameter("success"))) { %><p class="success">Job posted successfully!</p><% } %>
             <% if ("1".equals(request.getParameter("updated"))) { %><p class="success">Applicant status updated.</p><% } %>
-            <% if ("1".equals(request.getParameter("notice"))) { %><p class="success">面试通知已保存（站内消息）。</p><% } %>
+            <% if ("1".equals(request.getParameter("notice"))) { %><p class="success">Interview notice saved (in-app message).</p><% } %>
             <% String err = request.getParameter("error");
                if (err != null) {
                    String errMsg = err;
-                   if ("not_pending".equals(err)) errMsg = "仅申请中状态可设为面试者。";
-                   else if ("not_interview".equals(err)) errMsg = "仅面试中状态可录用。";
-                   else if ("not_applicant".equals(err)) errMsg = "当前状态不可执行该操作。";
-                   else if ("batch_empty".equals(err)) errMsg = "请至少勾选一项。";
-                   else if ("invalid_action".equals(err)) errMsg = "无效操作。";
+                   if ("not_pending".equals(err)) errMsg = "Only pending applications can be moved to interview.";
+                   else if ("not_interview".equals(err)) errMsg = "Only interview-stage applications can be selected.";
+                   else if ("not_applicant".equals(err)) errMsg = "This action is not allowed for the current status.";
+                   else if ("batch_empty".equals(err)) errMsg = "Select at least one row.";
+                   else if ("invalid_action".equals(err)) errMsg = "Invalid action.";
+                   else if ("invalid_job".equals(err)) errMsg = "Invalid posting or access denied.";
             %><p class="error">Error: <%= errMsg %></p><% } %>
 
+            <% if (moJobListMode) { %>
+            <h1><%= moPastJobsPage ? "Past postings" : "Your postings" %></h1>
+            <div class="context-card">
+                <% if (moPastJobsPage) { %>
+                <strong>Closed or past deadline</strong>
+                <p>These jobs were closed manually or are past the application deadline. Use this list for history only. Active recruitment is under <strong>My Jobs</strong> in the sidebar.</p>
+                <% } else { %>
+                <strong>One posting at a time</strong>
+                <p>Choose a job below to manage it. Applicants, interviewees, and progress are kept separate per posting and are not mixed in one list.</p>
+                <% } %>
+            </div>
+            <% if (moPastJobsPage) { %>
+            <p><a href="<%= moCtx %>/mo/jobs" class="btn btn-primary">Back to active postings</a></p>
+            <% } else { %>
+            <p><a href="<%= moCtx %>/mo/post-job" class="btn btn-primary">Post New Job</a></p>
+            <% } %>
+            <% if (moJobPickList.isEmpty()) { %>
+            <p><%= moPastJobsPage ? "No closed or expired postings." : "You have not posted any jobs yet." %><% if (!moPastJobsPage) { %> <a href="<%= moCtx %>/mo/post-job">Post your first job</a>.<% } %></p>
+            <% } else { %>
+            <div class="mo-job-pick-grid">
+            <% for (Object[] pick : moJobPickList) {
+                Job pj = (Job) pick[0];
+                List<AIMatchService.ApplicantRecommendation> pr = (List<AIMatchService.ApplicantRecommendation>) pick[1];
+                List<AIMatchService.ApplicantRecommendation> ir = (List<AIMatchService.ApplicantRecommendation>) pick[2];
+                List<AIMatchService.ApplicantRecommendation> wr = (List<AIMatchService.ApplicantRecommendation>) pick[3];
+                List<AIMatchService.ApplicantRecommendation> or = (List<AIMatchService.ApplicantRecommendation>) pick[4];
+                if (pr == null) pr = java.util.Collections.emptyList();
+                if (ir == null) ir = java.util.Collections.emptyList();
+                if (wr == null) wr = java.util.Collections.emptyList();
+                if (or == null) or = java.util.Collections.emptyList();
+                String pickHref = moBase + "?jobId=" + java.net.URLEncoder.encode(pj.getId(), "UTF-8") + "&view=pending";
+            %>
+                <a class="mo-job-pick-card context-card" href="<%= pickHref %>">
+                    <h3><%= escHtml(pj.getTitle()) %></h3>
+                    <p class="pick-meta"><%= escHtml(pj.getModuleCode()) %> · <%= escHtml(pj.getModuleName() != null ? pj.getModuleName() : "") %></p>
+                    <p class="pick-meta"><span class="job-status-text">(<%= escHtml(pj.getStatus()) %>)</span>
+                        <% if (moPastJobsPage && pj.getDeadline() != null && !pj.getDeadline().isEmpty()) { %>
+                        <span class="muted-inline"> · Deadline <%= escHtml(pj.getDeadline()) %></span>
+                        <% } %>
+                    </p>
+                    <p class="pick-stats">App <span class="tab-count"><%= pr.size() %></span> · Int <span class="tab-count"><%= ir.size() %></span> · Wdn <span class="tab-count"><%= wr.size() %></span> · Out <span class="tab-count"><%= or.size() %></span></p>
+                    <span class="btn btn-primary mo-job-pick-cta">Manage this posting</span>
+                </a>
+            <% } %>
+            </div>
+            <% } %>
+            <% } else { %>
+            <p class="breadcrumb-row"><a href="<%= moBase %>" class="mini-link">&larr; Back to posting list</a></p>
+            <% Job hdr = jobsWithApps.isEmpty() ? null : (Job) ((Object[]) jobsWithApps.get(0))[0]; %>
+            <h1><%= hdr != null ? escHtml(hdr.getTitle()) : "Job management" %></h1>
+            <% if (hdr != null) { %><p class="pick-meta"><%= escHtml(hdr.getModuleCode()) %> · <%= escHtml(hdr.getModuleName() != null ? hdr.getModuleName() : "") %></p><% } %>
+            <div class="context-card">
+                <strong>Workflow</strong>
+                <p>Use the four tabs: Applicants &rarr; Interview &rarr; Withdrawn &rarr; Outcomes. This page shows only <strong>this posting</strong>.
+                <% if (moPastJobsPage) { %><span class="muted-inline"> (Closed or past deadline; you can still review and adjust records.)</span><% } %>
+                </p>
+            </div>
+            <nav class="mo-jobs-tabs" aria-label="Application views">
+                <a href="<%= moBase %>?view=pending<%= moJobIdQ %>" class="mo-jobs-tab <%= "pending".equals(moView) ? "active" : "" %>">Applicants<span class="tab-count"><%= moCntP %></span></a>
+                <a href="<%= moBase %>?view=interview<%= moJobIdQ %>" class="mo-jobs-tab <%= "interview".equals(moView) ? "active" : "" %>">Interview<span class="tab-count"><%= moCntI %></span></a>
+                <a href="<%= moBase %>?view=withdrawn<%= moJobIdQ %>" class="mo-jobs-tab <%= "withdrawn".equals(moView) ? "active" : "" %>">Withdrawn<span class="tab-count"><%= moCntW %></span></a>
+                <a href="<%= moBase %>?view=outcome<%= moJobIdQ %>" class="mo-jobs-tab <%= "outcome".equals(moView) ? "active" : "" %>">Outcomes<span class="tab-count"><%= moCntO %></span></a>
+            </nav>
+            <p class="ai-hint"><strong>AI hint</strong>: Within each group, applicants are sorted by match score and workload.</p>
             <p><a href="${pageContext.request.contextPath}/mo/post-job" class="btn btn-primary">Post New Job</a></p>
 
             <% for (Object[] row : jobsWithApps) {
@@ -98,21 +175,22 @@
 
                 <div class="applicants-panel">
                     <div class="applicants-head">
-                        <h4>Applications (<%= totalApps %>)</h4>
+                        <h4>
+                            <% if ("pending".equals(moView)) { %>Applicants<% } else if ("interview".equals(moView)) { %>Interview<% } else if ("withdrawn".equals(moView)) { %>Withdrawn<% } else { %>Outcomes<% } %>
+                            <span class="job-apps-count">(this posting: <%= "pending".equals(moView) ? pendingRecs.size() : "interview".equals(moView) ? interviewRecs.size() : "withdrawn".equals(moView) ? withdrawnRecs.size() : outcomeRecs.size() %>)</span>
+                        </h4>
                     </div>
 
                     <% if (totalApps == 0) { %>
                     <div class="empty-applicants-card">No applications yet.</div>
-                    <% } %>
-
-                    <%-- 1. 申请者 --%>
-                    <h4 class="applicant-section-title">1. 申请者 (<%= pendingRecs.size() %>)</h4>
+                    <% } else if ("pending".equals(moView)) { %>
                     <form id="<%= batchPendingFormId %>" action="${pageContext.request.contextPath}/mo/batch-applicants" method="post" class="batch-form-hidden">
                         <input type="hidden" name="action" value="toInterview">
+                        <input type="hidden" name="returnJobId" value="<%= j.getId() %>">
                     </form>
                     <% if (!pendingRecs.isEmpty()) { %>
                     <p class="batch-toolbar">
-                        <button type="submit" class="btn btn-primary" form="<%= batchPendingFormId %>">将勾选者设为面试者（批量）</button>
+                        <button type="submit" class="btn btn-primary" form="<%= batchPendingFormId %>">Set selected to interview (batch)</button>
                     </p>
                     <% for (AIMatchService.ApplicantRecommendation rec : pendingRecs) {
                         Application a = rec.application;
@@ -139,7 +217,7 @@
                     <article class="applicant-card">
                         <label class="batch-check-label">
                             <input type="checkbox" name="applicationId" value="<%= a.getId() %>" class="batch-checkbox" form="<%= batchPendingFormId %>">
-                            <span class="batch-check-hint">勾选参与批量</span>
+                            <span class="batch-check-hint">Include in batch</span>
                         </label>
                         <div class="applicant-topline">
                             <div class="applicant-title-group">
@@ -187,8 +265,8 @@
                                     <input type="hidden" name="applicationId" value="<%= a.getId() %>">
                                     <input type="text" name="notes" placeholder="Optional notes" class="note-input">
                                     <div class="decision-buttons decision-buttons-inline">
-                                        <button type="submit" name="action" value="interview" class="btn btn-primary decision-btn">设为面试者</button>
-                                        <button type="submit" name="action" value="reject" class="btn btn-danger decision-btn">拒绝</button>
+                                        <button type="submit" name="action" value="interview" class="btn btn-primary decision-btn">Move to interview</button>
+                                        <button type="submit" name="action" value="reject" class="btn btn-danger decision-btn">Reject</button>
                                     </div>
                                 </form>
                             </div>
@@ -217,23 +295,22 @@
                     </article>
                     <% } %>
                     <p class="batch-toolbar">
-                        <button type="submit" class="btn btn-primary" form="<%= batchPendingFormId %>">将勾选者设为面试者（批量）</button>
+                        <button type="submit" class="btn btn-primary" form="<%= batchPendingFormId %>">Set selected to interview (batch)</button>
                     </p>
-                    <% } else { %><p class="muted-inline section-empty">暂无申请者。</p><% } %>
-
-                    <%-- 2. 面试者 --%>
-                    <h4 class="applicant-section-title">2. 面试者 (<%= interviewRecs.size() %>)</h4>
+                    <% } else { %><p class="muted-inline section-empty">No applicants for this posting.</p><% } %>
+                    <% } else if ("interview".equals(moView)) { %>
                     <% if (!interviewRecs.isEmpty()) { %>
                     <form id="<%= batchNoticeFormId %>" action="${pageContext.request.contextPath}/mo/batch-applicants" method="post" class="notice-form-fields">
                         <input type="hidden" name="action" value="sendNotice">
+                        <input type="hidden" name="returnJobId" value="<%= j.getId() %>">
                         <div class="notice-fields">
-                            <label>面试时间 <input type="text" name="interviewTime" placeholder="例如 2026-04-10 14:00" class="note-input notice-input-wide"></label>
-                            <label>地点 <input type="text" name="interviewLocation" placeholder="教室或线上链接" class="note-input notice-input-wide"></label>
-                            <label class="notice-label-block">考核内容 <textarea name="interviewAssessment" rows="2" placeholder="范围、形式等" class="note-input notice-textarea"></textarea></label>
+                            <label>Interview time <input type="text" name="interviewTime" placeholder="e.g. 2026-04-10 14:00" class="note-input notice-input-wide"></label>
+                            <label>Location <input type="text" name="interviewLocation" placeholder="Room or online link" class="note-input notice-input-wide"></label>
+                            <label class="notice-label-block">Assessment <textarea name="interviewAssessment" rows="2" placeholder="Scope, format, etc." class="note-input notice-textarea"></textarea></label>
                         </div>
                     </form>
                     <p class="batch-toolbar">
-                        <button type="submit" class="btn btn-success" form="<%= batchNoticeFormId %>">向勾选者发送/更新站内面试通知</button>
+                        <button type="submit" class="btn btn-success" form="<%= batchNoticeFormId %>">Send/update in-app interview notice</button>
                     </p>
                     <% for (AIMatchService.ApplicantRecommendation rec : interviewRecs) {
                         Application a = rec.application;
@@ -251,7 +328,7 @@
                     <article class="applicant-card">
                         <label class="batch-check-label">
                             <input type="checkbox" name="applicationId" value="<%= a.getId() %>" class="batch-checkbox" form="<%= batchNoticeFormId %>">
-                            <span class="batch-check-hint">勾选接收通知</span>
+                            <span class="batch-check-hint">Select for notice</span>
                         </label>
                         <div class="applicant-topline">
                             <div class="applicant-title-group">
@@ -273,10 +350,10 @@
                         </div>
                         <% if (hasNotice) { %>
                         <div class="notice-preview">
-                            <p><strong>已发通知：</strong> 时间 <%= a.getInterviewTime() != null ? a.getInterviewTime() : "—" %> |
-                                地点 <%= a.getInterviewLocation() != null ? a.getInterviewLocation() : "—" %></p>
+                            <p><strong>Notice:</strong> Time <%= a.getInterviewTime() != null ? a.getInterviewTime() : "&mdash;" %> |
+                                Location <%= a.getInterviewLocation() != null ? a.getInterviewLocation() : "&mdash;" %></p>
                             <% if (a.getInterviewAssessment() != null && !a.getInterviewAssessment().isEmpty()) { %>
-                            <p class="muted-inline">考核：<%= a.getInterviewAssessment() %></p>
+                            <p class="muted-inline">Assessment: <%= a.getInterviewAssessment() %></p>
                             <% } %>
                         </div>
                         <% } %>
@@ -301,8 +378,8 @@
                                     <input type="hidden" name="applicationId" value="<%= a.getId() %>">
                                     <input type="text" name="notes" placeholder="Optional notes" class="note-input">
                                     <div class="decision-buttons decision-buttons-inline">
-                                        <button type="submit" name="action" value="select" class="btn btn-success decision-btn">录用</button>
-                                        <button type="submit" name="action" value="reject" class="btn btn-danger decision-btn">拒绝</button>
+                                        <button type="submit" name="action" value="select" class="btn btn-success decision-btn">Select</button>
+                                        <button type="submit" name="action" value="reject" class="btn btn-danger decision-btn">Reject</button>
                                     </div>
                                 </form>
                             </div>
@@ -310,12 +387,10 @@
                     </article>
                     <% } %>
                     <p class="batch-toolbar">
-                        <button type="submit" class="btn btn-success" form="<%= batchNoticeFormId %>">向勾选者发送/更新站内面试通知</button>
+                        <button type="submit" class="btn btn-success" form="<%= batchNoticeFormId %>">Send/update in-app interview notice</button>
                     </p>
-                    <% } else { %><p class="muted-inline section-empty">暂无面试者。</p><% } %>
-
-                    <%-- 3. 撤回者 --%>
-                    <h4 class="applicant-section-title">3. 撤回者 (<%= withdrawnRecs.size() %>)</h4>
+                    <% } else { %><p class="muted-inline section-empty">No interviewees for this posting.</p><% } %>
+                    <% } else if ("withdrawn".equals(moView)) { %>
                     <% for (AIMatchService.ApplicantRecommendation rec : withdrawnRecs) {
                         Application a = rec.application;
                         String appliedText = a.getAppliedAt() != null ? a.getAppliedAt().replace("T", " ").replaceFirst("\\..*$", "") : "-";
@@ -325,17 +400,15 @@
                         <div class="applicant-topline">
                             <div class="applicant-title-group">
                                 <h5><%= applicantName %></h5>
-                                <p class="muted-inline">已撤回申请</p>
+                                <p class="muted-inline">Application withdrawn</p>
                             </div>
                             <span class="status-pill status-pill-rejected">WITHDRAWN</span>
                         </div>
                         <p class="section-copy"><strong>Applied:</strong> <%= appliedText %></p>
                     </article>
                     <% } %>
-                    <% if (withdrawnRecs.isEmpty() && totalApps > 0) { %><p class="muted-inline section-empty">无撤回记录。</p><% } %>
-
-                    <%-- 4. 已处理 --%>
-                    <h4 class="applicant-section-title">4. 已处理 (<%= outcomeRecs.size() %>)</h4>
+                    <% if (withdrawnRecs.isEmpty()) { %><p class="muted-inline section-empty">No withdrawn applications for this posting.</p><% } %>
+                    <% } else { %>
                     <% for (AIMatchService.ApplicantRecommendation rec : outcomeRecs) {
                         Application a = rec.application;
                         String appliedText = a.getAppliedAt() != null ? a.getAppliedAt().replace("T", " ").replaceFirst("\\..*$", "") : "-";
@@ -423,18 +496,20 @@
                         </template>
                     </article>
                     <% } %>
-                    <% if (outcomeRecs.isEmpty() && totalApps > 0) { %><p class="muted-inline section-empty">暂无已处理记录。</p><% } %>
+                    <% if (outcomeRecs.isEmpty()) { %><p class="muted-inline section-empty">No outcomes recorded for this posting yet.</p><% } %>
+                    <% } %>
                 </div>
             </div>
             <% }
                if (jobsWithApps.isEmpty()) { %>
-            <p>No jobs posted yet. <a href="${pageContext.request.contextPath}/mo/post-job">Post your first job</a>.</p>
+            <p class="error">Could not load this posting. <a href="<%= moBase %>">Back to list</a></p>
+            <% } %>
             <% } %>
         </main>
         <aside class="right-sidebar">
             <div class="widget-card">
                 <div class="widget-title">MO Dashboard</div>
-                <p class="widget-line">申请者 → 面试者 → 站内通知 → 录用/拒绝</p>
+                <p class="widget-line">Applicants &rarr; Interview &rarr; In-app notice &rarr; Select / reject</p>
             </div>
         </aside>
     </div>
