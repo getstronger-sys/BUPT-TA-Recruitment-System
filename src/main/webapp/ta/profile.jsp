@@ -30,8 +30,9 @@
                 <a class="active" href="${pageContext.request.contextPath}/ta/profile">My Profile</a>
             </aside>
         </div>
-        <main class="main-panel">
+        <main class="main-panel ta-main">
             <h1>My Profile</h1>
+            <p class="ta-page-lead">Keep your skills and CV up to date so module organisers and the matching system can rank you fairly.</p>
             <div class="context-card">
                 <strong>Profile Tip</strong>
                 <p>Profiles with clear skills, availability and CV are easier for MO to review and shortlist.</p>
@@ -41,7 +42,7 @@
             <% if ("no_file".equals(request.getParameter("error"))) { %><p class="error">Please select a file to upload.</p><% } %>
             <% if ("invalid_type".equals(request.getParameter("error"))) { %><p class="error">Invalid file type. Use PDF, DOC, DOCX or TXT.</p><% } %>
 
-            <form action="${pageContext.request.contextPath}/ta/profile" method="post" class="form">
+            <form action="${pageContext.request.contextPath}/ta/profile" method="post" class="form form--ta ta-profile-form">
                 <label>Student ID</label>
                 <input type="text" name="studentId" value="<%= escHtml(profile.getStudentId() != null ? profile.getStudentId() : "") %>">
                 <label>Phone</label>
@@ -61,19 +62,23 @@
                 <button type="submit">Save Profile</button>
             </form>
 
-            <h2>Upload CV</h2>
+            <section class="ta-cv-section" aria-labelledby="ta-cv-heading">
+            <h2 id="ta-cv-heading">Upload CV</h2>
+            <div class="ta-cv-panel">
             <% if (profile.getCvFilePath() != null && !profile.getCvFilePath().isEmpty()) { %>
-            <p class="success">Current CV uploaded.
+            <p class="success ta-cv-status">Current CV on file.
                 <a href="${pageContext.request.contextPath}/view-cv?userId=<%= profile.getUserId() %>" target="_blank" rel="noopener">View</a>
                 <span class="muted-inline"> | </span>
                 <a href="${pageContext.request.contextPath}/view-cv?userId=<%= profile.getUserId() %>&amp;download=1">Download</a>
             </p>
             <% } %>
-            <form action="${pageContext.request.contextPath}/ta/upload-cv" method="post" enctype="multipart/form-data" class="form">
+            <form action="${pageContext.request.contextPath}/ta/upload-cv" method="post" enctype="multipart/form-data" class="form form--ta form--ta-cv">
                 <label>Select file (PDF, DOC, DOCX, TXT, max 5MB)</label>
                 <input type="file" name="cvFile" accept=".pdf,.doc,.docx,.txt">
                 <button type="submit">Upload CV</button>
             </form>
+            </div>
+            </section>
         </main>
         <aside class="right-sidebar">
             <div class="widget-card">

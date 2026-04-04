@@ -36,8 +36,9 @@
                 <a href="${pageContext.request.contextPath}/mo/past-jobs">Past postings</a>
             </aside>
         </div>
-        <main class="main-panel">
+        <main class="main-panel mo-main">
     <h1>Post a New Job</h1>
+    <p class="mo-page-lead">Create a clear listing so TAs can judge fit before applying. Required fields are marked below.</p>
     <div class="context-card">
         <strong>Posting checklist</strong>
         <p>Fields marked * are required. Deadline must be YYYY-MM-DD and not in the past. Responsibilities at least 20 characters. At least one skill.</p>
@@ -45,7 +46,7 @@
     <% String err = (String) request.getAttribute("error"); if (err != null) { %>
     <p class="error"><%= escHtml(err) %></p>
     <% } %>
-    <form action="${pageContext.request.contextPath}/mo/post-job" method="post" class="form">
+    <form action="${pageContext.request.contextPath}/mo/post-job" method="post" class="form form--mo-post">
         <label>Job Title *</label>
         <input type="text" name="title" required placeholder="e.g. TA for Software Engineering" value="<%= fva(request, "fvTitle") %>">
         <label>Module Code *</label>
