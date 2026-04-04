@@ -81,6 +81,15 @@
     </servlet-mapping>
 
     <servlet>
+        <servlet-name>TAJobDetailServlet</servlet-name>
+        <servlet-class>bupt.ta.servlet.TAJobDetailServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>TAJobDetailServlet</servlet-name>
+        <url-pattern>/ta/job</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
         <servlet-name>ApplyJobServlet</servlet-name>
         <servlet-class>bupt.ta.servlet.ApplyJobServlet</servlet-class>
     </servlet>
@@ -127,6 +136,15 @@
     </servlet-mapping>
 
     <servlet>
+        <servlet-name>MOPastJobsServlet</servlet-name>
+        <servlet-class>bupt.ta.servlet.MOPastJobsServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>MOPastJobsServlet</servlet-name>
+        <url-pattern>/mo/past-jobs</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
         <servlet-name>ApplicantDetailServlet</servlet-name>
         <servlet-class>bupt.ta.servlet.ApplicantDetailServlet</servlet-class>
     </servlet>
@@ -142,6 +160,15 @@
     <servlet-mapping>
         <servlet-name>SelectApplicantServlet</servlet-name>
         <url-pattern>/mo/select-applicant</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>MOBatchApplicantServlet</servlet-name>
+        <servlet-class>bupt.ta.servlet.MOBatchApplicantServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>MOBatchApplicantServlet</servlet-name>
+        <url-pattern>/mo/batch-applicants</url-pattern>
     </servlet-mapping>
 
     <servlet>

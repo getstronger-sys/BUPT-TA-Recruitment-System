@@ -13,9 +13,13 @@
     Integer selectedObj = (Integer) request.getAttribute("selectedCount");
     Integer pendingObj = (Integer) request.getAttribute("pendingCount");
     Integer otherObj = (Integer) request.getAttribute("otherCount");
+    Integer interviewObj = (Integer) request.getAttribute("interviewCount");
     int selected = selectedObj != null ? selectedObj : 0;
     int pending = pendingObj != null ? pendingObj : 0;
+    int interview = interviewObj != null ? interviewObj : 0;
     int other = otherObj != null ? otherObj : 0;
+    Boolean hidePi = (Boolean) request.getAttribute("hideApplicantPersonalInfo");
+    boolean hidePersonal = hidePi != null && hidePi.booleanValue();
 %>
 <!DOCTYPE html>
 <html>
@@ -40,14 +44,23 @@
             <aside class="side-nav">
                 <a href="${pageContext.request.contextPath}/mo/jobs">My Jobs</a>
                 <a href="${pageContext.request.contextPath}/mo/post-job">Post Job</a>
+                <a href="${pageContext.request.contextPath}/mo/past-jobs">Past postings</a>
             </aside>
         </div>
         <main class="main-panel">
-    <h1>Applicant Detail</h1>
+    <h1><%= hidePersonal ? "Withdrawn application record" : "Applicant Detail" %></h1>
+    <% if (hidePersonal) { %>
+    <div class="context-card">
+        <strong>Privacy</strong>
+        <p>This applicant withdrew all applications to your jobs. Name, contact details, profile, and CV are not shown. Only status and job reference are listed below.</p>
+    </div>
+    <% } else { %>
     <div class="context-card">
         <strong>Review Tip</strong>
         <p>Check skills fit, availability and previous application status together for a balanced selection.</p>
     </div>
+    <% } %>
+    <% if (!hidePersonal) { %>
     <div class="detail-grid">
         <div class="detail-card">
             <h3>Basic Information</h3>
@@ -62,6 +75,7 @@
             <p><strong>Total (for your jobs):</strong> <%= appRows.size() %></p>
             <p><strong>Selected:</strong> <span class="status-selected"><%= selected %></span></p>
             <p><strong>Pending:</strong> <span class="status-pending"><%= pending %></span></p>
+            <p><strong>Interview:</strong> <span class="status-pending"><%= interview %></span></p>
             <p><strong>Other:</strong> <span class="status-rejected"><%= other %></span></p>
         </div>
     </div>
@@ -90,6 +104,7 @@
         <h3>Self introduction</h3>
         <p class="pre-wrap"><%= profile != null && profile.getIntroduction() != null && !profile.getIntroduction().isEmpty() ? escHtml(profile.getIntroduction()) : "No introduction provided." %></p>
     </div>
+    <% } %>
 
     <h2>Applications to Your Jobs</h2>
     <table>
@@ -105,6 +120,7 @@
             Job j = (Job) row[1];
             String statusClass = "status-pending";
             if ("SELECTED".equals(a.getStatus())) statusClass = "status-selected";
+            else if ("INTERVIEW".equals(a.getStatus())) statusClass = "status-pending";
             else if ("REJECTED".equals(a.getStatus()) || "WITHDRAWN".equals(a.getStatus())) statusClass = "status-rejected";
         %>
         <tr>
@@ -118,12 +134,14 @@
     </table>
         </main>
         <aside class="right-sidebar">
+            <% if (!hidePersonal) { %>
             <div class="widget-card">
                 <div class="widget-title">Applicant Snapshot</div>
                 <p class="widget-line">Selected: <%= selected %></p>
-                <p class="widget-line">Pending: <%= pending %></p>
+                <p class="widget-line">Pending: <%= pending %> | Interview: <%= interview %></p>
                 <p class="widget-line">Other: <%= other %></p>
             </div>
+            <% } %>
         </aside>
     </div>
 </div>

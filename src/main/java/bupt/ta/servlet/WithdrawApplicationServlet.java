@@ -30,7 +30,7 @@ public class WithdrawApplicationServlet extends HttpServlet {
             resp.sendRedirect(req.getContextPath() + "/ta/applications?error=not_found");
             return;
         }
-        if (!"PENDING".equals(target.getStatus())) {
+        if (!"PENDING".equals(target.getStatus()) && !"INTERVIEW".equals(target.getStatus())) {
             resp.sendRedirect(req.getContextPath() + "/ta/applications?error=already_processed");
             return;
         }

@@ -150,6 +150,36 @@ a { color: #1f56a7; }
 .stat-value { font-size: 1.5em; color: #123b7a; font-weight: 700; }
 .stat-meta { color: #486d98; font-size: 0.95em; }
 
+.applications-table-hint {
+    font-size: 0.85em;
+    color: #5a7399;
+    margin: 8px 0 0;
+}
+.applications-table-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin-top: 8px;
+    border-radius: 10px;
+    border: 1px solid #d8e5f3;
+    background: #fff;
+    max-width: 100%;
+}
+.applications-table-scroll table.applications-table {
+    width: 100%;
+    min-width: 920px;
+    margin-top: 0;
+}
+.applications-table .col-job { min-width: 140px; max-width: 240px; word-break: break-word; }
+.applications-table .col-module { white-space: nowrap; }
+.applications-table .col-applied { white-space: nowrap; }
+.applications-table .col-progress { min-width: 108px; }
+.applications-table .col-status { white-space: nowrap; }
+.applications-table .col-notice { min-width: 128px; }
+.applications-table .interview-notice-cell { max-width: none; }
+.applications-table .col-action { white-space: nowrap; }
+.ta-notice-sheet { text-align: left; }
+.btn-sm { padding: 4px 10px; font-size: 0.82em; }
+
 table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 0.95em; }
 th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ecebff; vertical-align: top; }
 th { background: linear-gradient(90deg, #1452a3, #1e69c8); color: white; }
@@ -339,6 +369,144 @@ tr:hover { background: #f8f7ff; }
     background: #ffe1e8;
     color: #b43357;
 }
+.status-pill-interview {
+    background: #e8eeff;
+    color: #3451b2;
+}
+.mo-jobs-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 0 0 20px;
+    padding: 0;
+    align-items: flex-end;
+}
+.mo-jobs-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    text-decoration: none;
+    color: #587291;
+    border-radius: 10px 10px 0 0;
+    border: 1px solid transparent;
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+.mo-jobs-tab:hover {
+    background: #f0f5fb;
+    color: #2a476d;
+}
+.mo-jobs-tab.active {
+    background: #fff;
+    color: #1e3a5c;
+    border-color: #dfe8f2;
+    border-bottom-color: #fff;
+    margin-bottom: -1px;
+    box-shadow: 0 -2px 0 #4a7ab5 inset;
+}
+.mo-jobs-tab .tab-count {
+    display: inline-block;
+    min-width: 1.5em;
+    padding: 2px 7px;
+    border-radius: 999px;
+    background: #e8eef6;
+    font-size: 0.8em;
+    font-weight: 700;
+    color: #4a6588;
+}
+.mo-jobs-tab.active .tab-count {
+    background: #dce8f8;
+    color: #3451b2;
+}
+.breadcrumb-row {
+    margin: 0 0 16px;
+}
+.mo-job-pick-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 16px;
+    margin-top: 16px;
+}
+.mo-job-pick-card {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+    transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+.mo-job-pick-card:hover {
+    box-shadow: 0 4px 16px rgba(42, 71, 109, 0.12);
+    border-color: #c5d6e8;
+}
+.mo-job-pick-card h3 {
+    margin: 0 0 8px;
+    font-size: 1.1rem;
+    color: #1e3a5c;
+}
+.mo-job-pick-cta {
+    margin-top: 12px;
+    display: inline-block;
+    pointer-events: none;
+}
+.pick-meta {
+    margin: 4px 0;
+    font-size: 0.9rem;
+    color: #6780a3;
+}
+.pick-stats {
+    margin: 10px 0 0;
+    font-size: 0.88rem;
+    color: #4a6588;
+}
+.job-apps-count {
+    font-weight: 400;
+    color: #6780a3;
+    font-size: 0.9em;
+}
+.applicant-section-title {
+    margin: 20px 0 10px;
+    font-size: 1.05rem;
+    color: #2a476d;
+    border-bottom: 1px solid #e0e8f2;
+    padding-bottom: 6px;
+}
+.section-empty { margin: 8px 0 16px; }
+.batch-form-hidden { display: none; }
+.batch-check-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+    font-size: 0.88em;
+    color: #6780a3;
+}
+.batch-toolbar { margin: 12px 0; }
+.notice-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 12px;
+    padding: 14px;
+    border: 1px solid #dfe8f2;
+    border-radius: 12px;
+    background: #f8fbff;
+}
+.notice-input-wide { min-width: 240px; }
+.notice-label-block { display: block; }
+.notice-textarea { width: 100%; max-width: 560px; }
+.notice-preview {
+    margin: 10px 0;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: #f0f4fb;
+    font-size: 0.92em;
+}
+.interview-notice-cell {
+    max-width: 220px;
+    font-size: 0.88em;
+    line-height: 1.45;
+}
+.notice-inline span { color: #3d5a7a; }
 .applicant-sections {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -431,6 +599,44 @@ tr:hover { background: #f8f7ff; }
     font-size: 0.9em;
 }
 
+.breadcrumb-line { margin: 0 0 12px; }
+.breadcrumb-line a { color: #3451b2; }
+.job-detail-dl {
+    display: grid;
+    grid-template-columns: minmax(140px, 200px) 1fr;
+    gap: 10px 20px;
+    margin: 20px 0;
+    padding: 16px 18px;
+    background: #f8fbff;
+    border: 1px solid #dfe8f2;
+    border-radius: 12px;
+}
+.job-detail-dl dt {
+    margin: 0;
+    font-weight: 700;
+    color: #6780a3;
+    font-size: 0.88em;
+}
+.job-detail-dl dd {
+    margin: 0;
+    color: #2a476d;
+}
+.job-detail-meta {
+    margin: 10px 0 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+.job-detail-overview { margin-top: 16px; }
+.job-detail-apply {
+    margin-top: 28px;
+    padding-top: 20px;
+    border-top: 1px solid #e0e8f2;
+}
+.btn-lg { padding: 12px 24px; font-size: 1.05rem; }
+.job-list-deadline { color: #9d6400; font-size: 0.92em; margin: 8px 0 0; }
+
 @media (max-width: 1380px) {
     .page-layout { grid-template-columns: 220px minmax(0, 1fr); }
     .right-sidebar { grid-column: 2; }
@@ -453,6 +659,7 @@ tr:hover { background: #f8f7ff; }
     .applicants-head,
     .applicant-topline { flex-direction: column; align-items: flex-start; }
     .applicant-sections { grid-template-columns: 1fr; }
+    .job-detail-dl { grid-template-columns: 1fr; }
 }
 
 .pre-wrap {

@@ -62,11 +62,13 @@ This produces `target/ta-recruitment.war`.
 
 ### Run with Cargo (Embedded Tomcat)
 
+`cargo:run` 需要先有打好的 WAR，请**在同一命令里先执行 `package`**（否则会报找不到 `target/ta-recruitment.war`）：
+
 ```bash
-mvn cargo:run
+mvn package cargo:run
 # Or with Maven wrapper (no Maven install needed):
-# Windows: mvnw.cmd cargo:run
-# Unix: ./mvnw cargo:run
+# Windows: mvnw.cmd package cargo:run
+# Unix: ./mvnw package cargo:run
 ```
 
 Then open: **http://localhost:8080/ta-recruitment/**

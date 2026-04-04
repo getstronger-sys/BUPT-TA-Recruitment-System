@@ -3,13 +3,29 @@ package bupt.ta.servlet;
 import bupt.ta.model.Application;
 import bupt.ta.model.Job;
 import bupt.ta.storage.DataStorage;
+import bupt.ta.util.JobActivity;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.*;
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 public class SelectApplicantServlet extends HttpServlet {
+
+    private static void redirectJobs(HttpServletResponse resp, HttpServletRequest req, String listPath, String view, String jobId, String extraQuery) throws IOException {
+        String ctx = req.getContextPath();
+        StringBuilder b = new StringBuilder(ctx).append(listPath).append("?");
+        if (jobId != null && !jobId.trim().isEmpty()) {
+            b.append("jobId=").append(URLEncoder.encode(jobId.trim(), StandardCharsets.UTF_8)).append("&");
+        }
+        b.append("view=").append(view);
+        if (extraQuery != null && !extraQuery.isEmpty()) {
+            b.append("&").append(extraQuery);
+        }
+        resp.sendRedirect(b.toString());
+    }
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
@@ -19,7 +35,7 @@ public class SelectApplicantServlet extends HttpServlet {
         String moId = (String) req.getSession().getAttribute("userId");
 
         if (appId == null || appId.trim().isEmpty()) {
-            resp.sendRedirect(req.getContextPath() + "/mo/jobs?error=invalid");
+            redirectJobs(resp, req, JobActivity.PATH_ACTIVE, "pending", null, "error=invalid");
             return;
         }
 
@@ -28,24 +44,51 @@ public class SelectApplicantServlet extends HttpServlet {
         Application target = apps.stream().filter(a -> a.getId().equals(appId)).findFirst().orElse(null);
 
         if (target == null) {
-            resp.sendRedirect(req.getContextPath() + "/mo/jobs?error=not_found");
+            redirectJobs(resp, req, JobActivity.PATH_ACTIVE, "pending", null, "error=not_found");
             return;
         }
 
-        Job job = storage.getJobById(target.getJobId());
+        String jobId = target.getJobId();
+        Job job = storage.getJobById(jobId);
+        String listPath = job != null ? JobActivity.listPathFor(job) : JobActivity.PATH_ACTIVE;
         if (job == null || !moId.equals(job.getPostedBy())) {
-            resp.sendRedirect(req.getContextPath() + "/mo/jobs?error=forbidden");
+            redirectJobs(resp, req, listPath, "pending", jobId, "error=forbidden");
             return;
         }
 
-        if ("select".equalsIgnoreCase(action)) {
+        if ("interview".equalsIgnoreCase(action)) {
+            if (!"PENDING".equals(target.getStatus())) {
+                redirectJobs(resp, req, listPath, "pending", jobId, "error=not_pending");
+                return;
+            }
+            target.setStatus("INTERVIEW");
+        } else if ("select".equalsIgnoreCase(action)) {
+            if (!"INTERVIEW".equals(target.getStatus())) {
+                redirectJobs(resp, req, listPath, "interview", jobId, "error=not_interview");
+                return;
+            }
             target.setStatus("SELECTED");
         } else if ("reject".equalsIgnoreCase(action)) {
+            if (!"PENDING".equals(target.getStatus()) && !"INTERVIEW".equals(target.getStatus())) {
+                redirectJobs(resp, req, listPath, "pending", jobId, "error=not_applicant");
+                return;
+            }
             target.setStatus("REJECTED");
+        } else {
+            redirectJobs(resp, req, listPath, "pending", jobId, "error=invalid_action");
+            return;
         }
         target.setNotes(notes != null ? notes.trim() : "");
         storage.saveApplication(target);
 
-        resp.sendRedirect(req.getContextPath() + "/mo/jobs?updated=1");
+        String view = "pending";
+        if ("interview".equalsIgnoreCase(action)) {
+            view = "interview";
+        } else if ("select".equalsIgnoreCase(action) || "reject".equalsIgnoreCase(action)) {
+            view = "outcome";
+        }
+        Job jobAfter = storage.getJobById(jobId);
+        String pathAfter = jobAfter != null ? JobActivity.listPathFor(jobAfter) : listPath;
+        redirectJobs(resp, req, pathAfter, view, jobId, "updated=1");
     }
 }

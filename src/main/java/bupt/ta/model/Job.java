@@ -19,6 +19,16 @@ public class Job {
     private String createdAt;
     private int maxApplicants;  // 0 = unlimited
     private String jobType;  // MODULE_TA, INVIGILATION, OTHER
+    /** TA-facing: duties (separate from general description). */
+    private String responsibilities;
+    /** Hours per week, session times, or schedule text. */
+    private String workingHours;
+    /** Expected workload description (e.g. hours/week, sessions). */
+    private String workload;
+    /** Pay rate, stipend, or bursary text. */
+    private String payment;
+    /** Application deadline, ISO date yyyy-MM-dd preferred. */
+    private String deadline;
 
     public Job() {
         this.requiredSkills = new ArrayList<>();
@@ -49,4 +59,15 @@ public class Job {
     public void setMaxApplicants(int maxApplicants) { this.maxApplicants = maxApplicants; }
     public String getJobType() { return jobType; }
     public void setJobType(String jobType) { this.jobType = jobType; }
+
+    public String getResponsibilities() { return responsibilities; }
+    public void setResponsibilities(String responsibilities) { this.responsibilities = responsibilities; }
+    public String getWorkingHours() { return workingHours; }
+    public void setWorkingHours(String workingHours) { this.workingHours = workingHours; }
+    public String getWorkload() { return workload; }
+    public void setWorkload(String workload) { this.workload = workload; }
+    public String getPayment() { return payment; }
+    public void setPayment(String payment) { this.payment = payment; }
+    public String getDeadline() { return deadline; }
+    public void setDeadline(String deadline) { this.deadline = deadline; }
 }
