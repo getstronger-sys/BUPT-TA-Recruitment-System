@@ -7,7 +7,7 @@
     if ("forbidden".equals(request.getParameter("error"))) { %>
 <!DOCTYPE html>
 <html>
-<head><title>Access Denied</title><link rel="stylesheet" href="<%= request.getContextPath() %>/css/style.css"></head>
+<head><meta charset="UTF-8"><%@ include file="/WEB-INF/jspf/viewport.jspf" %><title>Access Denied</title><link rel="stylesheet" href="<%= request.getContextPath() %>/css/style.css"></head>
 <body><div class="container"><p class="error">Access denied. You do not have permission for this page.</p>
 <a href="<%= request.getContextPath() %>/logout">Logout</a></div></body></html>
 <% return; }
