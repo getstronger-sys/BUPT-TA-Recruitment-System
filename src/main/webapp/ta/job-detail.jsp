@@ -23,6 +23,7 @@
 <html>
 <head>
     <meta charset="UTF-8">
+    <%@ include file="/WEB-INF/jspf/viewport.jspf" %>
     <title><%= safeTitle %> - Job Detail</title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css">
 </head>
@@ -46,8 +47,9 @@
                 <a href="${pageContext.request.contextPath}/ta/profile">My Profile</a>
             </aside>
         </div>
-        <main class="main-panel">
+        <main class="main-panel ta-main">
             <p class="breadcrumb-line"><a href="${pageContext.request.contextPath}/ta/jobs">&larr; Back to job list</a></p>
+            <div class="ta-job-hero">
             <h1><%= safeTitle %></h1>
             <p class="job-detail-meta">
                 <span class="status-pill <%= isOpen ? "status-pill-pending" : "status-pill-rejected" %>"><%= job.getStatus() %></span>
@@ -57,10 +59,11 @@
             </p>
 
             <% if (match != null) { %>
-            <p class="ai-hint"><span class="match-badge" title="<%= escHtml(match.explanation) %>">Your match: <%= (int) match.score %>%</span>
+            <p class="ai-hint ta-job-hero-hint"><span class="match-badge" title="<%= escHtml(match.explanation) %>">Your match: <%= (int) match.score %>%</span>
                 <% if (match.matched != null && !match.matched.isEmpty()) { %> · Matched: <%= escHtml(String.join(", ", match.matched)) %><% } %>
             </p>
             <% } %>
+            </div>
 
             <dl class="job-detail-dl">
                 <dt>Module code</dt><dd><%= escHtml(job.getModuleCode() != null ? job.getModuleCode() : "—") %></dd>
@@ -82,9 +85,9 @@
             <p><em>Posted by <%= escHtml(job.getPostedByName() != null ? job.getPostedByName() : "MO") %></em></p>
 
             <% if (isOpen) { %>
-            <div class="job-detail-apply">
+            <div class="job-detail-apply ta-apply-panel">
                 <h2>Apply for this position</h2>
-                <p class="muted-inline">Review the job details above, then continue to confirm what will be shared from your profile and CV.</p>
+                <p class="ta-apply-lead">Review the job details above, then continue to confirm what will be shared from your profile and CV. Submit once per posting; you can withdraw from <strong>My Applications</strong> while still pending or in interview.</p>
                 <p><a href="${pageContext.request.contextPath}/ta/apply-confirm?jobId=<%= escHtml(job.getId()) %>" class="btn btn-primary btn-lg">Review and apply</a></p>
             </div>
             <% } else { %>
