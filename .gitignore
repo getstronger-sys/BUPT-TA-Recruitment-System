@@ -1,5 +1,6 @@
 target/
 data/
+.m2/
 
 # IDE and OS files (optional, safe to ignore)
 .idea/

@@ -78,6 +78,56 @@ public class DataStorageTest {
         }
     }
 
+    @Test
+    public void testWithdrawnApplicationDoesNotBlockReapply() throws Exception {
+        Path tmp = Files.createTempDirectory("ta-test");
+        try {
+            DataStorage storage = new DataStorage(tmp.toString());
+            Application a = new Application();
+            a.setJobId("J0001");
+            a.setApplicantId("U001");
+            a.setApplicantName("Test TA");
+            storage.addApplication(a);
+
+            assertTrue(storage.hasApplied("J0001", "U001"));
+
+            a.setStatus("WITHDRAWN");
+            storage.saveApplication(a);
+
+            assertFalse(storage.hasApplied("J0001", "U001"));
+        } finally {
+            deleteRecursive(tmp);
+        }
+    }
+
+    @Test
+    public void testFindByEmailAndStudentId() throws Exception {
+        Path tmp = Files.createTempDirectory("ta-test");
+        try {
+            DataStorage storage = new DataStorage(tmp.toString());
+
+            User user = new User();
+            user.setUsername("applicant");
+            user.setPassword("test123");
+            user.setRole("TA");
+            user.setEmail("applicant@bupt.edu.cn");
+            user.setStudentId("20230001");
+            storage.addUser(user);
+
+            TAProfile profile = new TAProfile(user.getId());
+            profile.setStudentId("20230001");
+            storage.saveProfile(profile);
+
+            assertNotNull(storage.findByEmail("APPLICANT@bupt.edu.cn"));
+            assertNull(storage.findByEmail("missing@bupt.edu.cn"));
+            assertNotNull(storage.findProfileByStudentId("20230001"));
+            assertNotNull(storage.findProfileByStudentId(" 20230001 "));
+            assertNull(storage.findProfileByStudentId("20239999"));
+        } finally {
+            deleteRecursive(tmp);
+        }
+    }
+
     private void deleteRecursive(Path p) throws IOException {
         if (Files.exists(p)) {
             Files.walk(p).sorted((a, b) -> -a.compareTo(b)).forEach(path -> {
