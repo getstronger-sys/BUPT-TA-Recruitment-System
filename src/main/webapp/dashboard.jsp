@@ -20,7 +20,7 @@
     } else if ("MO".equals(role)) {
         response.sendRedirect(ctx + "/mo/jobs");
     } else if ("ADMIN".equals(role)) {
-        response.sendRedirect(ctx + "/admin/workload");
+        response.sendRedirect(ctx + "/admin/dashboard");
     } else {
         response.sendRedirect(ctx + "/index.jsp?error=unknown");
     }

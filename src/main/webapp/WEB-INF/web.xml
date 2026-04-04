@@ -200,6 +200,24 @@
 
     <!-- Admin Servlet -->
     <servlet>
+        <servlet-name>AdminDashboardServlet</servlet-name>
+        <servlet-class>bupt.ta.servlet.AdminDashboardServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>AdminDashboardServlet</servlet-name>
+        <url-pattern>/admin/dashboard</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>AdminMonitoringServlet</servlet-name>
+        <servlet-class>bupt.ta.servlet.AdminMonitoringServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>AdminMonitoringServlet</servlet-name>
+        <url-pattern>/admin/monitoring</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
         <servlet-name>AdminWorkloadServlet</servlet-name>
         <servlet-class>bupt.ta.servlet.AdminWorkloadServlet</servlet-class>
     </servlet>

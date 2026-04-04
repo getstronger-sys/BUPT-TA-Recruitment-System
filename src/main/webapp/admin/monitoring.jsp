@@ -1,0 +1,256 @@
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ include file="/WEB-INF/jspf/html-esc.jspf" %>
+<%@ page import="bupt.ta.model.AdminSettings" %>
+<%@ page import="bupt.ta.service.AdminService" %>
+<%
+    AdminSettings settings = (AdminSettings) request.getAttribute("adminSettings");
+    if (settings == null) settings = new AdminSettings();
+    AdminService.MonitoringReport monitoring = (AdminService.MonitoringReport) request.getAttribute("monitoring");
+    if (monitoring == null) {
+        monitoring = new AdminService.MonitoringReport(
+                java.util.Collections.emptyList(),
+                java.util.Collections.emptyList(),
+                java.util.Collections.emptyList(),
+                java.util.Collections.emptyList(),
+                java.util.Collections.emptyList()
+        );
+    }
+%>
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <%@ include file="/WEB-INF/jspf/viewport.jspf" %>
+    <title>Admin Monitoring - TA Recruitment</title>
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css">
+</head>
+<body>
+<div class="container">
+    <div class="nav top-nav">
+        <span class="brand">QM TA Portal</span>
+        <span class="user"><%= session.getAttribute("realName") %> | <a href="${pageContext.request.contextPath}/logout">Logout</a></span>
+    </div>
+    <div class="page-layout">
+        <div class="left-nav-wrap">
+            <div class="icon-rail">
+                <div class="icon-dot">D</div>
+                <div class="icon-dot">W</div>
+                <div class="icon-dot active">M</div>
+            </div>
+            <aside class="side-nav">
+                <a href="${pageContext.request.contextPath}/admin/dashboard">Summary</a>
+                <a href="${pageContext.request.contextPath}/admin/workload">Workload</a>
+                <a class="active" href="${pageContext.request.contextPath}/admin/monitoring">Monitoring</a>
+            </aside>
+        </div>
+        <main class="main-panel admin-main">
+            <h1>Application Monitoring</h1>
+            <p class="ta-page-lead">Review exception cases that may need admin attention: workload-rule conflicts, incomplete interview notices, inactive-job activity, and job capacity problems.</p>
+            <div class="context-card">
+                <strong>Current workload rule</strong>
+                <p>Limit: <%= settings.hasWorkloadLimit() ? settings.getMaxSelectedJobsPerTa() : 0 %> selected jobs per TA. Auto-close pending: <strong><%= settings.isAutoClosePendingWhenLimitReached() ? "ON" : "OFF" %></strong>.</p>
+            </div>
+
+            <div class="stats-row admin-stat-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">!</div>
+                    <div>
+                        <div class="stat-title">Total issues</div>
+                        <div class="stat-value"><%= monitoring.getTotalIssues() %></div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">L</div>
+                    <div>
+                        <div class="stat-title">Limit alerts</div>
+                        <div class="stat-value"><%= monitoring.getLimitAlerts().size() %></div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">I</div>
+                    <div>
+                        <div class="stat-title">Interview notice issues</div>
+                        <div class="stat-value"><%= monitoring.getInterviewNoticeAlerts().size() %></div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">C</div>
+                    <div>
+                        <div class="stat-title">Capacity issues</div>
+                        <div class="stat-value"><%= monitoring.getCapacityAlerts().size() %></div>
+                    </div>
+                </div>
+            </div>
+
+            <section class="detail-card">
+                <h3>Workload-limit conflicts</h3>
+                <p class="muted-inline">Applicants who are already at or over the configured workload cap but still have pending applications open.</p>
+                <% if (monitoring.getLimitAlerts().isEmpty()) { %>
+                <p class="section-empty section-empty--card">No workload-limit conflicts found.</p>
+                <% } else { %>
+                <div class="table-scroll-wrap">
+                    <table class="admin-table">
+                        <thead>
+                        <tr>
+                            <th>Applicant</th>
+                            <th>User ID</th>
+                            <th>Selected jobs</th>
+                            <th>Pending jobs</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <% for (AdminService.LimitAlert row : monitoring.getLimitAlerts()) { %>
+                        <tr>
+                            <td><%= escHtml(row.getApplicantName()) %></td>
+                            <td><%= escHtml(row.getApplicantId()) %></td>
+                            <td><strong><%= row.getSelectedCount() %></strong></td>
+                            <td><%= row.getPendingCount() %></td>
+                        </tr>
+                        <% } %>
+                        </tbody>
+                    </table>
+                </div>
+                <% } %>
+            </section>
+
+            <section class="detail-card">
+                <h3>Interview records missing notice details</h3>
+                <% if (monitoring.getInterviewNoticeAlerts().isEmpty()) { %>
+                <p class="section-empty section-empty--card">All interview-stage applications have time and location filled in.</p>
+                <% } else { %>
+                <div class="table-scroll-wrap">
+                    <table class="admin-table">
+                        <thead>
+                        <tr>
+                            <th>Application</th>
+                            <th>Applicant</th>
+                            <th>Job</th>
+                            <th>Module</th>
+                            <th>Missing</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <% for (AdminService.InterviewNoticeAlert row : monitoring.getInterviewNoticeAlerts()) { %>
+                        <tr>
+                            <td><%= escHtml(row.getApplicationId()) %></td>
+                            <td><%= escHtml(row.getApplicantName()) %></td>
+                            <td><%= escHtml(row.getJobTitle()) %></td>
+                            <td><%= escHtml(row.getModuleCode()) %></td>
+                            <td>
+                                <% if (row.isMissingTime()) { %>Time<% } %>
+                                <% if (row.isMissingTime() && row.isMissingLocation()) { %> + <% } %>
+                                <% if (row.isMissingLocation()) { %>Location<% } %>
+                            </td>
+                        </tr>
+                        <% } %>
+                        </tbody>
+                    </table>
+                </div>
+                <% } %>
+            </section>
+
+            <section class="detail-card">
+                <h3>Active applications on inactive jobs</h3>
+                <% if (monitoring.getInactiveJobAlerts().isEmpty()) { %>
+                <p class="section-empty section-empty--card">No pending or interview applications remain on closed / expired jobs.</p>
+                <% } else { %>
+                <div class="table-scroll-wrap">
+                    <table class="admin-table">
+                        <thead>
+                        <tr>
+                            <th>Application</th>
+                            <th>Applicant</th>
+                            <th>Job</th>
+                            <th>Status</th>
+                            <th>Issue</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <% for (AdminService.ApplicationAlert row : monitoring.getInactiveJobAlerts()) { %>
+                        <tr>
+                            <td><%= escHtml(row.getApplicationId()) %></td>
+                            <td><%= escHtml(row.getApplicantName()) %></td>
+                            <td><%= escHtml(row.getJobTitle()) %> (<%= escHtml(row.getModuleCode()) %>)</td>
+                            <td><%= escHtml(row.getStatus()) %></td>
+                            <td><%= escHtml(row.getIssue()) %></td>
+                        </tr>
+                        <% } %>
+                        </tbody>
+                    </table>
+                </div>
+                <% } %>
+            </section>
+
+            <section class="detail-card">
+                <h3>Applications pointing to missing jobs</h3>
+                <% if (monitoring.getMissingJobAlerts().isEmpty()) { %>
+                <p class="section-empty section-empty--card">No missing-job references found.</p>
+                <% } else { %>
+                <div class="table-scroll-wrap">
+                    <table class="admin-table">
+                        <thead>
+                        <tr>
+                            <th>Application</th>
+                            <th>Applicant</th>
+                            <th>Job ID</th>
+                            <th>Status</th>
+                            <th>Issue</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <% for (AdminService.ApplicationAlert row : monitoring.getMissingJobAlerts()) { %>
+                        <tr>
+                            <td><%= escHtml(row.getApplicationId()) %></td>
+                            <td><%= escHtml(row.getApplicantName()) %></td>
+                            <td><%= escHtml(row.getJobTitle()) %></td>
+                            <td><%= escHtml(row.getStatus()) %></td>
+                            <td><%= escHtml(row.getIssue()) %></td>
+                        </tr>
+                        <% } %>
+                        </tbody>
+                    </table>
+                </div>
+                <% } %>
+            </section>
+
+            <section class="detail-card">
+                <h3>Jobs over capacity</h3>
+                <% if (monitoring.getCapacityAlerts().isEmpty()) { %>
+                <p class="section-empty section-empty--card">No job exceeds its max-applicant capacity.</p>
+                <% } else { %>
+                <div class="table-scroll-wrap">
+                    <table class="admin-table">
+                        <thead>
+                        <tr>
+                            <th>Job</th>
+                            <th>Module</th>
+                            <th>Selected</th>
+                            <th>Max applicants</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <% for (AdminService.CapacityAlert row : monitoring.getCapacityAlerts()) { %>
+                        <tr>
+                            <td><%= escHtml(row.getJobTitle()) %></td>
+                            <td><%= escHtml(row.getModuleCode()) %></td>
+                            <td><strong><%= row.getSelectedCount() %></strong></td>
+                            <td><%= row.getMaxApplicants() %></td>
+                        </tr>
+                        <% } %>
+                        </tbody>
+                    </table>
+                </div>
+                <% } %>
+            </section>
+        </main>
+        <aside class="right-sidebar">
+            <div class="widget-card">
+                <div class="widget-title">Admin Actions</div>
+                <p class="widget-line"><a href="${pageContext.request.contextPath}/admin/dashboard">Adjust workload settings</a></p>
+                <p class="widget-line"><a href="${pageContext.request.contextPath}/admin/workload">Review TA distribution</a></p>
+            </div>
+        </aside>
+    </div>
+</div>
+</body>
+</html>

@@ -32,7 +32,7 @@
         return datePart + " " + timePart;
     }
 %>
-<%
+<% 
     List<Object[]> applications = (List<Object[]>) request.getAttribute("applications");
     if (applications == null) applications = java.util.Collections.emptyList();
     Integer pointsObj = (Integer) request.getAttribute("points");
@@ -45,6 +45,8 @@
     int rejectedCount = rejectedObj != null ? rejectedObj : 0;
     Integer interviewObj = (Integer) request.getAttribute("interviewCount");
     int interviewCount = interviewObj != null ? interviewObj : 0;
+    Integer autoClosedObj = (Integer) request.getAttribute("autoClosedCount");
+    int autoClosedCount = autoClosedObj != null ? autoClosedObj : 0;
 %>
 <!DOCTYPE html>
 <html>
@@ -97,7 +99,7 @@
                 <div class="stat-card">
                     <div>
                         <div class="stat-title">Status Overview</div>
-                        <div class="stat-meta">Selected <%= selectedCount %> | Pending <%= pendingCount %> | Interview <%= interviewCount %> | Closed <%= rejectedCount %></div>
+                        <div class="stat-meta">Selected <%= selectedCount %> | Pending <%= pendingCount %> | Interview <%= interviewCount %> | Closed <%= rejectedCount + autoClosedCount %></div>
                     </div>
                 </div>
             </div>
@@ -125,6 +127,7 @@
                     if ("SELECTED".equals(a.getStatus())) { statusClass = "status-selected"; progress = 100; }
                     else if ("REJECTED".equals(a.getStatus())) { statusClass = "status-rejected"; progress = 100; }
                     else if ("WITHDRAWN".equals(a.getStatus())) { statusClass = "status-rejected"; progress = 100; }
+                    else if ("AUTO_CLOSED".equals(a.getStatus())) { statusClass = "status-rejected"; progress = 100; }
                     else if ("INTERVIEW".equals(a.getStatus())) { statusClass = "status-pending"; progress = 75; }
                     boolean hasNotice = (a.getInterviewTime() != null && !a.getInterviewTime().isEmpty())
                             || (a.getInterviewLocation() != null && !a.getInterviewLocation().isEmpty())
@@ -145,7 +148,12 @@
                         </div>
                         <div class="progress-text"><%= progress %>%</div>
                     </td>
-                    <td class="col-status <%= statusClass %>"><%= a.getStatus() %></td>
+                    <td class="col-status <%= statusClass %>">
+                        <div><%= a.getStatus() %></div>
+                        <% if ("AUTO_CLOSED".equals(a.getStatus()) && a.getNotes() != null && !a.getNotes().isEmpty()) { %>
+                        <div class="status-subtext"><%= escHtml(a.getNotes()) %></div>
+                        <% } %>
+                    </td>
                     <td class="col-notice interview-notice-cell">
                         <% if (hasNotice) { %>
                         <button type="button" class="btn btn-primary btn-sm ta-notice-btn" data-template="<%= noticeTplId %>">View notice</button>
