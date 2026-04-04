@@ -1,0 +1,7 @@
+<%!
+    /** Escape for HTML text nodes (skills list etc.) */
+    static String escHtml(String s) {
+        if (s == null) return "";
+        return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;");
+    }
+%>

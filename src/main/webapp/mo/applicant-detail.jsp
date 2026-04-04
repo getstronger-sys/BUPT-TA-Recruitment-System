@@ -1,4 +1,5 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ include file="/WEB-INF/jspf/html-esc.jspf" %>
 <%@ page import="java.util.List" %>
 <%@ page import="bupt.ta.model.User" %>
 <%@ page import="bupt.ta.model.TAProfile" %>
@@ -43,7 +44,6 @@
             <aside class="side-nav">
                 <a href="${pageContext.request.contextPath}/mo/jobs">My Jobs</a>
                 <a href="${pageContext.request.contextPath}/mo/post-job">Post Job</a>
-                <a class="active" href="${pageContext.request.contextPath}/mo/applicant-detail?applicantId=<%= user != null ? user.getId() : "" %>">Applicant Detail</a>
             </aside>
         </div>
         <main class="main-panel">
@@ -63,18 +63,11 @@
     <div class="detail-grid">
         <div class="detail-card">
             <h3>Basic Information</h3>
-            <p><strong>Name:</strong> <%= user != null && user.getRealName() != null ? user.getRealName() : "-" %></p>
-            <p><strong>Email:</strong> <%= user != null && user.getEmail() != null ? user.getEmail() : "-" %></p>
-            <p><strong>Student ID:</strong> <%= profile != null && profile.getStudentId() != null && !profile.getStudentId().isEmpty() ? profile.getStudentId() : "-" %></p>
-            <p><strong>Phone:</strong> <%= profile != null && profile.getPhone() != null && !profile.getPhone().isEmpty() ? profile.getPhone() : "-" %></p>
-            <p><strong>Availability:</strong> <%= profile != null && profile.getAvailability() != null && !profile.getAvailability().isEmpty() ? profile.getAvailability() : "-" %></p>
-            <p><strong>CV:</strong>
-                <% if (profile != null && profile.getCvFilePath() != null && !profile.getCvFilePath().isEmpty()) { %>
-                <a href="${pageContext.request.contextPath}/view-cv?userId=<%= user != null ? user.getId() : "" %>" target="_blank">View CV</a>
-                <% } else { %>
-                Not uploaded
-                <% } %>
-            </p>
+            <p><strong>Name:</strong> <%= user != null && user.getRealName() != null && !user.getRealName().isEmpty() ? escHtml(user.getRealName()) : "-" %></p>
+            <p><strong>Email:</strong> <%= user != null && user.getEmail() != null && !user.getEmail().isEmpty() ? escHtml(user.getEmail()) : "-" %></p>
+            <p><strong>Student ID:</strong> <%= profile != null && profile.getStudentId() != null && !profile.getStudentId().isEmpty() ? escHtml(profile.getStudentId()) : "-" %></p>
+            <p><strong>Phone:</strong> <%= profile != null && profile.getPhone() != null && !profile.getPhone().isEmpty() ? escHtml(profile.getPhone()) : "-" %></p>
+            <p><strong>Availability:</strong> <%= profile != null && profile.getAvailability() != null && !profile.getAvailability().isEmpty() ? escHtml(profile.getAvailability()) : "-" %></p>
         </div>
         <div class="detail-card">
             <h3>Application Summary</h3>
@@ -83,15 +76,32 @@
             <p><strong>Pending:</strong> <span class="status-pending"><%= pending %></span></p>
             <p><strong>Interview:</strong> <span class="status-pending"><%= interview %></span></p>
             <p><strong>Other:</strong> <span class="status-rejected"><%= other %></span></p>
-            <p><strong>Skills:</strong>
-                <%= profile != null && profile.getSkills() != null && !profile.getSkills().isEmpty() ? String.join(", ", profile.getSkills()) : "-" %>
-            </p>
         </div>
     </div>
 
+    <div class="detail-card applicant-academic-card">
+        <h3>Academic &amp; experience</h3>
+        <p><strong>Degree:</strong> <%= profile != null && profile.getDegree() != null && !profile.getDegree().isEmpty() ? escHtml(profile.getDegree()) : "-" %></p>
+        <p><strong>Programme:</strong> <%= profile != null && profile.getProgramme() != null && !profile.getProgramme().isEmpty() ? escHtml(profile.getProgramme()) : "-" %></p>
+        <p><strong>Skills:</strong> <%= profile != null && profile.getSkills() != null && !profile.getSkills().isEmpty() ? escHtml(String.join(", ", profile.getSkills())) : "-" %></p>
+        <div class="detail-block-text">
+            <strong>TA experience</strong>
+            <p class="pre-wrap"><%= profile != null && profile.getTaExperience() != null && !profile.getTaExperience().isEmpty() ? escHtml(profile.getTaExperience()) : "Not provided." %></p>
+        </div>
+        <p><strong>CV:</strong>
+            <% if (profile != null && profile.getCvFilePath() != null && !profile.getCvFilePath().isEmpty() && user != null) { %>
+            <a href="${pageContext.request.contextPath}/view-cv?userId=<%= user.getId() %>" target="_blank" rel="noopener">View</a>
+            <span class="muted-inline"> | </span>
+            <a href="${pageContext.request.contextPath}/view-cv?userId=<%= user.getId() %>&amp;download=1">Download</a>
+            <% } else { %>
+            Not uploaded
+            <% } %>
+        </p>
+    </div>
+
     <div class="detail-card">
-        <h3>Self Introduction</h3>
-        <p><%= profile != null && profile.getIntroduction() != null && !profile.getIntroduction().isEmpty() ? profile.getIntroduction() : "No introduction provided." %></p>
+        <h3>Self introduction</h3>
+        <p class="pre-wrap"><%= profile != null && profile.getIntroduction() != null && !profile.getIntroduction().isEmpty() ? escHtml(profile.getIntroduction()) : "No introduction provided." %></p>
     </div>
     <% } %>
 

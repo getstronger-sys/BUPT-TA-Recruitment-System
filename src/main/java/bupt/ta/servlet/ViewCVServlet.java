@@ -36,14 +36,19 @@ public class ViewCVServlet extends HttpServlet {
             return;
         }
 
-        // Resolve file on disk using the same base directory as DataStorage / CVUploadServlet
-        // (not getRealPath("/"), which points at the WAR extract dir and misses project data/uploads).
-        String rel = profile.getCvFilePath().replace("\\", "/").trim();
-        if (rel.startsWith("data/")) {
-            rel = rel.substring(5);
-        }
+        // Same base dir as DataStorage / CVUploadServlet (not getRealPath webapp root).
+        String raw = profile.getCvFilePath().replace("\\", "/").trim();
         Path dataRoot = storage.getBasePath().normalize();
-        Path file = dataRoot.resolve(rel).normalize();
+        Path file;
+        if (Path.of(raw).isAbsolute()) {
+            file = Path.of(raw).normalize();
+        } else {
+            String rel = raw;
+            if (rel.startsWith("data/")) {
+                rel = rel.substring(5);
+            }
+            file = dataRoot.resolve(rel).normalize();
+        }
         if (!file.startsWith(dataRoot)) {
             resp.sendError(HttpServletResponse.SC_FORBIDDEN, "Invalid CV path");
             return;
@@ -60,7 +65,9 @@ public class ViewCVServlet extends HttpServlet {
         }
 
         resp.setContentType(contentType);
-        resp.setHeader("Content-Disposition", "inline; filename=\"" + filename + "\"");
+        boolean asDownload = "1".equals(req.getParameter("download")) || "true".equalsIgnoreCase(req.getParameter("download"));
+        String disp = asDownload ? "attachment" : "inline";
+        resp.setHeader("Content-Disposition", disp + "; filename=\"" + filename.replace("\"", "") + "\"");
         resp.setContentLengthLong(Files.size(file));
         Files.copy(file, resp.getOutputStream());
     }

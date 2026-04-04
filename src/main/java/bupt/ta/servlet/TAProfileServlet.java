@@ -31,6 +31,9 @@ public class TAProfileServlet extends HttpServlet {
         String phone = req.getParameter("phone");
         String availability = req.getParameter("availability");
         String introduction = req.getParameter("introduction");
+        String degree = req.getParameter("degree");
+        String programme = req.getParameter("programme");
+        String taExperience = req.getParameter("taExperience");
         String skillsStr = req.getParameter("skills");
 
         List<String> skills = skillsStr != null && !skillsStr.trim().isEmpty()
@@ -46,6 +49,9 @@ public class TAProfileServlet extends HttpServlet {
         profile.setPhone(phone != null ? phone.trim() : "");
         profile.setAvailability(availability != null ? availability.trim() : "");
         profile.setIntroduction(introduction != null ? introduction.trim() : "");
+        profile.setDegree(degree != null ? degree.trim() : "");
+        profile.setProgramme(programme != null ? programme.trim() : "");
+        profile.setTaExperience(taExperience != null ? taExperience.trim() : "");
         profile.setSkills(skills);
 
         storage.saveProfile(profile);
