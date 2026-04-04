@@ -67,6 +67,7 @@
                 <div class="icon-dot">P</div>
             </div>
             <aside class="side-nav">
+                <a href="${pageContext.request.contextPath}/ta/dashboard">Home</a>
                 <a href="${pageContext.request.contextPath}/ta/jobs">Find Jobs</a>
                 <a class="active" href="${pageContext.request.contextPath}/ta/applications">My Applications</a>
                 <a href="${pageContext.request.contextPath}/ta/profile">My Profile</a>
