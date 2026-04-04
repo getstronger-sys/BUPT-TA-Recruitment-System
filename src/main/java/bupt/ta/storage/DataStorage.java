@@ -156,6 +156,14 @@ public class DataStorage {
         return users.stream().filter(u -> u.getUsername().equals(username)).findFirst().orElse(null);
     }
 
+    public User findByEmail(String email) throws IOException {
+        List<User> users = loadUsers();
+        return users.stream()
+                .filter(u -> equalsIgnoreCaseTrimmed(u.getEmail(), email))
+                .findFirst()
+                .orElse(null);
+    }
+
     public User findUserById(String id) throws IOException {
         List<User> users = loadUsers();
         return users.stream().filter(u -> u.getId().equals(id)).findFirst().orElse(null);
@@ -192,6 +200,13 @@ public class DataStorage {
 
     public TAProfile getProfileByUserId(String userId) throws IOException {
         return loadProfiles().stream().filter(p -> p.getUserId().equals(userId)).findFirst().orElse(null);
+    }
+
+    public TAProfile findProfileByStudentId(String studentId) throws IOException {
+        return loadProfiles().stream()
+                .filter(p -> equalsIgnoreCaseTrimmed(p.getStudentId(), studentId))
+                .findFirst()
+                .orElse(null);
     }
 
     public void saveProfile(TAProfile profile) throws IOException {
@@ -251,7 +266,8 @@ public class DataStorage {
      */
     public boolean hasApplied(String jobId, String applicantId) throws IOException {
         return loadApplications().stream()
-                .anyMatch(a -> a.getJobId().equals(jobId) && a.getApplicantId().equals(applicantId)
+                .anyMatch(a -> a.getJobId().equals(jobId)
+                        && a.getApplicantId().equals(applicantId)
                         && blocksNewApplicationToJob(a.getStatus()));
     }
 
@@ -279,4 +295,11 @@ public class DataStorage {
 
     public Path getBasePath() { return basePath; }
     public Path getUploadPath() { return basePath.resolve("uploads"); }
+
+    private boolean equalsIgnoreCaseTrimmed(String left, String right) {
+        if (left == null || right == null) {
+            return false;
+        }
+        return left.trim().equalsIgnoreCase(right.trim());
+    }
 }

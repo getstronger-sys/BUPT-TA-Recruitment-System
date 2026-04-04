@@ -9,6 +9,7 @@ public class User {
     private String password;
     private String role; // TA, MO, ADMIN
     private String email;
+    private String studentId;
     private String realName;
 
     public User() {}
@@ -30,6 +31,8 @@ public class User {
     public void setRole(String role) { this.role = role; }
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }
+    public String getStudentId() { return studentId; }
+    public void setStudentId(String studentId) { this.studentId = studentId; }
     public String getRealName() { return realName; }
     public void setRealName(String realName) { this.realName = realName; }
 }
