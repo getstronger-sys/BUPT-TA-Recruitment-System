@@ -7,6 +7,7 @@
 <html>
 <head>
     <meta charset="UTF-8">
+    <%@ include file="/WEB-INF/jspf/viewport.jspf" %>
     <title>Find Jobs - TA Recruitment</title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css">
 </head>

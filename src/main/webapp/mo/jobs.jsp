@@ -26,6 +26,7 @@
 <html>
 <head>
     <meta charset="UTF-8">
+    <%@ include file="/WEB-INF/jspf/viewport.jspf" %>
     <title><%= moPastJobsPage ? "Past postings - MO" : "My Jobs - MO" %></title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css">
 </head>
