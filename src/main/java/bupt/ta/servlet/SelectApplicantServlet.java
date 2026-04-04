@@ -38,10 +38,27 @@ public class SelectApplicantServlet extends HttpServlet {
             return;
         }
 
-        if ("select".equalsIgnoreCase(action)) {
+        if ("interview".equalsIgnoreCase(action)) {
+            if (!"PENDING".equals(target.getStatus())) {
+                resp.sendRedirect(req.getContextPath() + "/mo/jobs?error=not_pending");
+                return;
+            }
+            target.setStatus("INTERVIEW");
+        } else if ("select".equalsIgnoreCase(action)) {
+            if (!"INTERVIEW".equals(target.getStatus())) {
+                resp.sendRedirect(req.getContextPath() + "/mo/jobs?error=not_interview");
+                return;
+            }
             target.setStatus("SELECTED");
         } else if ("reject".equalsIgnoreCase(action)) {
+            if (!"PENDING".equals(target.getStatus()) && !"INTERVIEW".equals(target.getStatus())) {
+                resp.sendRedirect(req.getContextPath() + "/mo/jobs?error=not_applicant");
+                return;
+            }
             target.setStatus("REJECTED");
+        } else {
+            resp.sendRedirect(req.getContextPath() + "/mo/jobs?error=invalid_action");
+            return;
         }
         target.setNotes(notes != null ? notes.trim() : "");
         storage.saveApplication(target);

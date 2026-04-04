@@ -41,23 +41,46 @@ public class MOJobsServlet extends HttpServlet {
         List<Object[]> enriched = new ArrayList<>();
         for (Job j : jobs) {
             List<Application> apps = appsByJob.getOrDefault(j.getId(), new ArrayList<>());
-            List<AIMatchService.ApplicantRecommendation> recs = new ArrayList<>();
+            List<AIMatchService.ApplicantRecommendation> all = new ArrayList<>();
             for (Application a : apps) {
                 TAProfile profile = profileByUser.get(a.getApplicantId());
                 AIMatchService.MatchResult match = aiService.matchSkills(profile, j);
                 int workload = workloadByTa.getOrDefault(a.getApplicantId(), 0);
                 boolean balanced = workload <= avgWorkload;
-                recs.add(new AIMatchService.ApplicantRecommendation(a, profile, match, workload, balanced));
+                all.add(new AIMatchService.ApplicantRecommendation(a, profile, match, workload, balanced));
             }
-            recs.sort((r1, r2) -> {
-                int cmp = Double.compare(r2.matchResult.score, r1.matchResult.score);
-                if (cmp != 0) return cmp;
-                return Integer.compare(r1.currentWorkload, r2.currentWorkload);
-            });
-            enriched.add(new Object[]{j, recs});
+            List<AIMatchService.ApplicantRecommendation> pending = new ArrayList<>();
+            List<AIMatchService.ApplicantRecommendation> interview = new ArrayList<>();
+            List<AIMatchService.ApplicantRecommendation> withdrawn = new ArrayList<>();
+            List<AIMatchService.ApplicantRecommendation> outcome = new ArrayList<>();
+            for (AIMatchService.ApplicantRecommendation r : all) {
+                String s = r.application.getStatus();
+                if ("WITHDRAWN".equals(s)) {
+                    withdrawn.add(r);
+                } else if ("PENDING".equals(s)) {
+                    pending.add(r);
+                } else if ("INTERVIEW".equals(s)) {
+                    interview.add(r);
+                } else {
+                    outcome.add(r);
+                }
+            }
+            sortByMatch(pending);
+            sortByMatch(interview);
+            sortByMatch(withdrawn);
+            sortByMatch(outcome);
+            enriched.add(new Object[]{j, pending, interview, withdrawn, outcome});
         }
 
         req.setAttribute("jobsWithApps", enriched);
         req.getRequestDispatcher("/mo/jobs.jsp").forward(req, resp);
+    }
+
+    private static void sortByMatch(List<AIMatchService.ApplicantRecommendation> recs) {
+        recs.sort((r1, r2) -> {
+            int cmp = Double.compare(r2.matchResult.score, r1.matchResult.score);
+            if (cmp != 0) return cmp;
+            return Integer.compare(r1.currentWorkload, r2.currentWorkload);
+        });
     }
 }

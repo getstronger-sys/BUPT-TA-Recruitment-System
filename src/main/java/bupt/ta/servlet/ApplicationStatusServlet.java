@@ -26,19 +26,22 @@ public class ApplicationStatusServlet extends HttpServlet {
         List<Object[]> enriched = new ArrayList<>();
         int selectedCount = 0;
         int pendingCount = 0;
+        int interviewCount = 0;
         int rejectedCount = 0;
         for (Application a : applications) {
             Job j = jobMap.get(a.getJobId());
             enriched.add(new Object[]{a, j});
             if ("SELECTED".equals(a.getStatus())) selectedCount++;
             else if ("PENDING".equals(a.getStatus())) pendingCount++;
-            else rejectedCount++;
+            else if ("INTERVIEW".equals(a.getStatus())) interviewCount++;
+            else if ("REJECTED".equals(a.getStatus()) || "WITHDRAWN".equals(a.getStatus())) rejectedCount++;
         }
 
-        int points = selectedCount * 100 + pendingCount * 20;
+        int points = selectedCount * 100 + pendingCount * 20 + interviewCount * 40;
         req.setAttribute("applications", enriched);
         req.setAttribute("selectedCount", selectedCount);
         req.setAttribute("pendingCount", pendingCount);
+        req.setAttribute("interviewCount", interviewCount);
         req.setAttribute("rejectedCount", rejectedCount);
         req.setAttribute("points", points);
         req.getRequestDispatcher("/ta/applications.jsp").forward(req, resp);

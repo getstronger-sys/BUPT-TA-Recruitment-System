@@ -36,9 +36,18 @@ public class ViewCVServlet extends HttpServlet {
             return;
         }
 
-        String storedPath = profile.getCvFilePath().replace("\\", "/");
-        String relativePath = storedPath.startsWith("data/") ? storedPath : "data/" + storedPath;
-        Path file = Path.of(getServletContext().getRealPath("/"), relativePath).normalize();
+        // Resolve file on disk using the same base directory as DataStorage / CVUploadServlet
+        // (not getRealPath("/"), which points at the WAR extract dir and misses project data/uploads).
+        String rel = profile.getCvFilePath().replace("\\", "/").trim();
+        if (rel.startsWith("data/")) {
+            rel = rel.substring(5);
+        }
+        Path dataRoot = storage.getBasePath().normalize();
+        Path file = dataRoot.resolve(rel).normalize();
+        if (!file.startsWith(dataRoot)) {
+            resp.sendError(HttpServletResponse.SC_FORBIDDEN, "Invalid CV path");
+            return;
+        }
         if (!Files.exists(file) || !Files.isRegularFile(file)) {
             resp.sendError(HttpServletResponse.SC_NOT_FOUND, "CV file not found");
             return;

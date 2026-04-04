@@ -339,6 +339,54 @@ tr:hover { background: #f8f7ff; }
     background: #ffe1e8;
     color: #b43357;
 }
+.status-pill-interview {
+    background: #e8eeff;
+    color: #3451b2;
+}
+.applicant-section-title {
+    margin: 20px 0 10px;
+    font-size: 1.05rem;
+    color: #2a476d;
+    border-bottom: 1px solid #e0e8f2;
+    padding-bottom: 6px;
+}
+.section-empty { margin: 8px 0 16px; }
+.batch-form-hidden { display: none; }
+.batch-check-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+    font-size: 0.88em;
+    color: #6780a3;
+}
+.batch-toolbar { margin: 12px 0; }
+.notice-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 12px;
+    padding: 14px;
+    border: 1px solid #dfe8f2;
+    border-radius: 12px;
+    background: #f8fbff;
+}
+.notice-input-wide { min-width: 240px; }
+.notice-label-block { display: block; }
+.notice-textarea { width: 100%; max-width: 560px; }
+.notice-preview {
+    margin: 10px 0;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: #f0f4fb;
+    font-size: 0.92em;
+}
+.interview-notice-cell {
+    max-width: 220px;
+    font-size: 0.88em;
+    line-height: 1.45;
+}
+.notice-inline span { color: #3d5a7a; }
 .applicant-sections {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));

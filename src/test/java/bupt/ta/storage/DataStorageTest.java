@@ -73,6 +73,19 @@ public class DataStorageTest {
 
             assertTrue(storage.hasApplied("J0001", "U001"));
             assertFalse(storage.hasApplied("J0001", "U002"));
+
+            a.setStatus("WITHDRAWN");
+            storage.saveApplication(a);
+            assertFalse("WITHDRAWN should allow applying again", storage.hasApplied("J0001", "U001"));
+
+            Application b = new Application();
+            b.setJobId("J0002");
+            b.setApplicantId("U001");
+            b.setApplicantName("Test TA");
+            storage.addApplication(b);
+            b.setStatus("INTERVIEW");
+            storage.saveApplication(b);
+            assertTrue("INTERVIEW should block another apply to same job", storage.hasApplied("J0002", "U001"));
         } finally {
             deleteRecursive(tmp);
         }

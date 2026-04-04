@@ -145,6 +145,15 @@
     </servlet-mapping>
 
     <servlet>
+        <servlet-name>MOBatchApplicantServlet</servlet-name>
+        <servlet-class>bupt.ta.servlet.MOBatchApplicantServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>MOBatchApplicantServlet</servlet-name>
+        <url-pattern>/mo/batch-applicants</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
         <servlet-name>CloseJobServlet</servlet-name>
         <servlet-class>bupt.ta.servlet.CloseJobServlet</servlet-class>
     </servlet>
