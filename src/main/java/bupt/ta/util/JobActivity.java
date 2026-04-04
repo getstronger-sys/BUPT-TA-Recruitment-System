@@ -1,0 +1,46 @@
+package bupt.ta.util;
+
+import bupt.ta.model.Job;
+
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
+
+/**
+ * Whether a job is still "active" for MO day-to-day management (My Jobs).
+ * Inactive = manually closed or application deadline has passed (date only, yyyy-MM-dd).
+ */
+public final class JobActivity {
+
+    public static final String PATH_ACTIVE = "/mo/jobs";
+    public static final String PATH_INACTIVE = "/mo/past-jobs";
+
+    private JobActivity() {}
+
+    public static boolean isInactive(Job job) {
+        if (job == null) return true;
+        if ("CLOSED".equalsIgnoreCase(job.getStatus())) return true;
+        return isPastDeadline(job.getDeadline());
+    }
+
+    public static boolean isActive(Job job) {
+        return !isInactive(job);
+    }
+
+    public static String listPathFor(Job job) {
+        return isInactive(job) ? PATH_INACTIVE : PATH_ACTIVE;
+    }
+
+    private static boolean isPastDeadline(String deadline) {
+        if (deadline == null || deadline.trim().isEmpty()) return false;
+        String d = deadline.trim();
+        if (d.length() >= 10) {
+            d = d.substring(0, 10);
+        }
+        try {
+            LocalDate end = LocalDate.parse(d);
+            return end.isBefore(LocalDate.now());
+        } catch (DateTimeParseException e) {
+            return false;
+        }
+    }
+}

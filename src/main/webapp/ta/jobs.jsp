@@ -33,7 +33,7 @@
             <h1>Find Available Jobs</h1>
             <div class="context-card">
                 <strong>Quick Tip</strong>
-                <p>Complete your profile skills first, then apply to jobs with higher match scores.</p>
+                <p>Open <strong>View details</strong> for full module info, hours, payment, workload, deadline, and responsibilities—then apply from that page.</p>
             </div>
             <p class="ai-hint"><strong>AI Skill Matching</strong>: Jobs are ordered by your match score. Complete your <a href="${pageContext.request.contextPath}/ta/profile">profile skills</a> for better matching.</p>
 
@@ -73,6 +73,9 @@
                 <% if (j.getRequiredSkills() != null && !j.getRequiredSkills().isEmpty()) { %>
                 <p class="skills">Required: <%= String.join(", ", j.getRequiredSkills()) %></p>
                 <% } %>
+                <% if (j.getDeadline() != null && !j.getDeadline().isEmpty()) { %>
+                <p class="job-list-deadline"><strong>Apply by:</strong> <%= j.getDeadline() %></p>
+                <% } %>
                 <% if (match.matched != null && !match.matched.isEmpty()) { %>
                 <p class="ai-matched">Your matched skills: <%= String.join(", ", match.matched) %></p>
                 <% } %>
@@ -80,10 +83,7 @@
                 <p class="ai-missing">Missing skills for this job: <strong><%= String.join(", ", match.missing) %></strong>. Consider adding them to your profile.</p>
                 <% } %>
                 <p><em>Posted by <%= j.getPostedByName() != null ? j.getPostedByName() : "MO" %></em></p>
-                <form action="${pageContext.request.contextPath}/ta/apply" method="post" style="display:inline;">
-                    <input type="hidden" name="jobId" value="<%= j.getId() %>">
-                    <button type="submit" class="btn btn-primary">Apply</button>
-                </form>
+                <a href="${pageContext.request.contextPath}/ta/job?jobId=<%= j.getId() %>" class="btn btn-primary">View details &amp; apply</a>
             </div>
             <% }
                if (jobsWithMatch.isEmpty()) { %>

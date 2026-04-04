@@ -1,0 +1,131 @@
+package bupt.ta.servlet;
+
+import bupt.ta.model.Application;
+import bupt.ta.model.Job;
+import bupt.ta.storage.DataStorage;
+import bupt.ta.util.JobActivity;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+
+/**
+ * Batch operations for MO: mark PENDING as INTERVIEW, or send in-app interview notice to INTERVIEW applicants.
+ */
+public class MOBatchApplicantServlet extends HttpServlet {
+
+    @Override
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        String moId = (String) req.getSession().getAttribute("userId");
+        String action = req.getParameter("action");
+        String returnJobId = trim(req.getParameter("returnJobId"));
+        String[] ids = req.getParameterValues("applicationId");
+        String ctx = req.getContextPath();
+        DataStorage storage = new DataStorage(getServletContext());
+        if (ids == null || ids.length == 0) {
+            resp.sendRedirect(moJobsUrl(ctx, moListPath(storage, returnJobId, moId), "pending", returnJobId, "error=batch_empty"));
+            return;
+        }
+
+        Set<String> idSet = new HashSet<>(Arrays.asList(ids));
+
+        if ("toInterview".equals(action)) {
+            for (String appId : idSet) {
+                Application target = findApp(storage, appId);
+                if (target == null) continue;
+                Job job = storage.getJobById(target.getJobId());
+                if (job == null || !moId.equals(job.getPostedBy())) continue;
+                if (!returnJobId.isEmpty() && !returnJobId.equals(target.getJobId())) continue;
+                if (!"PENDING".equals(target.getStatus())) continue;
+                target.setStatus("INTERVIEW");
+                storage.saveApplication(target);
+            }
+            String jid = resolveReturnJobId(storage, idSet, returnJobId, moId);
+            Job jref = jid.isEmpty() ? null : storage.getJobById(jid);
+            String listPath = jref != null ? JobActivity.listPathFor(jref) : JobActivity.PATH_ACTIVE;
+            resp.sendRedirect(moJobsUrl(ctx, listPath, "interview", jid, "updated=1"));
+            return;
+        }
+
+        if ("sendNotice".equals(action)) {
+            String time = trim(req.getParameter("interviewTime"));
+            String location = trim(req.getParameter("interviewLocation"));
+            String assessment = trim(req.getParameter("interviewAssessment"));
+            for (String appId : idSet) {
+                Application target = findApp(storage, appId);
+                if (target == null) continue;
+                Job job = storage.getJobById(target.getJobId());
+                if (job == null || !moId.equals(job.getPostedBy())) continue;
+                if (!returnJobId.isEmpty() && !returnJobId.equals(target.getJobId())) continue;
+                if (!"INTERVIEW".equals(target.getStatus())) continue;
+                target.setInterviewTime(time);
+                target.setInterviewLocation(location);
+                target.setInterviewAssessment(assessment);
+                storage.saveApplication(target);
+            }
+            String jid = resolveReturnJobId(storage, idSet, returnJobId, moId);
+            Job jref = jid.isEmpty() ? null : storage.getJobById(jid);
+            String listPath = jref != null ? JobActivity.listPathFor(jref) : JobActivity.PATH_ACTIVE;
+            resp.sendRedirect(moJobsUrl(ctx, listPath, "interview", jid, "notice=1"));
+            return;
+        }
+
+        resp.sendRedirect(moJobsUrl(ctx, moListPath(storage, returnJobId, moId), "pending", returnJobId, "error=invalid_action"));
+    }
+
+    private static Application findApp(DataStorage storage, String appId) throws IOException {
+        return storage.loadApplications().stream()
+                .filter(a -> a.getId().equals(appId))
+                .findFirst()
+                .orElse(null);
+    }
+
+    private static String trim(String s) {
+        return s != null ? s.trim() : "";
+    }
+
+    private static String moJobsUrl(String ctx, String listPath, String view, String jobId, String extraQuery) {
+        StringBuilder b = new StringBuilder(ctx).append(listPath).append("?");
+        if (jobId != null && !jobId.isEmpty()) {
+            b.append("jobId=").append(URLEncoder.encode(jobId, StandardCharsets.UTF_8)).append("&");
+        }
+        b.append("view=").append(view);
+        if (extraQuery != null && !extraQuery.isEmpty()) {
+            b.append("&").append(extraQuery);
+        }
+        return b.toString();
+    }
+
+    private static String moListPath(DataStorage storage, String jobId, String moId) throws IOException {
+        if (jobId == null || jobId.isEmpty()) return JobActivity.PATH_ACTIVE;
+        Job j = storage.getJobById(jobId);
+        if (j != null && moId.equals(j.getPostedBy())) return JobActivity.listPathFor(j);
+        return JobActivity.PATH_ACTIVE;
+    }
+
+    /** Prefer explicit returnJobId when it matches processed apps; else first app's job owned by MO. */
+    private static String resolveReturnJobId(DataStorage storage, Set<String> idSet, String returnJobId, String moId) throws IOException {
+        if (returnJobId != null && !returnJobId.isEmpty()) {
+            Job j = storage.getJobById(returnJobId);
+            if (j != null && moId.equals(j.getPostedBy())) {
+                return returnJobId;
+            }
+        }
+        for (String appId : idSet) {
+            Application a = findApp(storage, appId);
+            if (a == null) continue;
+            Job job = storage.getJobById(a.getJobId());
+            if (job != null && moId.equals(job.getPostedBy())) {
+                return a.getJobId();
+            }
+        }
+        return "";
+    }
+}

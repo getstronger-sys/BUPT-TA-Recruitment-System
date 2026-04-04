@@ -34,7 +34,8 @@ public class JobSearchServlet extends HttpServlet {
             jobs = jobs.stream()
                     .filter(j -> (j.getTitle() != null && j.getTitle().toLowerCase().contains(k))
                             || (j.getModuleName() != null && j.getModuleName().toLowerCase().contains(k))
-                            || (j.getDescription() != null && j.getDescription().toLowerCase().contains(k)))
+                            || (j.getDescription() != null && j.getDescription().toLowerCase().contains(k))
+                            || (j.getResponsibilities() != null && j.getResponsibilities().toLowerCase().contains(k)))
                     .collect(Collectors.toList());
         }
         if (moduleCode != null && !moduleCode.trim().isEmpty()) {

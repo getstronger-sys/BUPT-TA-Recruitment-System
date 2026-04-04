@@ -2,10 +2,13 @@ package bupt.ta.servlet;
 
 import bupt.ta.model.Job;
 import bupt.ta.storage.DataStorage;
+import bupt.ta.util.JobActivity;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.*;
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 
 public class CloseJobServlet extends HttpServlet {
 
@@ -33,6 +36,8 @@ public class CloseJobServlet extends HttpServlet {
             job.setStatus("OPEN");
         }
         storage.saveJob(job);
-        resp.sendRedirect(req.getContextPath() + "/mo/jobs?updated=1");
+        String enc = URLEncoder.encode(jobId.trim(), StandardCharsets.UTF_8);
+        String path = JobActivity.listPathFor(job);
+        resp.sendRedirect(req.getContextPath() + path + "?updated=1&jobId=" + enc + "&view=pending");
     }
 }

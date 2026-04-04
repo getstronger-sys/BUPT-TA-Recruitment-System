@@ -260,11 +260,19 @@ public class DataStorage {
         return loadApplications().stream().filter(a -> a.getApplicantId().equals(applicantId)).collect(Collectors.toList());
     }
 
+    /**
+     * True if the applicant already has an active application for this job (blocks a new apply).
+     * WITHDRAWN and REJECTED records do not block re-applying.
+     */
     public boolean hasApplied(String jobId, String applicantId) throws IOException {
         return loadApplications().stream()
                 .anyMatch(a -> a.getJobId().equals(jobId)
                         && a.getApplicantId().equals(applicantId)
-                        && !"WITHDRAWN".equals(a.getStatus()));
+                        && blocksNewApplicationToJob(a.getStatus()));
+    }
+
+    private static boolean blocksNewApplicationToJob(String status) {
+        return "PENDING".equals(status) || "INTERVIEW".equals(status) || "SELECTED".equals(status);
     }
 
     public void saveApplication(Application app) throws IOException {

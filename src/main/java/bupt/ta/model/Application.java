@@ -8,9 +8,13 @@ public class Application {
     private String jobId;
     private String applicantId;  // TA user id
     private String applicantName;
-    private String status;  // PENDING, SELECTED, REJECTED
+    private String status;  // PENDING, INTERVIEW, SELECTED, REJECTED, WITHDRAWN
     private String appliedAt;
     private String notes;  // MO's notes when selecting
+    /** Interview notice (in-app, not email) — set when MO sends batch/single notice */
+    private String interviewTime;
+    private String interviewLocation;
+    private String interviewAssessment;
 
     public Application() {
         this.status = "PENDING";
@@ -30,4 +34,11 @@ public class Application {
     public void setAppliedAt(String appliedAt) { this.appliedAt = appliedAt; }
     public String getNotes() { return notes; }
     public void setNotes(String notes) { this.notes = notes; }
+
+    public String getInterviewTime() { return interviewTime; }
+    public void setInterviewTime(String interviewTime) { this.interviewTime = interviewTime; }
+    public String getInterviewLocation() { return interviewLocation; }
+    public void setInterviewLocation(String interviewLocation) { this.interviewLocation = interviewLocation; }
+    public String getInterviewAssessment() { return interviewAssessment; }
+    public void setInterviewAssessment(String interviewAssessment) { this.interviewAssessment = interviewAssessment; }
 }

@@ -45,22 +45,27 @@ public class ApplicantDetailServlet extends HttpServlet {
         List<Object[]> rows = new ArrayList<>();
         int selected = 0;
         int pending = 0;
+        int interview = 0;
         int rejectedOrWithdrawn = 0;
         for (Application a : relatedApps) {
             rows.add(new Object[]{a, jobMap.get(a.getJobId())});
             if ("SELECTED".equals(a.getStatus())) selected++;
             else if ("PENDING".equals(a.getStatus())) pending++;
+            else if ("INTERVIEW".equals(a.getStatus())) interview++;
             else rejectedOrWithdrawn++;
         }
 
         TAProfile profile = storage.getProfileByUserId(applicantId);
         User user = storage.findUserById(applicantId);
 
+        boolean hidePersonalInfo = relatedApps.stream().allMatch(a -> "WITHDRAWN".equals(a.getStatus()));
+        req.setAttribute("hideApplicantPersonalInfo", hidePersonalInfo);
         req.setAttribute("applicantUser", user);
         req.setAttribute("applicantProfile", profile);
         req.setAttribute("appRows", rows);
         req.setAttribute("selectedCount", selected);
         req.setAttribute("pendingCount", pending);
+        req.setAttribute("interviewCount", interview);
         req.setAttribute("otherCount", rejectedOrWithdrawn);
         req.getRequestDispatcher("/mo/applicant-detail.jsp").forward(req, resp);
     }
