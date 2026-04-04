@@ -40,6 +40,7 @@
                 <div class="icon-dot">P</div>
             </div>
             <aside class="side-nav">
+                <a href="${pageContext.request.contextPath}/ta/dashboard">Home</a>
                 <a class="active" href="${pageContext.request.contextPath}/ta/jobs">Find Jobs</a>
                 <a href="${pageContext.request.contextPath}/ta/applications">My Applications</a>
                 <a href="${pageContext.request.contextPath}/ta/profile">My Profile</a>
@@ -83,10 +84,8 @@
             <% if (isOpen) { %>
             <div class="job-detail-apply">
                 <h2>Apply for this position</h2>
-                <form action="${pageContext.request.contextPath}/ta/apply" method="post">
-                    <input type="hidden" name="jobId" value="<%= job.getId() %>">
-                    <button type="submit" class="btn btn-primary btn-lg">Submit application</button>
-                </form>
+                <p class="muted-inline">Review the job details above, then continue to confirm what will be shared from your profile and CV.</p>
+                <p><a href="${pageContext.request.contextPath}/ta/apply-confirm?jobId=<%= escHtml(job.getId()) %>" class="btn btn-primary btn-lg">Review and apply</a></p>
             </div>
             <% } else { %>
             <p class="error">This job is closed; applications are not accepted.</p>

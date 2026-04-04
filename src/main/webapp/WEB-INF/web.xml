@@ -72,6 +72,15 @@
     </servlet-mapping>
 
     <servlet>
+        <servlet-name>TADashboardServlet</servlet-name>
+        <servlet-class>bupt.ta.servlet.TADashboardServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>TADashboardServlet</servlet-name>
+        <url-pattern>/ta/dashboard</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
         <servlet-name>JobSearchServlet</servlet-name>
         <servlet-class>bupt.ta.servlet.JobSearchServlet</servlet-class>
     </servlet>
@@ -87,6 +96,15 @@
     <servlet-mapping>
         <servlet-name>TAJobDetailServlet</servlet-name>
         <url-pattern>/ta/job</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>ApplyConfirmServlet</servlet-name>
+        <servlet-class>bupt.ta.servlet.ApplyConfirmServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>ApplyConfirmServlet</servlet-name>
+        <url-pattern>/ta/apply-confirm</url-pattern>
     </servlet-mapping>
 
     <servlet>

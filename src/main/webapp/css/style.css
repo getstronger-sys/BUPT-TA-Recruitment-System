@@ -576,6 +576,11 @@ tr:hover { background: #f8f7ff; }
     border-radius: 12px;
     background: #f8fbff;
 }
+/* Form-only bar (MO applicant cards): was squeezed into the 240px column, leaving empty space */
+.decision-bar > .decision-form:only-child {
+    grid-column: 1 / -1;
+    width: 100%;
+}
 .decision-bar-copy p {
     margin: 6px 0 0;
     color: #587291;
@@ -587,10 +592,21 @@ tr:hover { background: #f8f7ff; }
 }
 .decision-form { width: 100%; }
 .decision-form-inline {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 12px;
+    display: flex;
+    flex-wrap: wrap;
     align-items: center;
+    gap: 12px;
+    width: 100%;
+}
+.decision-form-inline .note-input {
+    flex: 1 1 240px;
+    min-width: 160px;
+    max-width: 100%;
+    width: auto;
+    padding: 10px 12px;
+    border: 1px solid #cfdeed;
+    border-radius: 8px;
+    background: #ffffff;
 }
 .note-input {
     width: 100%;
@@ -605,14 +621,20 @@ tr:hover { background: #f8f7ff; }
 }
 .decision-buttons-inline {
     display: flex;
-    flex-wrap: wrap;
+    flex-direction: row;
+    flex-wrap: nowrap;
     align-items: center;
     justify-content: flex-end;
-    gap: 8px;
+    gap: 10px;
+    margin-left: auto;
+}
+.decision-form-inline .decision-buttons-inline {
+    flex: 0 0 auto;
 }
 .decision-btn {
-    min-width: 108px;
+    min-width: 132px;
     margin: 0;
+    white-space: nowrap;
 }
 .decision-summary p {
     margin: 0;
@@ -670,11 +692,19 @@ tr:hover { background: #f8f7ff; }
 @media (max-width: 1200px) {
     .applicant-score-area { align-items: flex-start; }
     .decision-bar,
-    .decision-bar-recorded,
-    .decision-form-inline {
+    .decision-bar-recorded {
         grid-template-columns: 1fr;
     }
-    .decision-buttons-inline { justify-content: flex-start; }
+    .decision-form-inline .decision-buttons-inline {
+        margin-left: 0;
+        width: 100%;
+        justify-content: stretch;
+        flex-wrap: wrap;
+    }
+    .decision-form-inline .decision-btn {
+        flex: 1 1 calc(50% - 6px);
+        min-width: 140px;
+    }
 }
 
 @media (max-width: 980px) {
@@ -757,3 +787,108 @@ tr:hover { background: #f8f7ff; }
     margin: 0;
     text-decoration: none;
 }
+
+/* TA Home only: styled jump links (Browse positions, View all, Quick links row) */
+.ta-dash-stats { margin-top: 8px; }
+.ta-home-dashboard .ta-dash-stat-link,
+.ta-home-dashboard a.ta-dash-stat-link {
+    display: inline-flex !important;
+    align-items: center;
+    margin-top: 6px;
+    padding: 8px 18px;
+    border-radius: 999px;
+    background: linear-gradient(180deg, #ffffff 0%, #e8f1fb 100%);
+    border: 1px solid #9eb9d9;
+    color: #0a2f5e !important;
+    font-size: 0.88em;
+    font-weight: 700;
+    text-decoration: none !important;
+    text-decoration-line: none !important;
+    letter-spacing: 0.02em;
+    box-shadow: 0 2px 6px rgba(20, 60, 120, 0.08);
+    transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, color 0.15s ease;
+}
+.ta-home-dashboard .ta-dash-stat-link:hover,
+.ta-home-dashboard a.ta-dash-stat-link:hover {
+    background: #dce9f8;
+    border-color: #1452a3;
+    box-shadow: 0 5px 16px rgba(20, 82, 163, 0.18);
+    color: #06254a !important;
+    text-decoration: none !important;
+}
+
+.ta-dash-quick-card strong { display: block; margin-bottom: 12px; }
+.ta-dash-quick-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin: 0;
+}
+.ta-home-dashboard .ta-dash-quick-btn,
+.ta-home-dashboard a.ta-dash-quick-btn {
+    display: inline-flex !important;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 18px;
+    border-radius: 12px;
+    background: #ffffff;
+    border: 1px solid #b8cce5;
+    color: #123b7a !important;
+    font-size: 0.95em;
+    font-weight: 700;
+    text-decoration: none !important;
+    text-decoration-line: none !important;
+    box-shadow: 0 2px 10px rgba(25, 56, 102, 0.08);
+    transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, transform 0.12s ease, color 0.15s ease;
+}
+.ta-home-dashboard .ta-dash-quick-btn:hover,
+.ta-home-dashboard a.ta-dash-quick-btn:hover {
+    background: #f2f8ff;
+    border-color: #1452a3;
+    box-shadow: 0 8px 22px rgba(20, 82, 163, 0.14);
+    transform: translateY(-2px);
+    color: #0c2d5c !important;
+    text-decoration: none !important;
+}
+.ta-home-dashboard .ta-dash-quick-ico {
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(145deg, #1452a3, #2064c2);
+    color: #fff;
+    font-size: 0.82em;
+    font-weight: 800;
+    flex-shrink: 0;
+}
+.dash-checklist {
+    list-style: none;
+    padding-left: 0;
+    margin: 12px 0;
+}
+.dash-checklist li { margin: 8px 0; padding-left: 22px; position: relative; }
+.dash-checklist li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0.35em;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
+.dash-checklist li.dash-ok::before { background: #1d9a70; }
+.dash-checklist li.dash-miss::before { background: #c9a227; }
+
+.apply-confirm-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 14px;
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid #e0e8f2;
+}
+.apply-confirm-submit-form { margin: 0; display: inline-block; }
+.apply-confirm-submit-form .btn { margin: 0; }

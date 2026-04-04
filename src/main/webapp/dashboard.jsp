@@ -16,7 +16,7 @@
     String ctx = request.getContextPath();
 
     if ("TA".equals(role)) {
-        response.sendRedirect(ctx + "/ta/jobs");
+        response.sendRedirect(ctx + "/ta/dashboard");
     } else if ("MO".equals(role)) {
         response.sendRedirect(ctx + "/mo/jobs");
     } else if ("ADMIN".equals(role)) {

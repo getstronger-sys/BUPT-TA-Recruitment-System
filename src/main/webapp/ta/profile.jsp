@@ -2,7 +2,9 @@
 <%@ include file="/WEB-INF/jspf/html-esc.jspf" %>
 <%@ page import="bupt.ta.model.TAProfile" %>
 <%@ page import="java.util.List" %>
-<% TAProfile profile = (TAProfile) request.getAttribute("profile"); if (profile == null) profile = new TAProfile(); %>
+<% TAProfile profile = (TAProfile) request.getAttribute("profile"); if (profile == null) profile = new TAProfile();
+   String returnUrlAttr = (String) request.getAttribute("returnUrl");
+%>
 <!DOCTYPE html>
 <html>
 <head>
@@ -24,6 +26,7 @@
                 <div class="icon-dot active">P</div>
             </div>
             <aside class="side-nav">
+                <a href="${pageContext.request.contextPath}/ta/dashboard">Home</a>
                 <a href="${pageContext.request.contextPath}/ta/jobs">Find Jobs</a>
                 <a href="${pageContext.request.contextPath}/ta/applications">My Applications</a>
                 <a class="active" href="${pageContext.request.contextPath}/ta/profile">My Profile</a>
@@ -41,6 +44,9 @@
             <% if ("invalid_type".equals(request.getParameter("error"))) { %><p class="error">Invalid file type. Use PDF, DOC, DOCX or TXT.</p><% } %>
 
             <form action="${pageContext.request.contextPath}/ta/profile" method="post" class="form">
+                <% if (returnUrlAttr != null && !returnUrlAttr.isEmpty()) { %>
+                <input type="hidden" name="returnUrl" value="<%= escHtml(returnUrlAttr) %>">
+                <% } %>
                 <label>Student ID</label>
                 <input type="text" name="studentId" value="<%= escHtml(profile.getStudentId() != null ? profile.getStudentId() : "") %>">
                 <label>Phone</label>

@@ -24,6 +24,7 @@
                 <div class="icon-dot">P</div>
             </div>
             <aside class="side-nav">
+                <a href="${pageContext.request.contextPath}/ta/dashboard">Home</a>
                 <a class="active" href="${pageContext.request.contextPath}/ta/jobs">Find Jobs</a>
                 <a href="${pageContext.request.contextPath}/ta/applications">My Applications</a>
                 <a href="${pageContext.request.contextPath}/ta/profile">My Profile</a>
@@ -33,7 +34,7 @@
             <h1>Find Available Jobs</h1>
             <div class="context-card">
                 <strong>Quick Tip</strong>
-                <p>Open <strong>View details</strong> for full module info, hours, payment, workload, deadline, and responsibilities—then apply from that page.</p>
+                <p>Open <strong>View details</strong> for full module info, hours, payment, workload, deadline, and responsibilities—then use <strong>Review and apply</strong> to confirm your profile before submitting.</p>
             </div>
             <p class="ai-hint"><strong>AI Skill Matching</strong>: Jobs are ordered by your match score. Complete your <a href="${pageContext.request.contextPath}/ta/profile">profile skills</a> for better matching.</p>
 
