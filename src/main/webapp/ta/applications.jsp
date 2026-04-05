@@ -31,6 +31,14 @@
         }
         return datePart + " " + timePart;
     }
+
+    /** TA-facing note for rejected applications. */
+    static String rejectionNote(String raw) {
+        if (raw == null || raw.trim().isEmpty()) {
+            return "Thank you for your application. This application was not selected.";
+        }
+        return raw.trim();
+    }
 %>
 <% 
     List<Object[]> applications = (List<Object[]>) request.getAttribute("applications");
@@ -154,6 +162,8 @@
                         <div><%= a.getStatus() %></div>
                         <% if ("AUTO_CLOSED".equals(a.getStatus()) && a.getNotes() != null && !a.getNotes().isEmpty()) { %>
                         <div class="status-subtext"><%= escHtml(a.getNotes()) %></div>
+                        <% } else if ("REJECTED".equals(a.getStatus())) { %>
+                        <div class="status-subtext"><%= escHtml(rejectionNote(a.getNotes())) %></div>
                         <% } %>
                     </td>
                     <td class="col-notice interview-notice-cell">
