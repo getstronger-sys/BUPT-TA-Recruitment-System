@@ -42,6 +42,9 @@
         if (StudentNotificationService.KIND_INTERVIEW_DETAILS.equals(kind) || StudentNotificationService.KIND_STATUS_INTERVIEW.equals(kind)) {
             return "ta-msg-kind--info";
         }
+        if (StudentNotificationService.KIND_STATUS_WAITLIST.equals(kind)) {
+            return "ta-msg-kind--waitlist";
+        }
         return "ta-msg-kind--default";
     }
 

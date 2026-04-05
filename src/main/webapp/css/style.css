@@ -1843,6 +1843,8 @@ tr:hover { background: #f8f7ff; }
     border-radius: 999px;
 }
 .ta-msg-kind--default { background: #e8ecf4; color: #3d4f6a; }
+/* Matches .status-pill-pending / My Applications waitlist & pending tone */
+.ta-msg-kind--waitlist { background: #fff0d9; color: #9d6400; }
 .ta-msg-kind--info { background: #dbeafe; color: #1d4ed8; }
 .ta-msg-kind--success { background: #d1fae5; color: #047857; }
 .ta-msg-kind--muted { background: #f1f5f9; color: #64748b; }

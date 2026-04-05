@@ -59,7 +59,7 @@
                if (err != null) {
                    String errMsg = err;
                    if ("not_pending".equals(err)) errMsg = "Only pending applications can be moved to interview.";
-                   else if ("not_interview".equals(err)) errMsg = "Only interview-stage applications can be selected.";
+                   else if ("not_interview".equals(err)) errMsg = "Only interview or waitlist applications can be selected.";
                    else if ("not_applicant".equals(err)) errMsg = "This action is not allowed for the current status.";
                    else if ("batch_empty".equals(err)) errMsg = "Select at least one row.";
                    else if ("invalid_action".equals(err)) errMsg = "Invalid action.";

@@ -74,13 +74,14 @@ public class SelectApplicantServlet extends HttpServlet {
             }
             target.setStatus("WAITLIST");
         } else if ("select".equalsIgnoreCase(action)) {
-            if (!"INTERVIEW".equals(target.getStatus())) {
+            if (!"INTERVIEW".equals(target.getStatus()) && !"WAITLIST".equals(target.getStatus())) {
                 redirectJobs(resp, req, listPath, "interview", jobId, "error=not_interview");
                 return;
             }
             target.setStatus("SELECTED");
         } else if ("reject".equalsIgnoreCase(action)) {
-            if (!"PENDING".equals(target.getStatus()) && !"INTERVIEW".equals(target.getStatus())) {
+            if (!"PENDING".equals(target.getStatus()) && !"INTERVIEW".equals(target.getStatus())
+                    && !"WAITLIST".equals(target.getStatus())) {
                 redirectJobs(resp, req, listPath, "pending", jobId, "error=not_applicant");
                 return;
             }
