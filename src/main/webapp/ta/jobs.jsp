@@ -21,12 +21,14 @@
         <div class="left-nav-wrap">
             <div class="icon-rail">
                 <div class="icon-dot active">F</div>
+                <div class="icon-dot">S</div>
                 <div class="icon-dot">A</div>
                 <div class="icon-dot">P</div>
             </div>
             <aside class="side-nav">
                 <a href="${pageContext.request.contextPath}/ta/dashboard">Home</a>
                 <a class="active" href="${pageContext.request.contextPath}/ta/jobs">Find Jobs</a>
+                <a href="${pageContext.request.contextPath}/ta/saved-jobs">Saved Jobs</a>
                 <a href="${pageContext.request.contextPath}/ta/applications">My Applications</a>
                 <a href="${pageContext.request.contextPath}/ta/profile">My Profile</a>
             </aside>
@@ -62,6 +64,7 @@
             <% for (Object[] row : jobsWithMatch) {
                 Job j = (Job) row[0];
                 AIMatchService.MatchResult match = (AIMatchService.MatchResult) row[1];
+                boolean saved = row.length > 2 && Boolean.TRUE.equals(row[2]);
             %>
             <div class="job-card ta-job-card">
                 <h3><%= j.getTitle() %> - <%= j.getModuleCode() %>
@@ -86,7 +89,15 @@
                 <p class="ai-missing">Missing skills for this job: <strong><%= String.join(", ", match.missing) %></strong>. Consider adding them to your profile.</p>
                 <% } %>
                 <p><em>Posted by <%= j.getPostedByName() != null ? j.getPostedByName() : "MO" %></em></p>
-                <a href="${pageContext.request.contextPath}/ta/job?jobId=<%= j.getId() %>" class="btn btn-primary">View details &amp; apply</a>
+                <div class="ta-job-actions">
+                    <a href="${pageContext.request.contextPath}/ta/job?jobId=<%= j.getId() %>" class="btn btn-primary">View details &amp; apply</a>
+                    <form action="${pageContext.request.contextPath}/ta/save-job" method="post" class="inline-form">
+                        <input type="hidden" name="jobId" value="<%= j.getId() %>">
+                        <input type="hidden" name="action" value="<%= saved ? "unsave" : "save" %>">
+                        <input type="hidden" name="returnTo" value="/ta/jobs">
+                        <button type="submit" class="btn <%= saved ? "btn-danger" : "btn-success" %>"><%= saved ? "Remove saved" : "Save job" %></button>
+                    </form>
+                </div>
             </div>
             <% }
                if (jobsWithMatch.isEmpty()) { %>

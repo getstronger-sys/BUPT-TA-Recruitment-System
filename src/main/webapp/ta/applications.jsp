@@ -66,12 +66,14 @@
         <div class="left-nav-wrap">
             <div class="icon-rail">
                 <div class="icon-dot">F</div>
+                <div class="icon-dot">S</div>
                 <div class="icon-dot active">A</div>
                 <div class="icon-dot">P</div>
             </div>
             <aside class="side-nav">
                 <a href="${pageContext.request.contextPath}/ta/dashboard">Home</a>
                 <a href="${pageContext.request.contextPath}/ta/jobs">Find Jobs</a>
+                <a href="${pageContext.request.contextPath}/ta/saved-jobs">Saved Jobs</a>
                 <a class="active" href="${pageContext.request.contextPath}/ta/applications">My Applications</a>
                 <a href="${pageContext.request.contextPath}/ta/profile">My Profile</a>
             </aside>

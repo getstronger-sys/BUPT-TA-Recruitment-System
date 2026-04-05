@@ -1148,6 +1148,24 @@ tr:hover { background: #f8f7ff; }
 .job-card.ta-job-card .match-badge {
     margin-left: 0;
 }
+.ta-job-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    margin-top: 10px;
+}
+.inline-form {
+    display: inline-flex;
+    margin: 0;
+}
+.inline-form .btn,
+.job-save-form .btn {
+    margin: 0;
+}
+.job-save-form {
+    margin: 12px 0 4px;
+}
 .ta-empty {
     margin-top: 8px;
 }

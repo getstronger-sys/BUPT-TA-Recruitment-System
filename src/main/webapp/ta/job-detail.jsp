@@ -5,6 +5,7 @@
 <%
     Job job = (Job) request.getAttribute("job");
     AIMatchService.MatchResult match = (AIMatchService.MatchResult) request.getAttribute("match");
+    boolean saved = Boolean.TRUE.equals(request.getAttribute("saved"));
     if (job == null) {
         response.sendRedirect(request.getContextPath() + "/ta/jobs?error=job_not_found");
         return;
@@ -37,18 +38,20 @@
         <div class="left-nav-wrap">
             <div class="icon-rail">
                 <div class="icon-dot active">F</div>
+                <div class="icon-dot">S</div>
                 <div class="icon-dot">A</div>
                 <div class="icon-dot">P</div>
             </div>
             <aside class="side-nav">
                 <a href="${pageContext.request.contextPath}/ta/dashboard">Home</a>
                 <a class="active" href="${pageContext.request.contextPath}/ta/jobs">Find Jobs</a>
+                <a href="${pageContext.request.contextPath}/ta/saved-jobs">Saved Jobs</a>
                 <a href="${pageContext.request.contextPath}/ta/applications">My Applications</a>
                 <a href="${pageContext.request.contextPath}/ta/profile">My Profile</a>
             </aside>
         </div>
         <main class="main-panel ta-main">
-            <p class="breadcrumb-line"><a href="${pageContext.request.contextPath}/ta/jobs">&larr; Back to job list</a></p>
+            <p class="breadcrumb-line"><a href="${pageContext.request.contextPath}/ta/jobs">&larr; Back to job list</a> | <a href="${pageContext.request.contextPath}/ta/saved-jobs">Saved jobs</a></p>
             <div class="ta-job-hero">
             <h1><%= safeTitle %></h1>
             <p class="job-detail-meta">
@@ -83,6 +86,12 @@
             </div>
 
             <p><em>Posted by <%= escHtml(job.getPostedByName() != null ? job.getPostedByName() : "MO") %></em></p>
+            <form action="${pageContext.request.contextPath}/ta/save-job" method="post" class="job-save-form">
+                <input type="hidden" name="jobId" value="<%= escHtml(job.getId()) %>">
+                <input type="hidden" name="action" value="<%= saved ? "unsave" : "save" %>">
+                <input type="hidden" name="returnTo" value="/ta/job?jobId=<%= escHtml(job.getId()) %>">
+                <button type="submit" class="btn <%= saved ? "btn-danger" : "btn-success" %> btn-lg"><%= saved ? "Remove from saved jobs" : "Save this job" %></button>
+            </form>
 
             <% if (isOpen) { %>
             <div class="job-detail-apply ta-apply-panel">

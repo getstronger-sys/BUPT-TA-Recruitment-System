@@ -99,6 +99,24 @@
     </servlet-mapping>
 
     <servlet>
+        <servlet-name>SavedJobsServlet</servlet-name>
+        <servlet-class>bupt.ta.servlet.SavedJobsServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>SavedJobsServlet</servlet-name>
+        <url-pattern>/ta/saved-jobs</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>SaveJobServlet</servlet-name>
+        <servlet-class>bupt.ta.servlet.SaveJobServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>SaveJobServlet</servlet-name>
+        <url-pattern>/ta/save-job</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
         <servlet-name>ApplyConfirmServlet</servlet-name>
         <servlet-class>bupt.ta.servlet.ApplyConfirmServlet</servlet-class>
     </servlet>

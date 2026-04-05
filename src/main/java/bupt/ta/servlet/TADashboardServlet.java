@@ -21,10 +21,7 @@ public class TADashboardServlet extends HttpServlet {
         String userId = (String) req.getSession().getAttribute("userId");
         DataStorage storage = new DataStorage(getServletContext());
 
-        TAProfile profile = storage.getProfileByUserId(userId);
-        if (profile == null) {
-            profile = new TAProfile(userId);
-        }
+        TAProfile profile = storage.getOrCreateProfile(userId);
 
         List<Application> apps = storage.getApplicationsByApplicantId(userId);
         int pending = 0;
@@ -52,6 +49,7 @@ public class TADashboardServlet extends HttpServlet {
         req.setAttribute("selectedCount", selected);
         req.setAttribute("otherApplicationsCount", other);
         req.setAttribute("openJobsCount", (int) openJobs);
+        req.setAttribute("savedJobsCount", profile.getSavedJobIds().size());
         req.setAttribute("hasCv", hasCv);
         req.setAttribute("hasSkills", hasSkills);
         req.setAttribute("hasStudentId", hasStudentId);
