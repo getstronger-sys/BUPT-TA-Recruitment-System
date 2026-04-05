@@ -1,0 +1,18 @@
+<%-- TA sidebar: set request attribute "taNavActive" to home | jobs | saved | applications | messages | profile before including. --%>
+<%
+    String taNavActive = (String) request.getAttribute("taNavActive");
+    if (taNavActive == null) {
+        taNavActive = "";
+    }
+    Integer taUnreadObj = (Integer) request.getAttribute("taUnreadNotificationCount");
+    int taUnreadCount = taUnreadObj != null ? taUnreadObj : 0;
+    String taCtx = request.getContextPath();
+%>
+<aside class="side-nav">
+    <a class="<%= "home".equals(taNavActive) ? "active" : "" %>" href="<%= taCtx %>/ta/dashboard">Home</a>
+    <a class="<%= "jobs".equals(taNavActive) ? "active" : "" %>" href="<%= taCtx %>/ta/jobs">Find Jobs</a>
+    <a class="<%= "saved".equals(taNavActive) ? "active" : "" %>" href="<%= taCtx %>/ta/saved-jobs">Saved Jobs</a>
+    <a class="<%= "applications".equals(taNavActive) ? "active" : "" %>" href="<%= taCtx %>/ta/applications">My Applications</a>
+    <a class="<%= "messages".equals(taNavActive) ? "active" : "" %> ta-nav-messages" href="<%= taCtx %>/ta/messages">Messages<% if (taUnreadCount > 0) { %><span class="nav-unread-badge" title="Unread notifications"><%= taUnreadCount > 99 ? "99+" : String.valueOf(taUnreadCount) %></span><% } %></a>
+    <a class="<%= "profile".equals(taNavActive) ? "active" : "" %>" href="<%= taCtx %>/ta/profile">My Profile</a>
+</aside>

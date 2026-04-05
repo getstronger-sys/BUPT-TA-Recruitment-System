@@ -2,6 +2,7 @@ package bupt.ta.servlet;
 
 import bupt.ta.model.Application;
 import bupt.ta.model.Job;
+import bupt.ta.service.StudentNotificationService;
 import bupt.ta.storage.DataStorage;
 import bupt.ta.util.JobActivity;
 
@@ -46,6 +47,7 @@ public class MOBatchApplicantServlet extends HttpServlet {
                 if (!"PENDING".equals(target.getStatus())) continue;
                 target.setStatus("INTERVIEW");
                 storage.saveApplication(target);
+                StudentNotificationService.notifyInterviewInvite(storage, target, job);
             }
             String jid = resolveReturnJobId(storage, idSet, returnJobId, moId);
             Job jref = jid.isEmpty() ? null : storage.getJobById(jid);
@@ -69,6 +71,7 @@ public class MOBatchApplicantServlet extends HttpServlet {
                 target.setInterviewLocation(location);
                 target.setInterviewAssessment(assessment);
                 storage.saveApplication(target);
+                StudentNotificationService.notifyInterviewDetails(storage, target, job);
             }
             String jid = resolveReturnJobId(storage, idSet, returnJobId, moId);
             Job jref = jid.isEmpty() ? null : storage.getJobById(jid);

@@ -4,6 +4,7 @@ import bupt.ta.ai.AIMatchService;
 import bupt.ta.model.Application;
 import bupt.ta.model.Job;
 import bupt.ta.model.TAProfile;
+import bupt.ta.service.StudentNotificationService;
 import bupt.ta.storage.DataStorage;
 
 import javax.servlet.ServletException;
@@ -50,6 +51,7 @@ public class WithdrawApplicationServlet extends HttpServlet {
         Job job = storage.getJobById(target.getJobId());
         target.setStatus("WITHDRAWN");
         storage.saveApplication(target);
+        StudentNotificationService.notifyWithdrawn(storage, target, job);
         if (wasSelected && job != null && job.isAutoFillFromWaitlist()) {
             autoPromoteFromWaitlist(storage, job);
         }
@@ -78,5 +80,6 @@ public class WithdrawApplicationServlet extends HttpServlet {
         String note = next.getNotes() != null && !next.getNotes().trim().isEmpty() ? next.getNotes().trim() + " " : "";
         next.setNotes((note + "Auto-promoted from waitlist after a selected TA withdrew.").trim());
         storage.saveApplication(next);
+        StudentNotificationService.notifyAutoPromotedFromWaitlist(storage, next, job);
     }
 }

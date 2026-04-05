@@ -11,6 +11,7 @@
         return;
     }
     if (profile == null) profile = new TAProfile();
+    request.setAttribute("taNavActive", "jobs");
     String uid = (String) session.getAttribute("userId");
     boolean hasCv = profile.getCvFilePath() != null && !profile.getCvFilePath().trim().isEmpty();
     if (profileEditUrl == null) profileEditUrl = request.getContextPath() + "/ta/profile";
@@ -36,13 +37,7 @@
                 <div class="icon-dot">S</div>
                 <div class="icon-dot">A</div>
             </div>
-            <aside class="side-nav">
-                <a href="${pageContext.request.contextPath}/ta/dashboard">Home</a>
-                <a class="active" href="${pageContext.request.contextPath}/ta/jobs">Find Jobs</a>
-                <a href="${pageContext.request.contextPath}/ta/saved-jobs">Saved Jobs</a>
-                <a href="${pageContext.request.contextPath}/ta/applications">My Applications</a>
-                <a href="${pageContext.request.contextPath}/ta/profile">My Profile</a>
-            </aside>
+            <%@ include file="/WEB-INF/jspf/ta-side-nav.jspf" %>
         </div>
         <main class="main-panel">
             <p class="breadcrumb-line"><a href="${pageContext.request.contextPath}/ta/job?jobId=<%= escHtml(job.getId()) %>">&larr; Back to job details</a></p>

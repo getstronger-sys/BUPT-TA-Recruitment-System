@@ -4,6 +4,7 @@ import bupt.ta.model.AdminSettings;
 import bupt.ta.model.Application;
 import bupt.ta.model.Job;
 import bupt.ta.service.AdminService;
+import bupt.ta.service.StudentNotificationService;
 import bupt.ta.storage.DataStorage;
 import bupt.ta.util.JobActivity;
 
@@ -90,6 +91,16 @@ public class SelectApplicantServlet extends HttpServlet {
         }
         target.setNotes(notes != null ? notes.trim() : "");
         storage.saveApplication(target);
+
+        if ("interview".equalsIgnoreCase(action)) {
+            StudentNotificationService.notifyInterviewInvite(storage, target, job);
+        } else if ("waitlist".equalsIgnoreCase(action)) {
+            StudentNotificationService.notifyWaitlist(storage, target, job);
+        } else if ("select".equalsIgnoreCase(action)) {
+            StudentNotificationService.notifySelected(storage, target, job);
+        } else if ("reject".equalsIgnoreCase(action)) {
+            StudentNotificationService.notifyRejected(storage, target, job, target.getNotes());
+        }
 
         String extraQuery = "updated=1";
         if ("select".equalsIgnoreCase(action)) {

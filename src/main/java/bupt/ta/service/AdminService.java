@@ -366,6 +366,8 @@ public class AdminService {
             app.setStatus(STATUS_AUTO_CLOSED);
             app.setNotes(appendAutoCloseNote(app.getNotes(), settings.getMaxSelectedJobsPerTa()));
             storage.saveApplication(app);
+            Job closedJob = storage.getJobById(app.getJobId());
+            StudentNotificationService.notifyAutoClosed(storage, app, closedJob, app.getNotes());
             closed++;
         }
         return closed;

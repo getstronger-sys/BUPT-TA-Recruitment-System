@@ -3,6 +3,7 @@ package bupt.ta.servlet;
 import bupt.ta.model.Application;
 import bupt.ta.model.Job;
 import bupt.ta.model.User;
+import bupt.ta.service.StudentNotificationService;
 import bupt.ta.storage.DataStorage;
 
 import javax.servlet.ServletException;
@@ -46,6 +47,7 @@ public class ApplyJobServlet extends HttpServlet {
         app.setApplicantId(applicantId);
         app.setApplicantName(applicantName);
         storage.addApplication(app);
+        StudentNotificationService.notifyApplicationSubmitted(storage, app, job);
 
         resp.sendRedirect(req.getContextPath() + "/ta/applications?success=1");
     }

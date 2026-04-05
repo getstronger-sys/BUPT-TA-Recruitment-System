@@ -2,7 +2,8 @@
 <%@ page import="java.util.List" %>
 <%@ page import="bupt.ta.model.Job" %>
 <%@ page import="bupt.ta.ai.AIMatchService" %>
-<% List<Object[]> jobsWithMatch = (List<Object[]>) request.getAttribute("jobsWithMatch"); if (jobsWithMatch == null) jobsWithMatch = java.util.Collections.emptyList(); %>
+<% List<Object[]> jobsWithMatch = (List<Object[]>) request.getAttribute("jobsWithMatch"); if (jobsWithMatch == null) jobsWithMatch = java.util.Collections.emptyList();
+   request.setAttribute("taNavActive", "jobs"); %>
 <!DOCTYPE html>
 <html>
 <head>
@@ -25,13 +26,7 @@
                 <div class="icon-dot">A</div>
                 <div class="icon-dot">P</div>
             </div>
-            <aside class="side-nav">
-                <a href="${pageContext.request.contextPath}/ta/dashboard">Home</a>
-                <a class="active" href="${pageContext.request.contextPath}/ta/jobs">Find Jobs</a>
-                <a href="${pageContext.request.contextPath}/ta/saved-jobs">Saved Jobs</a>
-                <a href="${pageContext.request.contextPath}/ta/applications">My Applications</a>
-                <a href="${pageContext.request.contextPath}/ta/profile">My Profile</a>
-            </aside>
+            <%@ include file="/WEB-INF/jspf/ta-side-nav.jspf" %>
         </div>
         <main class="main-panel ta-main">
             <h1>Find Available Jobs</h1>

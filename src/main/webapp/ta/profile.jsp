@@ -4,6 +4,7 @@
 <%@ page import="java.util.List" %>
 <% TAProfile profile = (TAProfile) request.getAttribute("profile"); if (profile == null) profile = new TAProfile();
    String returnUrlAttr = (String) request.getAttribute("returnUrl");
+   request.setAttribute("taNavActive", "profile");
 %>
 <!DOCTYPE html>
 <html>
@@ -27,13 +28,7 @@
                 <div class="icon-dot">A</div>
                 <div class="icon-dot active">P</div>
             </div>
-            <aside class="side-nav">
-                <a href="${pageContext.request.contextPath}/ta/dashboard">Home</a>
-                <a href="${pageContext.request.contextPath}/ta/jobs">Find Jobs</a>
-                <a href="${pageContext.request.contextPath}/ta/saved-jobs">Saved Jobs</a>
-                <a href="${pageContext.request.contextPath}/ta/applications">My Applications</a>
-                <a class="active" href="${pageContext.request.contextPath}/ta/profile">My Profile</a>
-            </aside>
+            <%@ include file="/WEB-INF/jspf/ta-side-nav.jspf" %>
         </div>
         <main class="main-panel ta-main">
             <h1>My Profile</h1>

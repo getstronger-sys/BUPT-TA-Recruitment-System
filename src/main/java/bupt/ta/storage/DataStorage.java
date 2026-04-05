@@ -25,6 +25,7 @@ public class DataStorage {
     private static final String APPLICATIONS_FILE = "applications.json";
     private static final String JOB_TEMPLATES_FILE = "job-templates.json";
     private static final String SETTINGS_FILE = "settings.json";
+    private static final String SITE_NOTIFICATIONS_FILE = "notifications.json";
 
     private final Path basePath;
     private final Gson gson;
@@ -374,6 +375,234 @@ public class DataStorage {
 
     public void saveAdminSettings(AdminSettings settings) throws IOException {
         save(SETTINGS_FILE, settings != null ? settings : new AdminSettings());
+    }
+
+    // ---- In-app notifications (site messages, JSON file) ----
+    private List<SiteNotification> readSiteNotificationsFileUnsynchronized() throws IOException {
+        Path file = basePath.resolve(SITE_NOTIFICATIONS_FILE);
+        if (!Files.exists(file) || Files.size(file) == 0) {
+            return new ArrayList<>();
+        }
+        String json = new String(Files.readAllBytes(file), StandardCharsets.UTF_8);
+        List<SiteNotification> list = gson.fromJson(json, new TypeToken<ArrayList<SiteNotification>>(){}.getType());
+        return list != null ? list : new ArrayList<>();
+    }
+
+    private void writeSiteNotificationsFileUnsynchronized(List<SiteNotification> list) throws IOException {
+        Path file = basePath.resolve(SITE_NOTIFICATIONS_FILE);
+        String json = gson.toJson(list);
+        Files.write(file, json.getBytes(StandardCharsets.UTF_8), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+    }
+
+    public List<SiteNotification> loadSiteNotifications() throws IOException {
+        lock.readLock().lock();
+        try {
+            return readSiteNotificationsFileUnsynchronized();
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    /**
+     * Append a notification; assigns id and createdAt if missing.
+     */
+    public SiteNotification addSiteNotification(SiteNotification n) throws IOException {
+        lock.writeLock().lock();
+        try {
+            List<SiteNotification> list = readSiteNotificationsFileUnsynchronized();
+            if (n.getId() == null || n.getId().trim().isEmpty()) {
+                String newId = "N" + String.format("%05d", list.size() + 1);
+                n.setId(newId);
+            }
+            if (n.getCreatedAt() == null || n.getCreatedAt().trim().isEmpty()) {
+                n.setCreatedAt(java.time.LocalDateTime.now().toString());
+            }
+            list.add(n);
+            writeSiteNotificationsFileUnsynchronized(list);
+            return n;
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    public List<SiteNotification> getSiteNotificationsForUser(String userId) throws IOException {
+        if (userId == null || userId.trim().isEmpty()) {
+            return Collections.emptyList();
+        }
+        return loadSiteNotifications().stream()
+                .filter(x -> userId.equals(x.getRecipientUserId()))
+                .sorted(Comparator.comparing(SiteNotification::getCreatedAt,
+                        Comparator.nullsLast(Comparator.reverseOrder())))
+                .collect(Collectors.toList());
+    }
+
+    public int countUnreadSiteNotificationsForUser(String userId) throws IOException {
+        if (userId == null || userId.trim().isEmpty()) {
+            return 0;
+        }
+        return (int) loadSiteNotifications().stream()
+                .filter(x -> userId.equals(x.getRecipientUserId()))
+                .filter(x -> !x.isRead())
+                .count();
+    }
+
+    public boolean markSiteNotificationRead(String notificationId, String recipientUserId) throws IOException {
+        if (notificationId == null || recipientUserId == null) {
+            return false;
+        }
+        lock.writeLock().lock();
+        try {
+            List<SiteNotification> list = readSiteNotificationsFileUnsynchronized();
+            boolean changed = false;
+            for (SiteNotification n : list) {
+                if (notificationId.equals(n.getId()) && recipientUserId.equals(n.getRecipientUserId())) {
+                    if (!n.isRead()) {
+                        n.setRead(true);
+                        changed = true;
+                    }
+                    break;
+                }
+            }
+            if (changed) {
+                writeSiteNotificationsFileUnsynchronized(list);
+            }
+            return changed;
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    public boolean markSiteNotificationUnread(String notificationId, String recipientUserId) throws IOException {
+        if (notificationId == null || recipientUserId == null) {
+            return false;
+        }
+        lock.writeLock().lock();
+        try {
+            List<SiteNotification> list = readSiteNotificationsFileUnsynchronized();
+            boolean changed = false;
+            for (SiteNotification n : list) {
+                if (notificationId.equals(n.getId()) && recipientUserId.equals(n.getRecipientUserId())) {
+                    if (n.isRead()) {
+                        n.setRead(false);
+                        changed = true;
+                    }
+                    break;
+                }
+            }
+            if (changed) {
+                writeSiteNotificationsFileUnsynchronized(list);
+            }
+            return changed;
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    public int markAllSiteNotificationsReadForUser(String recipientUserId) throws IOException {
+        if (recipientUserId == null || recipientUserId.trim().isEmpty()) {
+            return 0;
+        }
+        lock.writeLock().lock();
+        try {
+            List<SiteNotification> list = readSiteNotificationsFileUnsynchronized();
+            int n = 0;
+            for (SiteNotification x : list) {
+                if (recipientUserId.equals(x.getRecipientUserId()) && !x.isRead()) {
+                    x.setRead(true);
+                    n++;
+                }
+            }
+            if (n > 0) {
+                writeSiteNotificationsFileUnsynchronized(list);
+            }
+            return n;
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    /**
+     * Returns a notification only if it belongs to the given user (for TA detail view).
+     */
+    public SiteNotification getSiteNotificationByIdForUser(String notificationId, String recipientUserId) throws IOException {
+        if (notificationId == null || notificationId.trim().isEmpty() || recipientUserId == null) {
+            return null;
+        }
+        String nid = notificationId.trim();
+        return loadSiteNotifications().stream()
+                .filter(x -> nid.equals(x.getId()) && recipientUserId.equals(x.getRecipientUserId()))
+                .findFirst()
+                .orElse(null);
+    }
+
+    /**
+     * Marks multiple notifications read in one write; ignores ids that do not belong to the user.
+     */
+    public int markSiteNotificationsReadForUser(String recipientUserId, Collection<String> notificationIds) throws IOException {
+        if (recipientUserId == null || recipientUserId.trim().isEmpty() || notificationIds == null || notificationIds.isEmpty()) {
+            return 0;
+        }
+        Set<String> idSet = new HashSet<>();
+        for (String id : notificationIds) {
+            if (id != null && !id.trim().isEmpty()) {
+                idSet.add(id.trim());
+            }
+        }
+        if (idSet.isEmpty()) {
+            return 0;
+        }
+        lock.writeLock().lock();
+        try {
+            List<SiteNotification> list = readSiteNotificationsFileUnsynchronized();
+            int n = 0;
+            for (SiteNotification x : list) {
+                if (recipientUserId.equals(x.getRecipientUserId()) && idSet.contains(x.getId()) && !x.isRead()) {
+                    x.setRead(true);
+                    n++;
+                }
+            }
+            if (n > 0) {
+                writeSiteNotificationsFileUnsynchronized(list);
+            }
+            return n;
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    /**
+     * Marks multiple notifications unread in one write; ignores ids that do not belong to the user.
+     */
+    public int markSiteNotificationsUnreadForUser(String recipientUserId, Collection<String> notificationIds) throws IOException {
+        if (recipientUserId == null || recipientUserId.trim().isEmpty() || notificationIds == null || notificationIds.isEmpty()) {
+            return 0;
+        }
+        Set<String> idSet = new HashSet<>();
+        for (String id : notificationIds) {
+            if (id != null && !id.trim().isEmpty()) {
+                idSet.add(id.trim());
+            }
+        }
+        if (idSet.isEmpty()) {
+            return 0;
+        }
+        lock.writeLock().lock();
+        try {
+            List<SiteNotification> list = readSiteNotificationsFileUnsynchronized();
+            int n = 0;
+            for (SiteNotification x : list) {
+                if (recipientUserId.equals(x.getRecipientUserId()) && idSet.contains(x.getId()) && x.isRead()) {
+                    x.setRead(false);
+                    n++;
+                }
+            }
+            if (n > 0) {
+                writeSiteNotificationsFileUnsynchronized(list);
+            }
+            return n;
+        } finally {
+            lock.writeLock().unlock();
+        }
     }
 
     private boolean equalsIgnoreCaseTrimmed(String left, String right) {

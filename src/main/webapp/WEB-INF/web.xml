@@ -152,6 +152,15 @@
         <url-pattern>/ta/withdraw</url-pattern>
     </servlet-mapping>
 
+    <servlet>
+        <servlet-name>TAMessagesServlet</servlet-name>
+        <servlet-class>bupt.ta.servlet.TAMessagesServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>TAMessagesServlet</servlet-name>
+        <url-pattern>/ta/messages</url-pattern>
+    </servlet-mapping>
+
     <!-- MO Servlets -->
     <servlet>
         <servlet-name>PostJobServlet</servlet-name>

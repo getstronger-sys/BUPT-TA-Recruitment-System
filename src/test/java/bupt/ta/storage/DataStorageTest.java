@@ -6,6 +6,7 @@ import org.junit.Test;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 
 import static org.junit.Assert.*;
 
@@ -108,6 +109,70 @@ public class DataStorageTest {
             storage.saveApplication(a);
 
             assertFalse(storage.hasApplied("J0001", "U001"));
+        } finally {
+            deleteRecursive(tmp);
+        }
+    }
+
+    @Test
+    public void testSiteNotifications() throws Exception {
+        Path tmp = Files.createTempDirectory("ta-test");
+        try {
+            DataStorage storage = new DataStorage(tmp.toString());
+            SiteNotification n = new SiteNotification();
+            n.setRecipientUserId("U001");
+            n.setKind("TEST");
+            n.setTitle("Hello");
+            n.setBody("Body text");
+            n.setRead(false);
+            storage.addSiteNotification(n);
+            assertNotNull(n.getId());
+            assertEquals(1, storage.countUnreadSiteNotificationsForUser("U001"));
+            assertTrue(storage.markSiteNotificationRead(n.getId(), "U001"));
+            assertEquals(0, storage.countUnreadSiteNotificationsForUser("U001"));
+
+            SiteNotification n2 = new SiteNotification();
+            n2.setRecipientUserId("U001");
+            n2.setKind("TEST");
+            n2.setTitle("Second");
+            n2.setBody("More");
+            n2.setRead(false);
+            storage.addSiteNotification(n2);
+            assertEquals(1, storage.countUnreadSiteNotificationsForUser("U001"));
+            assertEquals(1, storage.markAllSiteNotificationsReadForUser("U001"));
+            assertEquals(0, storage.countUnreadSiteNotificationsForUser("U001"));
+            assertEquals(0, storage.getSiteNotificationsForUser("U999").size());
+
+            assertNotNull(storage.getSiteNotificationByIdForUser(n2.getId(), "U001"));
+            assertNull(storage.getSiteNotificationByIdForUser(n2.getId(), "U999"));
+            assertNull(storage.getSiteNotificationByIdForUser("N99999", "U001"));
+
+            SiteNotification u2 = new SiteNotification();
+            u2.setRecipientUserId("U002");
+            u2.setKind("T");
+            u2.setTitle("Other user");
+            u2.setBody("x");
+            storage.addSiteNotification(u2);
+
+            SiteNotification n3 = new SiteNotification();
+            n3.setRecipientUserId("U001");
+            n3.setKind("T");
+            n3.setTitle("Batch target");
+            n3.setBody("z");
+            storage.addSiteNotification(n3);
+            assertEquals(1, storage.countUnreadSiteNotificationsForUser("U001"));
+            assertEquals(1, storage.markSiteNotificationsReadForUser("U001", Arrays.asList(n3.getId())));
+            assertEquals(0, storage.countUnreadSiteNotificationsForUser("U001"));
+            assertEquals(1, storage.countUnreadSiteNotificationsForUser("U002"));
+
+            assertTrue(storage.markSiteNotificationUnread(n3.getId(), "U001"));
+            assertEquals(1, storage.countUnreadSiteNotificationsForUser("U001"));
+            assertFalse(storage.markSiteNotificationUnread("N99999", "U001"));
+
+            storage.markSiteNotificationRead(n.getId(), "U001");
+            storage.markSiteNotificationRead(n2.getId(), "U001");
+            assertEquals(2, storage.markSiteNotificationsUnreadForUser("U001", Arrays.asList(n.getId(), n2.getId())));
+            assertEquals(3, storage.countUnreadSiteNotificationsForUser("U001"));
         } finally {
             deleteRecursive(tmp);
         }
