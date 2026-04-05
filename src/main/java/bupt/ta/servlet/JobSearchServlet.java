@@ -54,11 +54,12 @@ public class JobSearchServlet extends HttpServlet {
             jobs = jobs.stream().filter(j -> jt.equals(j.getJobType())).collect(Collectors.toList());
         }
 
-        TAProfile profile = applicantId != null ? storage.getProfileByUserId(applicantId) : null;
+        TAProfile profile = applicantId != null ? storage.getOrCreateProfile(applicantId) : null;
         List<Object[]> jobsWithMatch = new ArrayList<>();
+        List<String> savedJobIds = profile != null ? profile.getSavedJobIds() : java.util.Collections.emptyList();
         for (Job j : jobs) {
             AIMatchService.MatchResult match = aiService.matchSkills(profile, j);
-            jobsWithMatch.add(new Object[]{j, match});
+            jobsWithMatch.add(new Object[]{j, match, savedJobIds.contains(j.getId())});
         }
         jobsWithMatch.sort((a, b) -> Double.compare(((AIMatchService.MatchResult) b[1]).score, ((AIMatchService.MatchResult) a[1]).score));
 

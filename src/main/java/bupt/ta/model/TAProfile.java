@@ -14,6 +14,8 @@ public class TAProfile {
     private List<String> skills;  // e.g. Java, Python, Teaching
     private String availability;  // e.g. "Mon/Wed/Fri 9-12"
     private String introduction;
+    /** Job ids saved by the TA for later review. */
+    private List<String> savedJobIds;
     /** e.g. BSc, MSc, PhD */
     private String degree;
     /** Degree programme / major, e.g. Computer Science */
@@ -23,11 +25,13 @@ public class TAProfile {
 
     public TAProfile() {
         this.skills = new ArrayList<>();
+        this.savedJobIds = new ArrayList<>();
     }
 
     public TAProfile(String userId) {
         this.userId = userId;
         this.skills = new ArrayList<>();
+        this.savedJobIds = new ArrayList<>();
     }
 
     public String getUserId() { return userId; }
@@ -44,6 +48,13 @@ public class TAProfile {
     public void setAvailability(String availability) { this.availability = availability; }
     public String getIntroduction() { return introduction; }
     public void setIntroduction(String introduction) { this.introduction = introduction; }
+    public List<String> getSavedJobIds() {
+        if (savedJobIds == null) {
+            savedJobIds = new ArrayList<>();
+        }
+        return savedJobIds;
+    }
+    public void setSavedJobIds(List<String> savedJobIds) { this.savedJobIds = savedJobIds != null ? savedJobIds : new ArrayList<>(); }
     public String getDegree() { return degree; }
     public void setDegree(String degree) { this.degree = degree; }
     public String getProgramme() { return programme; }

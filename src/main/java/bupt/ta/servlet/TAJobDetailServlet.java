@@ -34,11 +34,13 @@ public class TAJobDetailServlet extends HttpServlet {
         }
 
         String applicantId = (String) req.getSession().getAttribute("userId");
-        TAProfile profile = applicantId != null ? storage.getProfileByUserId(applicantId) : null;
+        TAProfile profile = applicantId != null ? storage.getOrCreateProfile(applicantId) : null;
         AIMatchService.MatchResult match = aiService.matchSkills(profile, job);
+        boolean saved = profile != null && profile.getSavedJobIds().contains(job.getId());
 
         req.setAttribute("job", job);
         req.setAttribute("match", match);
+        req.setAttribute("saved", saved);
         req.getRequestDispatcher("/ta/job-detail.jsp").forward(req, resp);
     }
 }

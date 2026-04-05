@@ -215,10 +215,47 @@ public class DataStorage {
     }
 
     public void saveProfile(TAProfile profile) throws IOException {
+        if (profile.getSavedJobIds() == null) {
+            profile.setSavedJobIds(new ArrayList<>());
+        }
         List<TAProfile> profiles = loadProfiles();
         profiles.removeIf(p -> p.getUserId().equals(profile.getUserId()));
         profiles.add(profile);
         save(PROFILES_FILE, profiles);
+    }
+
+    public TAProfile getOrCreateProfile(String userId) throws IOException {
+        TAProfile profile = getProfileByUserId(userId);
+        if (profile == null) {
+            profile = new TAProfile(userId);
+        } else if (profile.getSavedJobIds() == null) {
+            profile.setSavedJobIds(new ArrayList<>());
+        }
+        return profile;
+    }
+
+    public boolean isJobSaved(String userId, String jobId) throws IOException {
+        TAProfile profile = getOrCreateProfile(userId);
+        return profile.getSavedJobIds().contains(jobId);
+    }
+
+    public boolean setJobSaved(String userId, String jobId, boolean saved) throws IOException {
+        TAProfile profile = getOrCreateProfile(userId);
+        List<String> savedJobIds = new ArrayList<>(profile.getSavedJobIds());
+        boolean changed;
+        if (saved) {
+            changed = !savedJobIds.contains(jobId);
+            if (changed) {
+                savedJobIds.add(jobId);
+            }
+        } else {
+            changed = savedJobIds.removeIf(jobId::equals);
+        }
+        if (changed) {
+            profile.setSavedJobIds(savedJobIds);
+            saveProfile(profile);
+        }
+        return changed;
     }
 
     // ---- Jobs ----

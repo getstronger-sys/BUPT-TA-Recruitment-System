@@ -9,6 +9,7 @@
     int selected = request.getAttribute("selectedCount") != null ? (Integer) request.getAttribute("selectedCount") : 0;
     int other = request.getAttribute("otherApplicationsCount") != null ? (Integer) request.getAttribute("otherApplicationsCount") : 0;
     int openJobs = request.getAttribute("openJobsCount") != null ? (Integer) request.getAttribute("openJobsCount") : 0;
+    int savedJobs = request.getAttribute("savedJobsCount") != null ? (Integer) request.getAttribute("savedJobsCount") : 0;
     boolean hasCv = Boolean.TRUE.equals(request.getAttribute("hasCv"));
     boolean hasSkills = Boolean.TRUE.equals(request.getAttribute("hasSkills"));
     boolean hasStudentId = Boolean.TRUE.equals(request.getAttribute("hasStudentId"));
@@ -31,11 +32,13 @@
             <div class="icon-rail">
                 <div class="icon-dot active">H</div>
                 <div class="icon-dot">F</div>
+                <div class="icon-dot">S</div>
                 <div class="icon-dot">A</div>
             </div>
             <aside class="side-nav">
                 <a class="active" href="${pageContext.request.contextPath}/ta/dashboard">Home</a>
                 <a href="${pageContext.request.contextPath}/ta/jobs">Find Jobs</a>
+                <a href="${pageContext.request.contextPath}/ta/saved-jobs">Saved Jobs</a>
                 <a href="${pageContext.request.contextPath}/ta/applications">My Applications</a>
                 <a href="${pageContext.request.contextPath}/ta/profile">My Profile</a>
             </aside>
@@ -62,6 +65,14 @@
                         <div class="stat-meta"><a class="ta-dash-stat-link" href="${pageContext.request.contextPath}/ta/applications">View all</a></div>
                     </div>
                 </div>
+                <div class="stat-card">
+                    <div class="stat-icon">S</div>
+                    <div>
+                        <div class="stat-title">Saved jobs</div>
+                        <div class="stat-value"><%= savedJobs %></div>
+                        <div class="stat-meta"><a class="ta-dash-stat-link" href="${pageContext.request.contextPath}/ta/saved-jobs">Open saved list</a></div>
+                    </div>
+                </div>
             </div>
 
             <div class="detail-card ta-dash-checklist">
@@ -79,6 +90,7 @@
                 <strong>Quick links</strong>
                 <div class="ta-dash-quick-row">
                     <a class="ta-dash-quick-btn" href="${pageContext.request.contextPath}/ta/jobs"><span class="ta-dash-quick-ico">J</span>Find Jobs</a>
+                    <a class="ta-dash-quick-btn" href="${pageContext.request.contextPath}/ta/saved-jobs"><span class="ta-dash-quick-ico">S</span>Saved Jobs</a>
                     <a class="ta-dash-quick-btn" href="${pageContext.request.contextPath}/ta/applications"><span class="ta-dash-quick-ico">A</span>My Applications</a>
                     <a class="ta-dash-quick-btn" href="${pageContext.request.contextPath}/ta/profile"><span class="ta-dash-quick-ico">P</span>My Profile</a>
                 </div>
