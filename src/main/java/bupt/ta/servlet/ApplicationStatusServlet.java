@@ -28,6 +28,7 @@ public class ApplicationStatusServlet extends HttpServlet {
         int selectedCount = 0;
         int pendingCount = 0;
         int interviewCount = 0;
+        int waitlistCount = 0;
         int rejectedCount = 0;
         int autoClosedCount = 0;
         for (Application a : applications) {
@@ -36,15 +37,17 @@ public class ApplicationStatusServlet extends HttpServlet {
             if ("SELECTED".equals(a.getStatus())) selectedCount++;
             else if ("PENDING".equals(a.getStatus())) pendingCount++;
             else if ("INTERVIEW".equals(a.getStatus())) interviewCount++;
+            else if ("WAITLIST".equals(a.getStatus())) waitlistCount++;
             else if ("REJECTED".equals(a.getStatus()) || "WITHDRAWN".equals(a.getStatus())) rejectedCount++;
             else if (AdminService.STATUS_AUTO_CLOSED.equals(a.getStatus())) autoClosedCount++;
         }
 
-        int points = selectedCount * 100 + pendingCount * 20 + interviewCount * 40;
+        int points = selectedCount * 100 + pendingCount * 20 + interviewCount * 40 + waitlistCount * 30;
         req.setAttribute("applications", enriched);
         req.setAttribute("selectedCount", selectedCount);
         req.setAttribute("pendingCount", pendingCount);
         req.setAttribute("interviewCount", interviewCount);
+        req.setAttribute("waitlistCount", waitlistCount);
         req.setAttribute("rejectedCount", rejectedCount);
         req.setAttribute("autoClosedCount", autoClosedCount);
         req.setAttribute("points", points);

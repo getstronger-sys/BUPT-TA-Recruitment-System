@@ -34,7 +34,7 @@ public class SelectApplicantServlet extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         String appId = req.getParameter("applicationId");
-        String action = req.getParameter("action");  // select or reject
+        String action = req.getParameter("action");  // interview, waitlist, select or reject
         String notes = req.getParameter("notes");
         String moId = (String) req.getSession().getAttribute("userId");
 
@@ -66,6 +66,12 @@ public class SelectApplicantServlet extends HttpServlet {
                 return;
             }
             target.setStatus("INTERVIEW");
+        } else if ("waitlist".equalsIgnoreCase(action)) {
+            if (!"INTERVIEW".equals(target.getStatus())) {
+                redirectJobs(resp, req, listPath, "interview", jobId, "error=not_interview");
+                return;
+            }
+            target.setStatus("WAITLIST");
         } else if ("select".equalsIgnoreCase(action)) {
             if (!"INTERVIEW".equals(target.getStatus())) {
                 redirectJobs(resp, req, listPath, "interview", jobId, "error=not_interview");
@@ -97,6 +103,8 @@ public class SelectApplicantServlet extends HttpServlet {
         String view = "pending";
         if ("interview".equalsIgnoreCase(action)) {
             view = "interview";
+        } else if ("waitlist".equalsIgnoreCase(action)) {
+            view = "waitlist";
         } else if ("select".equalsIgnoreCase(action) || "reject".equalsIgnoreCase(action)) {
             view = "outcome";
         }

@@ -29,6 +29,8 @@ public class Job {
     private String payment;
     /** Application deadline, ISO date yyyy-MM-dd preferred. */
     private String deadline;
+    /** Whether selected TA withdrawals should auto-promote from waitlist. */
+    private boolean autoFillFromWaitlist;
 
     public Job() {
         this.requiredSkills = new ArrayList<>();
@@ -70,4 +72,6 @@ public class Job {
     public void setPayment(String payment) { this.payment = payment; }
     public String getDeadline() { return deadline; }
     public void setDeadline(String deadline) { this.deadline = deadline; }
+    public boolean isAutoFillFromWaitlist() { return autoFillFromWaitlist; }
+    public void setAutoFillFromWaitlist(boolean autoFillFromWaitlist) { this.autoFillFromWaitlist = autoFillFromWaitlist; }
 }
