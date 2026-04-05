@@ -23,6 +23,7 @@ public class DataStorage {
     private static final String PROFILES_FILE = "profiles.json";
     private static final String JOBS_FILE = "jobs.json";
     private static final String APPLICATIONS_FILE = "applications.json";
+    private static final String JOB_TEMPLATES_FILE = "job-templates.json";
     private static final String SETTINGS_FILE = "settings.json";
 
     private final Path basePath;
@@ -287,6 +288,33 @@ public class DataStorage {
         return job;
     }
 
+    // ---- Job templates ----
+    @SuppressWarnings("unchecked")
+    public List<JobTemplate> loadJobTemplates() throws IOException {
+        List<JobTemplate> list = load(JOB_TEMPLATES_FILE, new TypeToken<ArrayList<JobTemplate>>(){}.getType());
+        return list != null ? list : new ArrayList<>();
+    }
+
+    public List<JobTemplate> getJobTemplatesByOwner(String ownerId) throws IOException {
+        return loadJobTemplates().stream()
+                .filter(t -> ownerId.equals(t.getOwnerId()))
+                .collect(Collectors.toList());
+    }
+
+    public JobTemplate getJobTemplateById(String id) throws IOException {
+        return loadJobTemplates().stream().filter(t -> t.getId().equals(id)).findFirst().orElse(null);
+    }
+
+    public JobTemplate addJobTemplate(JobTemplate template) throws IOException {
+        List<JobTemplate> templates = loadJobTemplates();
+        String newId = "T" + String.format("%04d", templates.size() + 1);
+        template.setId(newId);
+        template.setCreatedAt(java.time.LocalDateTime.now().toString());
+        templates.add(template);
+        save(JOB_TEMPLATES_FILE, templates);
+        return template;
+    }
+
     // ---- Applications ----
     @SuppressWarnings("unchecked")
     public List<Application> loadApplications() throws IOException {
@@ -314,7 +342,7 @@ public class DataStorage {
     }
 
     private static boolean blocksNewApplicationToJob(String status) {
-        return "PENDING".equals(status) || "INTERVIEW".equals(status) || "SELECTED".equals(status);
+        return "PENDING".equals(status) || "INTERVIEW".equals(status) || "WAITLIST".equals(status) || "SELECTED".equals(status);
     }
 
     public void saveApplication(Application app) throws IOException {

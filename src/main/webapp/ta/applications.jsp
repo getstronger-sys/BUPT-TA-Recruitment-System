@@ -53,6 +53,8 @@
     int rejectedCount = rejectedObj != null ? rejectedObj : 0;
     Integer interviewObj = (Integer) request.getAttribute("interviewCount");
     int interviewCount = interviewObj != null ? interviewObj : 0;
+    Integer waitlistObj = (Integer) request.getAttribute("waitlistCount");
+    int waitlistCount = waitlistObj != null ? waitlistObj : 0;
     Integer autoClosedObj = (Integer) request.getAttribute("autoClosedCount");
     int autoClosedCount = autoClosedObj != null ? autoClosedObj : 0;
 %>
@@ -109,7 +111,7 @@
                 <div class="stat-card">
                     <div>
                         <div class="stat-title">Status Overview</div>
-                        <div class="stat-meta">Selected <%= selectedCount %> | Pending <%= pendingCount %> | Interview <%= interviewCount %> | Closed <%= rejectedCount + autoClosedCount %></div>
+                        <div class="stat-meta">Selected <%= selectedCount %> | Pending <%= pendingCount %> | Interview <%= interviewCount %> | Waitlist <%= waitlistCount %> | Closed <%= rejectedCount + autoClosedCount %></div>
                     </div>
                 </div>
             </div>
@@ -138,6 +140,7 @@
                     else if ("REJECTED".equals(a.getStatus())) { statusClass = "status-rejected"; progress = 100; }
                     else if ("WITHDRAWN".equals(a.getStatus())) { statusClass = "status-rejected"; progress = 100; }
                     else if ("AUTO_CLOSED".equals(a.getStatus())) { statusClass = "status-rejected"; progress = 100; }
+                    else if ("WAITLIST".equals(a.getStatus())) { statusClass = "status-pending"; progress = 60; }
                     else if ("INTERVIEW".equals(a.getStatus())) { statusClass = "status-pending"; progress = 75; }
                     boolean hasNotice = (a.getInterviewTime() != null && !a.getInterviewTime().isEmpty())
                             || (a.getInterviewLocation() != null && !a.getInterviewLocation().isEmpty())
@@ -189,7 +192,7 @@
                         <% } %>
                     </td>
                     <td class="col-action">
-                        <% if ("PENDING".equals(a.getStatus()) || "INTERVIEW".equals(a.getStatus())) { %>
+                        <% if ("PENDING".equals(a.getStatus()) || "INTERVIEW".equals(a.getStatus()) || "WAITLIST".equals(a.getStatus()) || "SELECTED".equals(a.getStatus())) { %>
                         <form action="${pageContext.request.contextPath}/ta/withdraw" method="post" style="display:inline;">
                             <input type="hidden" name="applicationId" value="<%= a.getId() %>">
                             <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Withdraw this application?')">Withdraw</button>
@@ -209,7 +212,7 @@
             <div class="widget-card">
                 <div class="widget-title">TA Points</div>
                 <p class="widget-line">Current: <%= points %></p>
-                <p class="widget-line">Selected: <%= selectedCount %> | Pending: <%= pendingCount %> | Interview: <%= interviewCount %></p>
+                <p class="widget-line">Selected: <%= selectedCount %> | Pending: <%= pendingCount %> | Interview: <%= interviewCount %> | Waitlist: <%= waitlistCount %></p>
             </div>
             <div class="widget-card">
                 <div class="widget-title">Reminders</div>

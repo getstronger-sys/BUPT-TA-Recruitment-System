@@ -1,5 +1,7 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ include file="/WEB-INF/jspf/html-esc.jspf" %>
+<%@ page import="java.util.List" %>
+<%@ page import="bupt.ta.model.JobTemplate" %>
 <%!
     static String fv(javax.servlet.http.HttpServletRequest r, String key, String def) {
         Object o = r.getAttribute(key);
@@ -8,6 +10,11 @@
     static String fva(javax.servlet.http.HttpServletRequest r, String key) {
         return escHtml(fv(r, key, ""));
     }
+%>
+<% List<JobTemplate> jobTemplates = (List<JobTemplate>) request.getAttribute("jobTemplates");
+   if (jobTemplates == null) jobTemplates = java.util.Collections.emptyList();
+   String selectedTemplateId = request.getAttribute("selectedTemplateId") != null ? request.getAttribute("selectedTemplateId").toString() : "";
+   boolean fvAutoFill = Boolean.TRUE.equals(request.getAttribute("fvAutoFillFromWaitlist"));
 %>
 <!DOCTYPE html>
 <html>
@@ -43,6 +50,19 @@
         <strong>Posting checklist</strong>
         <p>Fields marked * are required. Deadline must be YYYY-MM-DD and not in the past. Responsibilities at least 20 characters. At least one skill.</p>
     </div>
+    <div class="context-card">
+        <strong>Reusable templates</strong>
+        <p>Load a saved template to prefill course code, skills, workload and description, then adjust only the fields that changed for this term.</p>
+        <form action="${pageContext.request.contextPath}/mo/post-job" method="get" class="search-form">
+            <select name="templateId">
+                <option value="">Choose a saved template</option>
+                <% for (JobTemplate t : jobTemplates) { %>
+                <option value="<%= escHtml(t.getId()) %>" <%= t.getId().equals(selectedTemplateId) ? "selected" : "" %>><%= escHtml(t.getTemplateName()) %> - <%= escHtml(t.getModuleCode()) %></option>
+                <% } %>
+            </select>
+            <button type="submit" class="btn btn-primary">Load template</button>
+        </form>
+    </div>
     <% String err = (String) request.getAttribute("error"); if (err != null) { %>
     <p class="error"><%= escHtml(err) %></p>
     <% } %>
@@ -77,6 +97,10 @@
         <input type="text" name="skills" required placeholder="e.g. Java, Python, Teaching" value="<%= fva(request, "fvSkills") %>">
         <label>Max Applicants (0 = unlimited)</label>
         <input type="number" name="maxApplicants" min="0" value="<%= fva(request, "fvMaxApplicants").isEmpty() ? "0" : fva(request, "fvMaxApplicants") %>">
+        <label class="checkbox-line"><input type="checkbox" name="autoFillFromWaitlist" <%= fvAutoFill ? "checked" : "" %>> Auto-fill from waitlist when a selected TA withdraws</label>
+        <label class="checkbox-line"><input type="checkbox" name="saveAsTemplate"> Save this posting setup as a reusable template</label>
+        <label>Template name <span class="muted-inline">(optional when saving)</span></label>
+        <input type="text" name="templateName" placeholder="e.g. EBU6304 standard TA template" value="<%= fva(request, "fvTemplateName") %>">
         <button type="submit" class="btn btn-primary">Post Job</button>
     </form>
         </main>

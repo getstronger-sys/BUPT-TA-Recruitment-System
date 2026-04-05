@@ -18,7 +18,7 @@ import java.util.stream.Collectors;
 public class MOJobsServlet extends HttpServlet {
 
     private static final Set<String> JOB_VIEWS = Collections.unmodifiableSet(
-            new HashSet<>(Arrays.asList("pending", "interview", "withdrawn", "outcome")));
+            new HashSet<>(Arrays.asList("pending", "interview", "waitlist", "withdrawn", "outcome")));
 
     private final AIMatchService aiService = new AIMatchService();
 
@@ -79,6 +79,7 @@ public class MOJobsServlet extends HttpServlet {
         if (jobListMode) {
             req.setAttribute("moJobsCountPending", 0);
             req.setAttribute("moJobsCountInterview", 0);
+            req.setAttribute("moJobsCountWaitlist", 0);
             req.setAttribute("moJobsCountWithdrawn", 0);
             req.setAttribute("moJobsCountOutcome", 0);
             req.setAttribute("jobsWithApps", Collections.emptyList());
@@ -89,16 +90,19 @@ public class MOJobsServlet extends HttpServlet {
             req.setAttribute("jobsWithApps", oneJob);
             int countPending = 0;
             int countInterview = 0;
+            int countWaitlist = 0;
             int countWithdrawn = 0;
             int countOutcome = 0;
             for (Object[] row : oneJob) {
                 countPending += listSize(row, 1);
                 countInterview += listSize(row, 2);
-                countWithdrawn += listSize(row, 3);
-                countOutcome += listSize(row, 4);
+                countWaitlist += listSize(row, 3);
+                countWithdrawn += listSize(row, 4);
+                countOutcome += listSize(row, 5);
             }
             req.setAttribute("moJobsCountPending", countPending);
             req.setAttribute("moJobsCountInterview", countInterview);
+            req.setAttribute("moJobsCountWaitlist", countWaitlist);
             req.setAttribute("moJobsCountWithdrawn", countWithdrawn);
             req.setAttribute("moJobsCountOutcome", countOutcome);
         }
@@ -124,6 +128,7 @@ public class MOJobsServlet extends HttpServlet {
             }
             List<AIMatchService.ApplicantRecommendation> pending = new ArrayList<>();
             List<AIMatchService.ApplicantRecommendation> interview = new ArrayList<>();
+            List<AIMatchService.ApplicantRecommendation> waitlist = new ArrayList<>();
             List<AIMatchService.ApplicantRecommendation> withdrawn = new ArrayList<>();
             List<AIMatchService.ApplicantRecommendation> outcome = new ArrayList<>();
             for (AIMatchService.ApplicantRecommendation r : all) {
@@ -134,15 +139,18 @@ public class MOJobsServlet extends HttpServlet {
                     pending.add(r);
                 } else if ("INTERVIEW".equals(s)) {
                     interview.add(r);
+                } else if ("WAITLIST".equals(s)) {
+                    waitlist.add(r);
                 } else {
                     outcome.add(r);
                 }
             }
             sortByMatch(pending);
             sortByMatch(interview);
+            sortByMatch(waitlist);
             sortByMatch(withdrawn);
             sortByMatch(outcome);
-            enriched.add(new Object[]{j, pending, interview, withdrawn, outcome});
+            enriched.add(new Object[]{j, pending, interview, waitlist, withdrawn, outcome});
         }
         return enriched;
     }
