@@ -6,6 +6,7 @@
 <html>
 <head>
     <meta charset="UTF-8">
+    <%@ include file="/WEB-INF/jspf/viewport.jspf" %>
     <title>TA Workload - Admin</title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css">
 </head>

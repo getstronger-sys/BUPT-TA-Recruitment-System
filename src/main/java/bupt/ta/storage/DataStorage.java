@@ -23,6 +23,7 @@ public class DataStorage {
     private static final String PROFILES_FILE = "profiles.json";
     private static final String JOBS_FILE = "jobs.json";
     private static final String APPLICATIONS_FILE = "applications.json";
+    private static final String SETTINGS_FILE = "settings.json";
 
     private final Path basePath;
     private final Gson gson;
@@ -115,6 +116,10 @@ public class DataStorage {
             j1.setMaxApplicants(2);
             j1.setJobType("MODULE_TA");
             save(JOBS_FILE, Arrays.asList(j1));
+        }
+        Path settingsPath = basePath.resolve(SETTINGS_FILE);
+        if (!Files.exists(settingsPath) || Files.size(settingsPath) == 0) {
+            save(SETTINGS_FILE, new AdminSettings());
         }
     }
 
@@ -295,6 +300,16 @@ public class DataStorage {
 
     public Path getBasePath() { return basePath; }
     public Path getUploadPath() { return basePath.resolve("uploads"); }
+
+    // ---- Admin settings ----
+    public AdminSettings loadAdminSettings() throws IOException {
+        AdminSettings settings = load(SETTINGS_FILE, AdminSettings.class);
+        return settings != null ? settings : new AdminSettings();
+    }
+
+    public void saveAdminSettings(AdminSettings settings) throws IOException {
+        save(SETTINGS_FILE, settings != null ? settings : new AdminSettings());
+    }
 
     private boolean equalsIgnoreCaseTrimmed(String left, String right) {
         if (left == null || right == null) {

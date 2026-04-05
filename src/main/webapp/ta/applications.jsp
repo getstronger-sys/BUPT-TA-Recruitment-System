@@ -32,7 +32,7 @@
         return datePart + " " + timePart;
     }
 %>
-<%
+<% 
     List<Object[]> applications = (List<Object[]>) request.getAttribute("applications");
     if (applications == null) applications = java.util.Collections.emptyList();
     Integer pointsObj = (Integer) request.getAttribute("points");
@@ -45,11 +45,14 @@
     int rejectedCount = rejectedObj != null ? rejectedObj : 0;
     Integer interviewObj = (Integer) request.getAttribute("interviewCount");
     int interviewCount = interviewObj != null ? interviewObj : 0;
+    Integer autoClosedObj = (Integer) request.getAttribute("autoClosedCount");
+    int autoClosedCount = autoClosedObj != null ? autoClosedObj : 0;
 %>
 <!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
+    <%@ include file="/WEB-INF/jspf/viewport.jspf" %>
     <title>My Applications - TA Recruitment</title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css">
 </head>
@@ -67,13 +70,15 @@
                 <div class="icon-dot">P</div>
             </div>
             <aside class="side-nav">
+                <a href="${pageContext.request.contextPath}/ta/dashboard">Home</a>
                 <a href="${pageContext.request.contextPath}/ta/jobs">Find Jobs</a>
                 <a class="active" href="${pageContext.request.contextPath}/ta/applications">My Applications</a>
                 <a href="${pageContext.request.contextPath}/ta/profile">My Profile</a>
             </aside>
         </div>
-        <main class="main-panel">
+        <main class="main-panel ta-main">
             <h1>My Applications</h1>
+            <p class="ta-page-lead">Track each submission, open interview notices from the organiser, and withdraw while still pending or in interview.</p>
             <div class="context-card">
                 <strong>How it works</strong>
                 <p>Pending &rarr; Interview (see time and location posted by the module organiser) &rarr; Selected or rejected. Notices are in-app only (no email).</p>
@@ -94,7 +99,7 @@
                 <div class="stat-card">
                     <div>
                         <div class="stat-title">Status Overview</div>
-                        <div class="stat-meta">Selected <%= selectedCount %> | Pending <%= pendingCount %> | Interview <%= interviewCount %> | Closed <%= rejectedCount %></div>
+                        <div class="stat-meta">Selected <%= selectedCount %> | Pending <%= pendingCount %> | Interview <%= interviewCount %> | Closed <%= rejectedCount + autoClosedCount %></div>
                     </div>
                 </div>
             </div>
@@ -102,6 +107,7 @@
             <p class="applications-table-hint muted-inline">Swipe or drag the bar below to see all columns if the table is wide.</p>
             <div class="applications-table-scroll">
             <table class="applications-table">
+                <thead>
                 <tr>
                     <th class="col-job">Job</th>
                     <th class="col-module">Module</th>
@@ -111,6 +117,8 @@
                     <th class="col-notice">Interview</th>
                     <th class="col-action">Action</th>
                 </tr>
+                </thead>
+                <tbody>
                 <% for (Object[] row : applications) {
                     Application a = (Application) row[0];
                     Job j = (Job) row[1];
@@ -119,6 +127,7 @@
                     if ("SELECTED".equals(a.getStatus())) { statusClass = "status-selected"; progress = 100; }
                     else if ("REJECTED".equals(a.getStatus())) { statusClass = "status-rejected"; progress = 100; }
                     else if ("WITHDRAWN".equals(a.getStatus())) { statusClass = "status-rejected"; progress = 100; }
+                    else if ("AUTO_CLOSED".equals(a.getStatus())) { statusClass = "status-rejected"; progress = 100; }
                     else if ("INTERVIEW".equals(a.getStatus())) { statusClass = "status-pending"; progress = 75; }
                     boolean hasNotice = (a.getInterviewTime() != null && !a.getInterviewTime().isEmpty())
                             || (a.getInterviewLocation() != null && !a.getInterviewLocation().isEmpty())
@@ -139,7 +148,12 @@
                         </div>
                         <div class="progress-text"><%= progress %>%</div>
                     </td>
-                    <td class="col-status <%= statusClass %>"><%= a.getStatus() %></td>
+                    <td class="col-status <%= statusClass %>">
+                        <div><%= a.getStatus() %></div>
+                        <% if ("AUTO_CLOSED".equals(a.getStatus()) && a.getNotes() != null && !a.getNotes().isEmpty()) { %>
+                        <div class="status-subtext"><%= escHtml(a.getNotes()) %></div>
+                        <% } %>
+                    </td>
                     <td class="col-notice interview-notice-cell">
                         <% if (hasNotice) { %>
                         <button type="button" class="btn btn-primary btn-sm ta-notice-btn" data-template="<%= noticeTplId %>">View notice</button>
@@ -173,8 +187,9 @@
                 </tr>
                 <% }
                    if (applications.isEmpty()) { %>
-                <tr><td colspan="7">No applications yet. <a href="${pageContext.request.contextPath}/ta/jobs">Find jobs</a> to apply.</td></tr>
+                <tr class="applications-empty-row"><td colspan="7" class="applications-empty-cell">No applications yet. <a href="${pageContext.request.contextPath}/ta/jobs">Find jobs</a> to apply.</td></tr>
                 <% } %>
+                </tbody>
             </table>
             </div>
         </main>

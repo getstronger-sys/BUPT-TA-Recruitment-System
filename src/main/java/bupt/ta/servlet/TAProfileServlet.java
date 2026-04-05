@@ -23,6 +23,10 @@ public class TAProfileServlet extends HttpServlet {
             profile = new TAProfile(userId);
         }
         req.setAttribute("profile", profile);
+        String returnUrl = req.getParameter("returnUrl");
+        if (isSafeTaRelativeReturn(returnUrl)) {
+            req.setAttribute("returnUrl", returnUrl);
+        }
         req.getRequestDispatcher("/ta/profile.jsp").forward(req, resp);
     }
 
@@ -62,6 +66,12 @@ public class TAProfileServlet extends HttpServlet {
         profile.setSkills(skills);
 
         storage.saveProfile(profile);
+
+        String returnUrl = req.getParameter("returnUrl");
+        if (isSafeTaRelativeReturn(returnUrl)) {
+            resp.sendRedirect(req.getContextPath() + returnUrl);
+            return;
+        }
         resp.sendRedirect(req.getContextPath() + "/ta/profile?success=1");
     }
 
@@ -98,5 +108,19 @@ public class TAProfileServlet extends HttpServlet {
 
     private static boolean isBlank(String value) {
         return value == null || value.trim().isEmpty();
+    }
+
+    /** Only allow in-app redirects under /ta/ (no open redirect). */
+    static boolean isSafeTaRelativeReturn(String u) {
+        if (u == null || u.isEmpty()) {
+            return false;
+        }
+        if (!u.startsWith("/ta/")) {
+            return false;
+        }
+        if (u.contains("..") || u.contains("//") || u.contains("\r") || u.contains("\n")) {
+            return false;
+        }
+        return true;
     }
 }

@@ -72,6 +72,15 @@
     </servlet-mapping>
 
     <servlet>
+        <servlet-name>TADashboardServlet</servlet-name>
+        <servlet-class>bupt.ta.servlet.TADashboardServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>TADashboardServlet</servlet-name>
+        <url-pattern>/ta/dashboard</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
         <servlet-name>JobSearchServlet</servlet-name>
         <servlet-class>bupt.ta.servlet.JobSearchServlet</servlet-class>
     </servlet>
@@ -87,6 +96,15 @@
     <servlet-mapping>
         <servlet-name>TAJobDetailServlet</servlet-name>
         <url-pattern>/ta/job</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>ApplyConfirmServlet</servlet-name>
+        <servlet-class>bupt.ta.servlet.ApplyConfirmServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>ApplyConfirmServlet</servlet-name>
+        <url-pattern>/ta/apply-confirm</url-pattern>
     </servlet-mapping>
 
     <servlet>
@@ -182,6 +200,24 @@
 
     <!-- Admin Servlet -->
     <servlet>
+        <servlet-name>AdminDashboardServlet</servlet-name>
+        <servlet-class>bupt.ta.servlet.AdminDashboardServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>AdminDashboardServlet</servlet-name>
+        <url-pattern>/admin/dashboard</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>AdminMonitoringServlet</servlet-name>
+        <servlet-class>bupt.ta.servlet.AdminMonitoringServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>AdminMonitoringServlet</servlet-name>
+        <url-pattern>/admin/monitoring</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
         <servlet-name>AdminWorkloadServlet</servlet-name>
         <servlet-class>bupt.ta.servlet.AdminWorkloadServlet</servlet-class>
     </servlet>
@@ -210,4 +246,9 @@
         <url-pattern>/mo/*</url-pattern>
         <url-pattern>/admin/*</url-pattern>
     </filter-mapping>
+
+    <error-page>
+        <error-code>404</error-code>
+        <location>/404.jsp</location>
+    </error-page>
 </web-app>

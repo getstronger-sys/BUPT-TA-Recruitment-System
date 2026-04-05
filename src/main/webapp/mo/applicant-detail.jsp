@@ -25,6 +25,7 @@
 <html>
 <head>
     <meta charset="UTF-8">
+    <%@ include file="/WEB-INF/jspf/viewport.jspf" %>
     <title>Applicant Detail - MO</title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css">
 </head>
@@ -47,8 +48,15 @@
                 <a href="${pageContext.request.contextPath}/mo/past-jobs">Past postings</a>
             </aside>
         </div>
-        <main class="main-panel">
+        <main class="main-panel mo-main">
+    <div class="mo-applicant-head">
     <h1><%= hidePersonal ? "Withdrawn application record" : "Applicant Detail" %></h1>
+    <% if (hidePersonal) { %>
+    <p class="mo-manage-hero-lead">Personal data is hidden for withdrawn applicants.</p>
+    <% } else { %>
+    <p class="mo-manage-hero-lead">Review profile, academic background, and applications to your postings.</p>
+    <% } %>
+    </div>
     <% if (hidePersonal) { %>
     <div class="context-card">
         <strong>Privacy</strong>
@@ -108,7 +116,9 @@
     <% } %>
 
     <h2>Applications to Your Jobs</h2>
+    <div class="mo-detail-table-wrap">
     <table>
+        <thead>
         <tr>
             <th>Job Title</th>
             <th>Module</th>
@@ -116,6 +126,8 @@
             <th>Status</th>
             <th>Notes</th>
         </tr>
+        </thead>
+        <tbody>
         <% for (Object[] row : appRows) {
             Application a = (Application) row[0];
             Job j = (Job) row[1];
@@ -132,7 +144,9 @@
             <td><%= a.getNotes() != null && !a.getNotes().isEmpty() ? a.getNotes() : "-" %></td>
         </tr>
         <% } %>
+        </tbody>
     </table>
+    </div>
         </main>
         <aside class="right-sidebar">
             <% if (!hidePersonal) { %>
