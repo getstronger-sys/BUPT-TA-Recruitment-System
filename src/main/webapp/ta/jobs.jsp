@@ -33,7 +33,7 @@
             <h1>Find Available Jobs</h1>
             <div class="context-card">
                 <strong>Quick Tip</strong>
-                <p>Open <strong>View details</strong> for full module info, hours, payment, workload, deadline, and responsibilities—then apply from that page.</p>
+                <p>Open <strong>View details</strong> for full module info, hours, payment, workload, deadline, and responsibilities, then apply from that page.</p>
             </div>
             <p class="ai-hint"><strong>AI Skill Matching</strong>: Jobs are ordered by your match score. Complete your <a href="${pageContext.request.contextPath}/ta/profile">profile skills</a> for better matching.</p>
 
