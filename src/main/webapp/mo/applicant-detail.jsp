@@ -92,6 +92,7 @@
         <h3>Academic &amp; experience</h3>
         <p><strong>Degree:</strong> <%= profile != null && profile.getDegree() != null && !profile.getDegree().isEmpty() ? escHtml(profile.getDegree()) : "-" %></p>
         <p><strong>Programme:</strong> <%= profile != null && profile.getProgramme() != null && !profile.getProgramme().isEmpty() ? escHtml(profile.getProgramme()) : "-" %></p>
+        <p><strong>Year of study:</strong> <%= profile != null && profile.getYearOfStudy() != null && !profile.getYearOfStudy().isEmpty() ? escHtml(profile.getYearOfStudy()) : "-" %></p>
         <p><strong>Skills:</strong> <%= profile != null && profile.getSkills() != null && !profile.getSkills().isEmpty() ? escHtml(String.join(", ", profile.getSkills())) : "-" %></p>
         <div class="detail-block-text">
             <strong>TA experience</strong>

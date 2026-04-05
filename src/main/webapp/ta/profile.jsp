@@ -38,33 +38,36 @@
             <p class="ta-page-lead">Keep your skills and CV up to date so module organisers and the matching system can rank you fairly.</p>
             <div class="context-card">
                 <strong>Profile Tip</strong>
-                <p>Profiles with clear skills, availability and CV are easier for MO to review and shortlist.</p>
+                <p>Profiles with complete academic details, experience, skills, availability and CV are easier for MO to review and shortlist.</p>
             </div>
             <% if ("1".equals(request.getParameter("success"))) { %><p class="success">Profile saved.</p><% } %>
             <% if ("cv_success".equals(request.getParameter("cv_success")) || "1".equals(request.getParameter("cv_success"))) { %><p class="success">CV uploaded successfully.</p><% } %>
             <% if ("no_file".equals(request.getParameter("error"))) { %><p class="error">Please select a file to upload.</p><% } %>
             <% if ("invalid_type".equals(request.getParameter("error"))) { %><p class="error">Invalid file type. Use PDF, DOC, DOCX or TXT.</p><% } %>
+            <% if (request.getAttribute("errorMessage") != null) { %><p class="error"><%= escHtml((String) request.getAttribute("errorMessage")) %></p><% } %>
 
             <form action="${pageContext.request.contextPath}/ta/profile" method="post" class="form form--ta ta-profile-form">
                 <% if (returnUrlAttr != null && !returnUrlAttr.isEmpty()) { %>
                 <input type="hidden" name="returnUrl" value="<%= escHtml(returnUrlAttr) %>">
                 <% } %>
                 <label>Student ID</label>
-                <input type="text" name="studentId" value="<%= escHtml(profile.getStudentId() != null ? profile.getStudentId() : "") %>">
+                <input type="text" name="studentId" required value="<%= escHtml(profile.getStudentId() != null ? profile.getStudentId() : "") %>">
                 <label>Phone</label>
-                <input type="tel" name="phone" value="<%= escHtml(profile.getPhone() != null ? profile.getPhone() : "") %>">
+                <input type="tel" name="phone" required value="<%= escHtml(profile.getPhone() != null ? profile.getPhone() : "") %>">
                 <label>Degree</label>
-                <input type="text" name="degree" value="<%= escHtml(profile.getDegree() != null ? profile.getDegree() : "") %>" placeholder="e.g. BSc, MSc">
+                <input type="text" name="degree" required value="<%= escHtml(profile.getDegree() != null ? profile.getDegree() : "") %>" placeholder="e.g. BSc, MSc">
                 <label>Programme / major</label>
-                <input type="text" name="programme" value="<%= escHtml(profile.getProgramme() != null ? profile.getProgramme() : "") %>" placeholder="e.g. Computer Science">
-                <label>TA or teaching experience</label>
-                <textarea name="taExperience" placeholder="Prior TA roles, tutoring, labs, etc."><%= escHtml(profile.getTaExperience() != null ? profile.getTaExperience() : "") %></textarea>
+                <input type="text" name="programme" required value="<%= escHtml(profile.getProgramme() != null ? profile.getProgramme() : "") %>" placeholder="e.g. Computer Science">
+                <label>Year of study</label>
+                <input type="text" name="yearOfStudy" required value="<%= escHtml(profile.getYearOfStudy() != null ? profile.getYearOfStudy() : "") %>" placeholder="e.g. Year 2">
+                <label>Previous TA or teaching experience</label>
+                <textarea name="taExperience" required placeholder="Prior TA roles, tutoring, labs, etc. If none, write 'None'."><%= escHtml(profile.getTaExperience() != null ? profile.getTaExperience() : "") %></textarea>
                 <label>Skills (comma-separated, e.g. Java, Python, Teaching)</label>
-                <input type="text" name="skills" value="<%= escHtml((profile.getSkills() != null && !profile.getSkills().isEmpty()) ? String.join(", ", profile.getSkills()) : "") %>">
+                <input type="text" name="skills" required value="<%= escHtml((profile.getSkills() != null && !profile.getSkills().isEmpty()) ? String.join(", ", profile.getSkills()) : "") %>">
                 <label>Availability</label>
-                <input type="text" name="availability" value="<%= escHtml(profile.getAvailability() != null ? profile.getAvailability() : "") %>" placeholder="e.g. Mon/Wed/Fri 9-12">
+                <input type="text" name="availability" required value="<%= escHtml(profile.getAvailability() != null ? profile.getAvailability() : "") %>" placeholder="e.g. Mon/Wed/Fri 9-12">
                 <label>Introduction</label>
-                <textarea name="introduction"><%= escHtml(profile.getIntroduction() != null ? profile.getIntroduction() : "") %></textarea>
+                <textarea name="introduction" required><%= escHtml(profile.getIntroduction() != null ? profile.getIntroduction() : "") %></textarea>
                 <button type="submit">Save Profile</button>
             </form>
 
@@ -89,7 +92,7 @@
         <aside class="right-sidebar">
             <div class="widget-card">
                 <div class="widget-title">Profile Health</div>
-                <p class="widget-line">Keep phone and availability updated.</p>
+                <p class="widget-line">Complete every required field before saving.</p>
                 <p class="widget-line">Add detailed skills for better AI ranking.</p>
             </div>
             <div class="widget-card">
@@ -100,5 +103,37 @@
         </aside>
     </div>
 </div>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    var messages = {
+        valueMissing: "Please fill out this field.",
+        typeMismatch: "Please enter a valid value.",
+        patternMismatch: "Please match the requested format.",
+        tooShort: "Please lengthen this text.",
+        tooLong: "Please shorten this text.",
+        rangeUnderflow: "Value is too small.",
+        rangeOverflow: "Value is too large.",
+        stepMismatch: "Please enter a valid value.",
+        badInput: "Please enter a valid value."
+    };
+
+    document.querySelectorAll("form").forEach(function (form) {
+        var controls = form.querySelectorAll("input, textarea, select");
+        controls.forEach(function (control) {
+            control.addEventListener("invalid", function () {
+                control.setCustomValidity("");
+                for (var key in messages) {
+                    if (control.validity[key]) {
+                        control.setCustomValidity(messages[key]);
+                        break;
+                    }
+                }
+            });
+            control.addEventListener("input", function () { control.setCustomValidity(""); });
+            control.addEventListener("change", function () { control.setCustomValidity(""); });
+        });
+    });
+});
+</script>
 </body>
 </html>

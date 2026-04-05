@@ -104,13 +104,13 @@
             %>
                 <a class="mo-job-pick-card context-card" href="<%= pickHref %>">
                     <h3><%= escHtml(pj.getTitle()) %></h3>
-                    <p class="pick-meta"><%= escHtml(pj.getModuleCode()) %> · <%= escHtml(pj.getModuleName() != null ? pj.getModuleName() : "") %></p>
+                    <p class="pick-meta"><%= escHtml(pj.getModuleCode()) %> | <%= escHtml(pj.getModuleName() != null ? pj.getModuleName() : "") %></p>
                     <p class="pick-meta"><span class="job-status-text">(<%= escHtml(pj.getStatus()) %>)</span>
                         <% if (moPastJobsPage && pj.getDeadline() != null && !pj.getDeadline().isEmpty()) { %>
-                        <span class="muted-inline"> · Deadline <%= escHtml(pj.getDeadline()) %></span>
+                        <span class="muted-inline"> | Deadline <%= escHtml(pj.getDeadline()) %></span>
                         <% } %>
                     </p>
-                    <p class="pick-stats">App <span class="tab-count"><%= pr.size() %></span> · Int <span class="tab-count"><%= ir.size() %></span> · Wdn <span class="tab-count"><%= wr.size() %></span> · Out <span class="tab-count"><%= or.size() %></span></p>
+                    <p class="pick-stats">App <span class="tab-count"><%= pr.size() %></span> | Int <span class="tab-count"><%= ir.size() %></span> | Wdn <span class="tab-count"><%= wr.size() %></span> | Out <span class="tab-count"><%= or.size() %></span></p>
                     <span class="btn btn-primary mo-job-pick-cta">Manage this posting</span>
                 </a>
             <% } %>
@@ -121,7 +121,7 @@
             <% Job hdr = jobsWithApps.isEmpty() ? null : (Job) ((Object[]) jobsWithApps.get(0))[0]; %>
             <div class="mo-manage-hero">
             <h1><%= hdr != null ? escHtml(hdr.getTitle()) : "Job management" %></h1>
-            <% if (hdr != null) { %><p class="pick-meta mo-manage-hero-meta"><%= escHtml(hdr.getModuleCode()) %> · <%= escHtml(hdr.getModuleName() != null ? hdr.getModuleName() : "") %></p><% } %>
+            <% if (hdr != null) { %><p class="pick-meta mo-manage-hero-meta"><%= escHtml(hdr.getModuleCode()) %> | <%= escHtml(hdr.getModuleName() != null ? hdr.getModuleName() : "") %></p><% } %>
             <p class="mo-manage-hero-lead">Use the tabs to switch between applicant stages for this posting only.</p>
             </div>
             <div class="context-card">
@@ -214,6 +214,7 @@
                         boolean hasCv = hasProfile && rec.profile.getCvFilePath() != null && !rec.profile.getCvFilePath().isEmpty();
                         String degreeText = hasProfile && rec.profile.getDegree() != null && !rec.profile.getDegree().isEmpty() ? escHtml(rec.profile.getDegree()) : "-";
                         String programmeText = hasProfile && rec.profile.getProgramme() != null && !rec.profile.getProgramme().isEmpty() ? escHtml(rec.profile.getProgramme()) : "-";
+                        String yearOfStudyText = hasProfile && rec.profile.getYearOfStudy() != null && !rec.profile.getYearOfStudy().isEmpty() ? escHtml(rec.profile.getYearOfStudy()) : "-";
                         String taExpText = hasProfile && rec.profile.getTaExperience() != null && !rec.profile.getTaExperience().isEmpty() ? escHtml(rec.profile.getTaExperience()) : "Not provided.";
                         String templateId = "applicant-tpl-" + j.getId() + "-" + a.getId();
                         String noteText = a.getNotes() != null && !a.getNotes().isEmpty() ? a.getNotes() : "No notes saved for this application.";
@@ -288,6 +289,7 @@
                                 <p class="quick-detail-name"><%= escHtml(applicantName) %></p>
                                 <p><strong>Degree:</strong> <%= degreeText %></p>
                                 <p><strong>Programme:</strong> <%= programmeText %></p>
+                                <p><strong>Year of study:</strong> <%= yearOfStudyText %></p>
                                 <p><strong>Skills:</strong> <%= escHtml(skillsText) %></p>
                                 <div class="detail-block-text">
                                     <strong>TA experience</strong>
@@ -450,6 +452,7 @@
                         String statusPillClass = "SELECTED".equals(a.getStatus()) ? "status-pill status-pill-selected" : "status-pill status-pill-rejected";
                         String degreeText = hasProfile && rec.profile.getDegree() != null && !rec.profile.getDegree().isEmpty() ? escHtml(rec.profile.getDegree()) : "-";
                         String programmeText = hasProfile && rec.profile.getProgramme() != null && !rec.profile.getProgramme().isEmpty() ? escHtml(rec.profile.getProgramme()) : "-";
+                        String yearOfStudyText = hasProfile && rec.profile.getYearOfStudy() != null && !rec.profile.getYearOfStudy().isEmpty() ? escHtml(rec.profile.getYearOfStudy()) : "-";
                         String taExpText = hasProfile && rec.profile.getTaExperience() != null && !rec.profile.getTaExperience().isEmpty() ? escHtml(rec.profile.getTaExperience()) : "Not provided.";
                         String templateId = "applicant-outcome-" + j.getId() + "-" + a.getId();
                     %>
@@ -506,6 +509,7 @@
                                 <p class="quick-detail-name"><%= escHtml(applicantName) %></p>
                                 <p><strong>Degree:</strong> <%= degreeText %></p>
                                 <p><strong>Programme:</strong> <%= programmeText %></p>
+                                <p><strong>Year of study:</strong> <%= yearOfStudyText %></p>
                                 <p><strong>Skills:</strong> <%= escHtml(skillsText) %></p>
                                 <div class="detail-block-text">
                                     <strong>TA experience</strong>
