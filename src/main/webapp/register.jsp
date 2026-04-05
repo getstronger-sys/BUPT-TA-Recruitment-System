@@ -15,7 +15,7 @@
     </header>
     <div class="auth-shell">
         <div class="auth-card auth-card--wide">
-            <a class="auth-back" href="${pageContext.request.contextPath}/index.jsp">← Back to sign in</a>
+            <a class="auth-back" href="${pageContext.request.contextPath}/index.jsp">&larr; Back to sign in</a>
             <div class="auth-card-head">
                 <h1 class="auth-title">Create account</h1>
                 <p class="auth-subtitle">Register as a Teaching Assistant or Module Organiser</p>
@@ -29,15 +29,9 @@
                 <label for="reg-username">Username *</label>
                 <input id="reg-username" type="text" name="username" required autocomplete="username" value="<%= escHtml((String) request.getAttribute("username")) %>">
                 <label for="reg-password">Password * (min 4 characters)</label>
-                <div class="password-field">
-                    <input id="reg-password" type="password" name="password" required minlength="4" autocomplete="new-password" data-password-input>
-                    <button type="button" class="password-toggle" data-password-toggle aria-label="Show password" aria-pressed="false">Show</button>
-                </div>
+                <input id="reg-password" type="password" name="password" required minlength="4" autocomplete="new-password">
                 <label for="reg-confirm">Confirm password *</label>
-                <div class="password-field">
-                    <input id="reg-confirm" type="password" name="confirmPassword" required autocomplete="new-password" data-password-input>
-                    <button type="button" class="password-toggle" data-password-toggle aria-label="Show password" aria-pressed="false">Show</button>
-                </div>
+                <input id="reg-confirm" type="password" name="confirmPassword" required autocomplete="new-password">
                 <label for="reg-role">Role *</label>
                 <select id="reg-role" name="role" required>
                     <option value="TA" <%= !"MO".equals(request.getAttribute("role")) ? "selected" : "" %>>Teaching Assistant (TA)</option>
@@ -59,16 +53,32 @@
 </div>
 <script>
 document.addEventListener("DOMContentLoaded", function () {
-    document.querySelectorAll("[data-password-toggle]").forEach(function (button) {
-        button.addEventListener("click", function () {
-            var wrapper = button.closest(".password-field");
-            var input = wrapper ? wrapper.querySelector("[data-password-input]") : null;
-            if (!input) return;
-            var show = input.type === "password";
-            input.type = show ? "text" : "password";
-            button.textContent = show ? "Hide" : "Show";
-            button.setAttribute("aria-label", show ? "Hide password" : "Show password");
-            button.setAttribute("aria-pressed", show ? "true" : "false");
+    var messages = {
+        valueMissing: "Please fill out this field.",
+        typeMismatch: "Please enter a valid value.",
+        patternMismatch: "Please match the requested format.",
+        tooShort: "Please lengthen this text.",
+        tooLong: "Please shorten this text.",
+        rangeUnderflow: "Value is too small.",
+        rangeOverflow: "Value is too large.",
+        stepMismatch: "Please enter a valid value.",
+        badInput: "Please enter a valid value."
+    };
+
+    document.querySelectorAll("form").forEach(function (form) {
+        var controls = form.querySelectorAll("input, textarea, select");
+        controls.forEach(function (control) {
+            control.addEventListener("invalid", function () {
+                control.setCustomValidity("");
+                for (var key in messages) {
+                    if (control.validity[key]) {
+                        control.setCustomValidity(messages[key]);
+                        break;
+                    }
+                }
+            });
+            control.addEventListener("input", function () { control.setCustomValidity(""); });
+            control.addEventListener("change", function () { control.setCustomValidity(""); });
         });
     });
 });

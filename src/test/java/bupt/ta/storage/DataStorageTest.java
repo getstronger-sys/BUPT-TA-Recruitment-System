@@ -129,6 +129,9 @@ public class DataStorageTest {
 
             TAProfile profile = new TAProfile(user.getId());
             profile.setStudentId("20230001");
+            profile.setProgramme("Computer Science");
+            profile.setYearOfStudy("Year 2");
+            profile.setTaExperience("Tutored first-year programming labs.");
             storage.saveProfile(profile);
 
             assertNotNull(storage.findByEmail("APPLICANT@bupt.edu.cn"));
@@ -136,6 +139,10 @@ public class DataStorageTest {
             assertNotNull(storage.findProfileByStudentId("20230001"));
             assertNotNull(storage.findProfileByStudentId(" 20230001 "));
             assertNull(storage.findProfileByStudentId("20239999"));
+            TAProfile saved = storage.getProfileByUserId(user.getId());
+            assertEquals("Computer Science", saved.getProgramme());
+            assertEquals("Year 2", saved.getYearOfStudy());
+            assertEquals("Tutored first-year programming labs.", saved.getTaExperience());
         } finally {
             deleteRecursive(tmp);
         }

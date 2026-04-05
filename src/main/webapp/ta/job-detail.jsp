@@ -11,13 +11,13 @@
         return;
     }
     boolean isOpen = "OPEN".equals(job.getStatus());
-    String moduleName = job.getModuleName() != null && !job.getModuleName().isEmpty() ? escHtml(job.getModuleName()) : "—";
-    String wh = job.getWorkingHours() != null && !job.getWorkingHours().isEmpty() ? escHtml(job.getWorkingHours()) : "—";
-    String wl = job.getWorkload() != null && !job.getWorkload().isEmpty() ? escHtml(job.getWorkload()) : "—";
-    String pay = job.getPayment() != null && !job.getPayment().isEmpty() ? escHtml(job.getPayment()) : "—";
-    String deadline = job.getDeadline() != null && !job.getDeadline().isEmpty() ? escHtml(job.getDeadline()) : "—";
-    String respText = job.getResponsibilities() != null && !job.getResponsibilities().isEmpty() ? escHtml(job.getResponsibilities()) : "—";
-    String desc = job.getDescription() != null && !job.getDescription().isEmpty() ? escHtml(job.getDescription()) : "—";
+    String moduleName = job.getModuleName() != null && !job.getModuleName().isEmpty() ? escHtml(job.getModuleName()) : "-";
+    String wh = job.getWorkingHours() != null && !job.getWorkingHours().isEmpty() ? escHtml(job.getWorkingHours()) : "-";
+    String wl = job.getWorkload() != null && !job.getWorkload().isEmpty() ? escHtml(job.getWorkload()) : "-";
+    String pay = job.getPayment() != null && !job.getPayment().isEmpty() ? escHtml(job.getPayment()) : "-";
+    String deadline = job.getDeadline() != null && !job.getDeadline().isEmpty() ? escHtml(job.getDeadline()) : "-";
+    String respText = job.getResponsibilities() != null && !job.getResponsibilities().isEmpty() ? escHtml(job.getResponsibilities()) : "-";
+    String desc = job.getDescription() != null && !job.getDescription().isEmpty() ? escHtml(job.getDescription()) : "-";
     String safeTitle = escHtml(job.getTitle() != null ? job.getTitle() : "");
 %>
 <!DOCTYPE html>
@@ -63,17 +63,17 @@
 
             <% if (match != null) { %>
             <p class="ai-hint ta-job-hero-hint"><span class="match-badge" title="<%= escHtml(match.explanation) %>">Your match: <%= (int) match.score %>%</span>
-                <% if (match.matched != null && !match.matched.isEmpty()) { %> · Matched: <%= escHtml(String.join(", ", match.matched)) %><% } %>
+                <% if (match.matched != null && !match.matched.isEmpty()) { %> | Matched: <%= escHtml(String.join(", ", match.matched)) %><% } %>
             </p>
             <% } %>
             </div>
 
             <dl class="job-detail-dl">
-                <dt>Module code</dt><dd><%= escHtml(job.getModuleCode() != null ? job.getModuleCode() : "—") %></dd>
+                <dt>Module code</dt><dd><%= escHtml(job.getModuleCode() != null ? job.getModuleCode() : "-") %></dd>
                 <dt>Module name</dt><dd><%= moduleName %></dd>
                 <dt>Hours / schedule</dt><dd class="pre-wrap"><%= wh %></dd>
                 <dt>Payment</dt><dd class="pre-wrap"><%= pay %></dd>
-                <dt>Required skills</dt><dd><%= job.getRequiredSkills() != null && !job.getRequiredSkills().isEmpty() ? escHtml(String.join(", ", job.getRequiredSkills())) : "—" %></dd>
+                <dt>Required skills</dt><dd><%= job.getRequiredSkills() != null && !job.getRequiredSkills().isEmpty() ? escHtml(String.join(", ", job.getRequiredSkills())) : "-" %></dd>
                 <dt>Responsibilities</dt><dd class="pre-wrap"><%= respText %></dd>
                 <dt>Workload</dt><dd class="pre-wrap"><%= wl %></dd>
                 <dt>Application deadline</dt><dd><%= deadline %></dd>

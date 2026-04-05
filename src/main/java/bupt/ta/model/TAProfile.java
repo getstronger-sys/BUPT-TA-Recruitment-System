@@ -20,6 +20,8 @@ public class TAProfile {
     private String degree;
     /** Degree programme / major, e.g. Computer Science */
     private String programme;
+    /** Current study year, e.g. Year 2 */
+    private String yearOfStudy;
     /** Prior TA or teaching-related experience */
     private String taExperience;
 
@@ -59,6 +61,8 @@ public class TAProfile {
     public void setDegree(String degree) { this.degree = degree; }
     public String getProgramme() { return programme; }
     public void setProgramme(String programme) { this.programme = programme; }
+    public String getYearOfStudy() { return yearOfStudy; }
+    public void setYearOfStudy(String yearOfStudy) { this.yearOfStudy = yearOfStudy; }
     public String getTaExperience() { return taExperience; }
     public void setTaExperience(String taExperience) { this.taExperience = taExperience; }
 }

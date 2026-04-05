@@ -38,7 +38,7 @@
             <p class="ta-page-lead">Browse open positions matched to your profile. Use search filters to narrow by module or skill.</p>
             <div class="context-card">
                 <strong>Quick Tip</strong>
-                <p>Open <strong>View details</strong> for full module info, hours, payment, workload, deadline, and responsibilities—then use <strong>Review and apply</strong> to confirm your profile before submitting.</p>
+                <p>Open <strong>View details</strong> for full module info, hours, payment, workload, deadline, and responsibilities, then use <strong>Review and apply</strong> to confirm your profile before submitting.</p>
             </div>
             <p class="ai-hint"><strong>AI Skill Matching</strong>: Jobs are ordered by your match score. Complete your <a href="${pageContext.request.contextPath}/ta/profile">profile skills</a> for better matching.</p>
 

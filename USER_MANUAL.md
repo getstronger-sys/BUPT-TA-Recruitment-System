@@ -26,7 +26,7 @@
 ## TA - My Profile
 
 - **Screenshot**: [TA Profile screen - ta/profile.jsp]
-- Fill student ID, phone, skills (comma-separated), availability, introduction.
+- Fill student ID, phone, degree, programme, year of study, previous experience, skills (comma-separated), availability, and introduction.
 - Upload CV (PDF, DOC, DOCX, TXT, max 5MB).
 - Click "Save Profile" and "Upload CV".
 
