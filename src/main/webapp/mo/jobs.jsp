@@ -52,6 +52,7 @@
         <main class="main-panel mo-main">
             <% if ("1".equals(request.getParameter("success"))) { %><p class="success">Job posted successfully!</p><% } %>
             <% if ("1".equals(request.getParameter("updated"))) { %><p class="success">Applicant status updated.</p><% } %>
+            <% if (request.getParameter("autoClosed") != null) { %><p class="success">Pending applications auto-closed by workload rule: <strong><%= request.getParameter("autoClosed") %></strong>.</p><% } %>
             <% if ("1".equals(request.getParameter("notice"))) { %><p class="success">Interview notice saved (in-app message).</p><% } %>
             <% String err = request.getParameter("error");
                if (err != null) {

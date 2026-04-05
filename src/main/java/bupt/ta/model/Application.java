@@ -8,7 +8,7 @@ public class Application {
     private String jobId;
     private String applicantId;  // TA user id
     private String applicantName;
-    private String status;  // PENDING, INTERVIEW, SELECTED, REJECTED, WITHDRAWN
+    private String status;  // PENDING, INTERVIEW, SELECTED, REJECTED, AUTO_CLOSED, WITHDRAWN
     private String appliedAt;
     private String notes;  // MO's notes when selecting
     /** Interview notice (in-app, not email) — set when MO sends batch/single notice */

@@ -1,7 +1,9 @@
 package bupt.ta.servlet;
 
+import bupt.ta.model.AdminSettings;
 import bupt.ta.model.Application;
 import bupt.ta.model.Job;
+import bupt.ta.service.AdminService;
 import bupt.ta.storage.DataStorage;
 import bupt.ta.util.JobActivity;
 
@@ -13,6 +15,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 public class SelectApplicantServlet extends HttpServlet {
+
+    private final AdminService adminService = new AdminService();
 
     private static void redirectJobs(HttpServletResponse resp, HttpServletRequest req, String listPath, String view, String jobId, String extraQuery) throws IOException {
         String ctx = req.getContextPath();
@@ -81,6 +85,15 @@ public class SelectApplicantServlet extends HttpServlet {
         target.setNotes(notes != null ? notes.trim() : "");
         storage.saveApplication(target);
 
+        String extraQuery = "updated=1";
+        if ("select".equalsIgnoreCase(action)) {
+            AdminSettings settings = storage.loadAdminSettings();
+            int autoClosed = adminService.enforceWorkloadLimitForApplicant(storage, target.getApplicantId(), target.getId(), settings);
+            if (autoClosed > 0) {
+                extraQuery += "&autoClosed=" + autoClosed;
+            }
+        }
+
         String view = "pending";
         if ("interview".equalsIgnoreCase(action)) {
             view = "interview";
@@ -89,6 +102,6 @@ public class SelectApplicantServlet extends HttpServlet {
         }
         Job jobAfter = storage.getJobById(jobId);
         String pathAfter = jobAfter != null ? JobActivity.listPathFor(jobAfter) : listPath;
-        redirectJobs(resp, req, pathAfter, view, jobId, "updated=1");
+        redirectJobs(resp, req, pathAfter, view, jobId, extraQuery);
     }
 }

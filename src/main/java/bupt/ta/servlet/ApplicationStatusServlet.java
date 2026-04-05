@@ -2,6 +2,7 @@ package bupt.ta.servlet;
 
 import bupt.ta.model.Application;
 import bupt.ta.model.Job;
+import bupt.ta.service.AdminService;
 import bupt.ta.storage.DataStorage;
 
 import javax.servlet.ServletException;
@@ -28,6 +29,7 @@ public class ApplicationStatusServlet extends HttpServlet {
         int pendingCount = 0;
         int interviewCount = 0;
         int rejectedCount = 0;
+        int autoClosedCount = 0;
         for (Application a : applications) {
             Job j = jobMap.get(a.getJobId());
             enriched.add(new Object[]{a, j});
@@ -35,6 +37,7 @@ public class ApplicationStatusServlet extends HttpServlet {
             else if ("PENDING".equals(a.getStatus())) pendingCount++;
             else if ("INTERVIEW".equals(a.getStatus())) interviewCount++;
             else if ("REJECTED".equals(a.getStatus()) || "WITHDRAWN".equals(a.getStatus())) rejectedCount++;
+            else if (AdminService.STATUS_AUTO_CLOSED.equals(a.getStatus())) autoClosedCount++;
         }
 
         int points = selectedCount * 100 + pendingCount * 20 + interviewCount * 40;
@@ -43,6 +46,7 @@ public class ApplicationStatusServlet extends HttpServlet {
         req.setAttribute("pendingCount", pendingCount);
         req.setAttribute("interviewCount", interviewCount);
         req.setAttribute("rejectedCount", rejectedCount);
+        req.setAttribute("autoClosedCount", autoClosedCount);
         req.setAttribute("points", points);
         req.getRequestDispatcher("/ta/applications.jsp").forward(req, resp);
     }
