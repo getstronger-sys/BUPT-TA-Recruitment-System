@@ -13,6 +13,7 @@
     boolean hasCv = Boolean.TRUE.equals(request.getAttribute("hasCv"));
     boolean hasSkills = Boolean.TRUE.equals(request.getAttribute("hasSkills"));
     boolean hasStudentId = Boolean.TRUE.equals(request.getAttribute("hasStudentId"));
+    request.setAttribute("taNavActive", "home");
 %>
 <!DOCTYPE html>
 <html>
@@ -35,13 +36,7 @@
                 <div class="icon-dot">S</div>
                 <div class="icon-dot">A</div>
             </div>
-            <aside class="side-nav">
-                <a class="active" href="${pageContext.request.contextPath}/ta/dashboard">Home</a>
-                <a href="${pageContext.request.contextPath}/ta/jobs">Find Jobs</a>
-                <a href="${pageContext.request.contextPath}/ta/saved-jobs">Saved Jobs</a>
-                <a href="${pageContext.request.contextPath}/ta/applications">My Applications</a>
-                <a href="${pageContext.request.contextPath}/ta/profile">My Profile</a>
-            </aside>
+            <%@ include file="/WEB-INF/jspf/ta-side-nav.jspf" %>
         </div>
         <main class="main-panel ta-home-dashboard">
             <h1>Welcome back, <%= escHtml(session.getAttribute("realName") != null ? session.getAttribute("realName").toString() : "TA") %></h1>

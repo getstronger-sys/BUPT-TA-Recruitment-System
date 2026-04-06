@@ -10,6 +10,7 @@
         response.sendRedirect(request.getContextPath() + "/ta/jobs?error=job_not_found");
         return;
     }
+    request.setAttribute("taNavActive", "jobs");
     boolean isOpen = "OPEN".equals(job.getStatus());
     String moduleName = job.getModuleName() != null && !job.getModuleName().isEmpty() ? escHtml(job.getModuleName()) : "-";
     String wh = job.getWorkingHours() != null && !job.getWorkingHours().isEmpty() ? escHtml(job.getWorkingHours()) : "-";
@@ -42,13 +43,7 @@
                 <div class="icon-dot">A</div>
                 <div class="icon-dot">P</div>
             </div>
-            <aside class="side-nav">
-                <a href="${pageContext.request.contextPath}/ta/dashboard">Home</a>
-                <a class="active" href="${pageContext.request.contextPath}/ta/jobs">Find Jobs</a>
-                <a href="${pageContext.request.contextPath}/ta/saved-jobs">Saved Jobs</a>
-                <a href="${pageContext.request.contextPath}/ta/applications">My Applications</a>
-                <a href="${pageContext.request.contextPath}/ta/profile">My Profile</a>
-            </aside>
+            <%@ include file="/WEB-INF/jspf/ta-side-nav.jspf" %>
         </div>
         <main class="main-panel ta-main">
             <p class="breadcrumb-line"><a href="${pageContext.request.contextPath}/ta/jobs">&larr; Back to job list</a> | <a href="${pageContext.request.contextPath}/ta/saved-jobs">Saved jobs</a></p>

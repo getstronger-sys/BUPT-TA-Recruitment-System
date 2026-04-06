@@ -1,5 +1,7 @@
 package bupt.ta.filter;
 
+import bupt.ta.storage.DataStorage;
+
 import javax.servlet.*;
 import javax.servlet.http.*;
 import java.io.IOException;
@@ -39,6 +41,18 @@ public class AuthFilter implements Filter {
         if (!allowed) {
             response.sendRedirect(contextPath + "/dashboard.jsp?error=forbidden");
             return;
+        }
+
+        // Unread in-app message count for TA shell (sidebar badge)
+        if ("TA".equals(role) && path.startsWith("/ta/")) {
+            try {
+                String uid = (String) session.getAttribute("userId");
+                DataStorage storage = new DataStorage(request.getServletContext());
+                int unread = storage.countUnreadSiteNotificationsForUser(uid);
+                request.setAttribute("taUnreadNotificationCount", unread);
+            } catch (IOException e) {
+                request.setAttribute("taUnreadNotificationCount", 0);
+            }
         }
 
         chain.doFilter(req, resp);

@@ -448,6 +448,8 @@ tr:hover { background: #f8f7ff; }
 .btn-primary:hover { background: #0f4384; }
 .btn-success { background: #1d9a70; color: white; }
 .btn-danger { background: #c73a60; color: white; }
+.btn-secondary { background: #e8f0fa; color: #1f3f73; border: 1px solid #c5d6eb; }
+.btn-secondary:hover { background: #dce8f7; color: #123b7a; }
 
 .status-pending { color: #b56a09; font-weight: 600; }
 .status-selected { color: #1d9a70; font-weight: bold; }
@@ -1750,4 +1752,438 @@ tr:hover { background: #f8f7ff; }
     .admin-table {
         min-width: 680px;
     }
+}
+
+/* TA in-app messages (notifications.json) */
+.side-nav .ta-nav-messages {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+.nav-unread-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.35em;
+    padding: 2px 7px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    line-height: 1.2;
+    border-radius: 999px;
+    background: #ffffff;
+    color: #c5006b;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.35);
+}
+.ta-messages-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+.ta-messages-header h1 { margin-bottom: 6px; }
+.ta-messages-markall { margin: 0; align-self: center; }
+.ta-messages-markall-widget { margin: 10px 0 0; }
+.ta-messages-markall-widget .btn { width: 100%; }
+.ta-messages-hint { margin-bottom: 16px; }
+.ta-messages-empty {
+    text-align: center;
+    padding: 28px 20px;
+}
+.ta-messages-empty-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #123b7a;
+    margin: 0 0 8px;
+}
+.ta-message-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.ta-message-item {
+    border: 1px solid #d8e5f3;
+    border-radius: 12px;
+    padding: 14px 16px;
+    background: #fbfdff;
+    transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+.ta-message-item--unread {
+    background: linear-gradient(135deg, #f0f7ff 0%, #ffffff 55%);
+    border-color: #9ebce6;
+    box-shadow: 0 4px 14px rgba(8, 59, 132, 0.08);
+}
+.ta-message-item--read {
+    opacity: 0.92;
+}
+.ta-message-item-top {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+.ta-message-time {
+    font-size: 0.82rem;
+    color: #5a7194;
+}
+.ta-msg-kind {
+    display: inline-block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 999px;
+}
+.ta-msg-kind--default { background: #e8ecf4; color: #3d4f6a; }
+/* Matches .status-pill-pending / My Applications waitlist & pending tone */
+.ta-msg-kind--waitlist { background: #fff0d9; color: #9d6400; }
+.ta-msg-kind--info { background: #dbeafe; color: #1d4ed8; }
+.ta-msg-kind--success { background: #d1fae5; color: #047857; }
+.ta-msg-kind--muted { background: #f1f5f9; color: #64748b; }
+.ta-msg-kind--danger { background: #ffe4ea; color: #9b1b36; border: 1px solid #f0b8c8; }
+.ta-message-title {
+    margin: 0 0 8px;
+    font-size: 1.05rem;
+    color: #123b7a;
+}
+.ta-message-body {
+    margin: 0 0 12px;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    color: #2a3f5c;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+.ta-message-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+.ta-messages-main .inline-form { display: inline; margin: 0; }
+
+.ta-messages-back {
+    margin: 0 0 14px;
+    font-size: 0.92rem;
+}
+.ta-messages-back a { font-weight: 600; }
+.ta-message-detail-card {
+    border: 1px solid #d8e5f3;
+    border-radius: 12px;
+    padding: 20px 22px;
+    background: linear-gradient(180deg, #f8fbff 0%, #ffffff 40%);
+}
+.ta-message-detail-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+.ta-message-detail-title {
+    margin: 0 0 16px;
+    font-size: clamp(1.1rem, 1.5vw + 0.85rem, 1.35rem);
+    color: #123b7a;
+    line-height: 1.3;
+}
+.ta-message-detail-body {
+    white-space: pre-wrap;
+    word-break: break-word;
+    line-height: 1.55;
+    color: #2a3f5c;
+    font-size: 0.98rem;
+    margin-bottom: 16px;
+}
+.ta-message-detail-foot {
+    margin: 0;
+    font-size: 0.88rem;
+}
+.ta-message-detail-meta-right {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+}
+.ta-msg-unread-pill {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: #c5006b;
+    color: #ffffff;
+}
+.ta-msg-read-pill {
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: #e8ecf4;
+    color: #5a7194;
+}
+.ta-message-detail-card--unread {
+    border-color: #e8adc4;
+    box-shadow: 0 4px 20px rgba(197, 0, 107, 0.08), inset 0 0 0 1px rgba(197, 0, 107, 0.06);
+    background: linear-gradient(180deg, #fff8fb 0%, #ffffff 48%);
+}
+.ta-message-detail-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 14px;
+}
+.ta-msg-filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 14px;
+}
+.ta-msg-filter-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border-radius: 999px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-decoration: none;
+    color: #2a4f8c;
+    background: #e8eef6;
+    border: 1px solid #d0ddee;
+}
+.ta-msg-filter-tab:hover {
+    background: #dce6f4;
+    color: #123b7a;
+}
+.ta-msg-filter-tab--active {
+    background: linear-gradient(135deg, #083b84 0%, #1452a3 100%);
+    color: #ffffff;
+    border-color: #083b84;
+}
+.ta-msg-filter-count {
+    font-weight: 700;
+    opacity: 0.92;
+}
+.ta-messages-batch-form {
+    margin-bottom: 12px;
+}
+.ta-messages-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    background: #f2f8ff;
+    border: 1px solid #d8e5f3;
+    border-radius: 10px;
+}
+.ta-messages-toolbar-hint {
+    font-size: 0.88rem;
+}
+.ta-messages-toolbar-btns {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+.ta-message-list--compact {
+    gap: 0;
+}
+.ta-message-row {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: stretch;
+    gap: 0;
+    border: 1px solid #d8e5f3;
+    border-bottom: none;
+    background: #fbfdff;
+}
+.ta-message-list--compact .ta-message-row:first-of-type {
+    border-radius: 12px 12px 0 0;
+    overflow: hidden;
+}
+.ta-message-list--compact .ta-message-row:last-of-type {
+    border-bottom: 1px solid #d8e5f3;
+    border-radius: 0 0 12px 12px;
+}
+.ta-message-list--compact .ta-message-row:only-child {
+    border-radius: 12px;
+    border-bottom: 1px solid #d8e5f3;
+}
+.ta-message-row--unread {
+    background: linear-gradient(90deg, rgba(197, 0, 107, 0.11) 0%, #eef6ff 18%, #fbfdff 42%);
+    box-shadow: inset 4px 0 0 #c5006b;
+}
+.ta-message-row--unread .ta-message-row-title {
+    font-weight: 700;
+    color: #082752;
+}
+.ta-message-row--read {
+    opacity: 0.94;
+}
+.ta-message-row-meta {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+.ta-msg-unread-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #c5006b;
+    box-shadow: 0 0 0 2px rgba(197, 0, 107, 0.28);
+    flex-shrink: 0;
+}
+.ta-message-row-check {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 10px;
+    margin: 0;
+    border-right: 1px solid #e8eef6;
+    background: rgba(255, 255, 255, 0.5);
+    cursor: pointer;
+}
+.ta-message-row-check input {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+.ta-message-row-main {
+    display: block;
+    padding: 12px 14px;
+    text-decoration: none;
+    color: inherit;
+    min-width: 0;
+}
+.ta-message-row-main:hover {
+    background: rgba(32, 100, 194, 0.06);
+}
+.ta-message-row-top {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+.ta-message-row-title {
+    display: block;
+    font-weight: 600;
+    color: #123b7a;
+    font-size: 0.98rem;
+    margin-bottom: 4px;
+}
+.ta-message-row-summary {
+    display: block;
+    font-size: 0.88rem;
+    color: #5a7194;
+    line-height: 1.4;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.ta-msg-pagination {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    margin-top: 20px;
+    padding-top: 8px;
+}
+.ta-msg-page-status {
+    font-size: 0.92rem;
+    color: #4b6b95;
+    font-weight: 600;
+}
+.ta-msg-page-disabled {
+    opacity: 0.45;
+    pointer-events: none;
+    cursor: default;
+}
+
+/* TA messages list: lock page height; scroll inside list only */
+body.ta-messages-list-body {
+    overflow: hidden;
+    height: 100dvh;
+    max-height: 100dvh;
+}
+body.ta-messages-list-body .container.container--ta-messages-list {
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: 100%;
+    overflow: hidden;
+}
+body.ta-messages-list-body .page-layout {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+    grid-template-rows: minmax(0, 1fr);
+    align-items: stretch;
+}
+body.ta-messages-list-body .left-nav-wrap,
+body.ta-messages-list-body .right-sidebar {
+    min-height: 0;
+    max-height: 100%;
+    overflow-y: auto;
+}
+body.ta-messages-list-body .right-sidebar {
+    align-self: stretch;
+}
+body.ta-messages-list-body .main-panel.ta-messages-main--list {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    max-height: 100%;
+    overflow: hidden;
+}
+body.ta-messages-list-body .ta-messages-header,
+body.ta-messages-list-body .ta-msg-filter-bar {
+    flex: 0 0 auto;
+}
+body.ta-messages-list-body .ta-messages-list-layout {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+    margin-top: 4px;
+}
+body.ta-messages-list-body .ta-messages-batch-form {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+    margin-bottom: 0;
+}
+body.ta-messages-list-body .ta-messages-toolbar {
+    flex: 0 0 auto;
+    margin-bottom: 10px;
+}
+body.ta-messages-list-body .ta-messages-list-scroll {
+    flex: 1 1 auto;
+    min-height: 100px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    border: 1px solid #d8e5f3;
+    border-radius: 12px;
+    background: #fbfdff;
+}
+body.ta-messages-list-body .ta-msg-pagination--list {
+    flex: 0 0 auto;
+    margin-top: 12px;
+    margin-bottom: 0;
 }
