@@ -1,4 +1,5 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ include file="/WEB-INF/jspf/html-esc.jspf" %>
 <%@ page import="java.util.List" %>
 <%@ page import="bupt.ta.model.Job" %>
 <%@ page import="bupt.ta.ai.AIMatchService" %>
@@ -62,31 +63,46 @@
             <% for (Object[] row : jobsWithMatch) {
                 Job j = (Job) row[0];
                 AIMatchService.MatchResult match = (AIMatchService.MatchResult) row[1];
+                String title = escHtml(j.getTitle() != null ? j.getTitle() : "");
+                String moduleCode = escHtml(j.getModuleCode() != null ? j.getModuleCode() : "");
+                String moduleName = escHtml(j.getModuleName() != null ? j.getModuleName() : "");
+                String desc = escHtml(j.getDescription() != null ? j.getDescription() : "");
+                String deadline = escHtml(j.getDeadline() != null ? j.getDeadline() : "");
+                String workingHours = escHtml(j.getWorkingHours() != null ? j.getWorkingHours() : "");
+                String workload = escHtml(j.getWorkload() != null ? j.getWorkload() : "");
+                String postedByName = escHtml(j.getPostedByName() != null ? j.getPostedByName() : "MO");
+                String safeJobId = escHtml(j.getId() != null ? j.getId() : "");
             %>
             <div class="job-card ta-job-card">
-                <h3><%= j.getTitle() %> - <%= j.getModuleCode() %>
-                    <span class="match-badge" title="<%= match.explanation %>">Match: <%= (int)match.score %>%</span>
+                <h3><%= title %> - <%= moduleCode %>
+                    <span class="match-badge" title="<%= escHtml(match.explanation) %>">Match: <%= (int)match.score %>%</span>
                 </h3>
-                <p><strong><%= j.getModuleName() != null ? j.getModuleName() : "" %></strong>
+                <p><strong><%= moduleName %></strong>
                     <% if (j.getJobType() != null && !j.getJobType().isEmpty()) { %>
                     | Type: <%= "MODULE_TA".equals(j.getJobType()) ? "Module TA" : "INVIGILATION".equals(j.getJobType()) ? "Invigilation" : "Other" %>
                     <% } %>
                 </p>
-                <p><%= j.getDescription() != null ? j.getDescription() : "" %></p>
+                <p><%= desc %></p>
                 <% if (j.getRequiredSkills() != null && !j.getRequiredSkills().isEmpty()) { %>
-                <p class="skills">Required: <%= String.join(", ", j.getRequiredSkills()) %></p>
+                <p class="skills">Required: <%= escHtml(String.join(", ", j.getRequiredSkills())) %></p>
                 <% } %>
-                <% if (j.getDeadline() != null && !j.getDeadline().isEmpty()) { %>
-                <p class="job-list-deadline"><strong>Apply by:</strong> <%= j.getDeadline() %></p>
+                <% if (!workingHours.isEmpty()) { %>
+                <p><strong>Hours / schedule:</strong> <%= workingHours %></p>
+                <% } %>
+                <% if (!workload.isEmpty()) { %>
+                <p><strong>Workload:</strong> <%= workload %></p>
+                <% } %>
+                <% if (!deadline.isEmpty()) { %>
+                <p class="job-list-deadline"><strong>Apply by:</strong> <%= deadline %></p>
                 <% } %>
                 <% if (match.matched != null && !match.matched.isEmpty()) { %>
-                <p class="ai-matched">Your matched skills: <%= String.join(", ", match.matched) %></p>
+                <p class="ai-matched">Your matched skills: <%= escHtml(String.join(", ", match.matched)) %></p>
                 <% } %>
                 <% if (match.missing != null && !match.missing.isEmpty()) { %>
-                <p class="ai-missing">Missing skills for this job: <strong><%= String.join(", ", match.missing) %></strong>. Consider adding them to your profile.</p>
+                <p class="ai-missing">Missing skills for this job: <strong><%= escHtml(String.join(", ", match.missing)) %></strong>. Consider adding them to your profile.</p>
                 <% } %>
-                <p><em>Posted by <%= j.getPostedByName() != null ? j.getPostedByName() : "MO" %></em></p>
-                <a href="${pageContext.request.contextPath}/ta/job?jobId=<%= j.getId() %>" class="btn btn-primary">View details &amp; apply</a>
+                <p><em>Posted by <%= postedByName %></em></p>
+                <a href="${pageContext.request.contextPath}/ta/job?jobId=<%= safeJobId %>" class="btn btn-primary">Open vacancy details</a>
             </div>
             <% }
                if (jobsWithMatch.isEmpty()) { %>
