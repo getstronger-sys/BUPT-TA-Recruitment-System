@@ -3,7 +3,8 @@
 <%@ page import="java.util.List" %>
 <%@ page import="bupt.ta.model.Job" %>
 <%@ page import="bupt.ta.ai.AIMatchService" %>
-<% List<Object[]> jobsWithMatch = (List<Object[]>) request.getAttribute("jobsWithMatch"); if (jobsWithMatch == null) jobsWithMatch = java.util.Collections.emptyList(); %>
+<% List<Object[]> jobsWithMatch = (List<Object[]>) request.getAttribute("jobsWithMatch"); if (jobsWithMatch == null) jobsWithMatch = java.util.Collections.emptyList();
+   request.setAttribute("taNavActive", "jobs"); %>
 <!DOCTYPE html>
 <html>
 <head>
@@ -22,15 +23,11 @@
         <div class="left-nav-wrap">
             <div class="icon-rail">
                 <div class="icon-dot active">F</div>
+                <div class="icon-dot">S</div>
                 <div class="icon-dot">A</div>
                 <div class="icon-dot">P</div>
             </div>
-            <aside class="side-nav">
-                <a href="${pageContext.request.contextPath}/ta/dashboard">Home</a>
-                <a class="active" href="${pageContext.request.contextPath}/ta/jobs">Find Jobs</a>
-                <a href="${pageContext.request.contextPath}/ta/applications">My Applications</a>
-                <a href="${pageContext.request.contextPath}/ta/profile">My Profile</a>
-            </aside>
+            <%@ include file="/WEB-INF/jspf/ta-side-nav.jspf" %>
         </div>
         <main class="main-panel ta-main">
             <h1>Find Available Jobs</h1>
@@ -63,6 +60,7 @@
             <% for (Object[] row : jobsWithMatch) {
                 Job j = (Job) row[0];
                 AIMatchService.MatchResult match = (AIMatchService.MatchResult) row[1];
+                boolean saved = row.length > 2 && Boolean.TRUE.equals(row[2]);
                 String title = escHtml(j.getTitle() != null ? j.getTitle() : "");
                 String moduleCode = escHtml(j.getModuleCode() != null ? j.getModuleCode() : "");
                 String moduleName = escHtml(j.getModuleName() != null ? j.getModuleName() : "");
@@ -102,7 +100,15 @@
                 <p class="ai-missing">Missing skills for this job: <strong><%= escHtml(String.join(", ", match.missing)) %></strong>. Consider adding them to your profile.</p>
                 <% } %>
                 <p><em>Posted by <%= postedByName %></em></p>
-                <a href="${pageContext.request.contextPath}/ta/job?jobId=<%= safeJobId %>" class="btn btn-primary">Open vacancy details</a>
+                <div class="ta-job-actions">
+                    <a href="${pageContext.request.contextPath}/ta/job?jobId=<%= safeJobId %>" class="btn btn-primary">Open vacancy details</a>
+                    <form action="${pageContext.request.contextPath}/ta/save-job" method="post" class="inline-form">
+                        <input type="hidden" name="jobId" value="<%= safeJobId %>">
+                        <input type="hidden" name="action" value="<%= saved ? "unsave" : "save" %>">
+                        <input type="hidden" name="returnTo" value="/ta/jobs">
+                        <button type="submit" class="btn <%= saved ? "btn-danger" : "btn-success" %>"><%= saved ? "Remove saved" : "Save job" %></button>
+                    </form>
+                </div>
             </div>
             <% }
                if (jobsWithMatch.isEmpty()) { %>
