@@ -23,20 +23,25 @@ public class DataStorage {
     private static final String PROFILES_FILE = "profiles.json";
     private static final String JOBS_FILE = "jobs.json";
     private static final String APPLICATIONS_FILE = "applications.json";
+    private static final String SETTINGS_FILE = "settings.json";
+    private static final String SITE_NOTIFICATIONS_FILE = "site-notifications.json";
 
     private final Path basePath;
     private final Gson gson;
+    private final boolean seedDemoData;
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
     public DataStorage(ServletContext ctx) {
         this.basePath = resolveServletBasePath(ctx);
         this.gson = new GsonBuilder().setPrettyPrinting().create();
+        this.seedDemoData = true;
         ensureDataDir();
     }
 
     public DataStorage(String baseDir) {
         this.basePath = Paths.get(baseDir, DATA_DIR);
         this.gson = new GsonBuilder().setPrettyPrinting().create();
+        this.seedDemoData = false;
         ensureDataDir();
     }
 
@@ -179,6 +184,13 @@ public class DataStorage {
             save(JOBS_FILE, Arrays.asList(j1, j2, j3));
         }
 
+        Path settingsPath = basePath.resolve(SETTINGS_FILE);
+        if (!Files.exists(settingsPath) || Files.size(settingsPath) == 0) {
+            save(SETTINGS_FILE, new AdminSettings());
+        }
+        if (!seedDemoData) {
+            return;
+        }
         Path appsPath = basePath.resolve(APPLICATIONS_FILE);
         if (!Files.exists(appsPath) || Files.size(appsPath) == 0) {
             List<Application> demoApps = new ArrayList<>();
@@ -519,10 +531,47 @@ public class DataStorage {
     }
 
     public void saveProfile(TAProfile profile) throws IOException {
+        if (profile.getSavedJobIds() == null) {
+            profile.setSavedJobIds(new ArrayList<>());
+        }
         List<TAProfile> profiles = loadProfiles();
         profiles.removeIf(p -> p.getUserId().equals(profile.getUserId()));
         profiles.add(profile);
         save(PROFILES_FILE, profiles);
+    }
+
+    public TAProfile getOrCreateProfile(String userId) throws IOException {
+        TAProfile profile = getProfileByUserId(userId);
+        if (profile == null) {
+            profile = new TAProfile(userId);
+        } else if (profile.getSavedJobIds() == null) {
+            profile.setSavedJobIds(new ArrayList<>());
+        }
+        return profile;
+    }
+
+    public boolean isJobSaved(String userId, String jobId) throws IOException {
+        TAProfile profile = getOrCreateProfile(userId);
+        return profile.getSavedJobIds().contains(jobId);
+    }
+
+    public boolean setJobSaved(String userId, String jobId, boolean saved) throws IOException {
+        TAProfile profile = getOrCreateProfile(userId);
+        List<String> savedJobIds = new ArrayList<>(profile.getSavedJobIds());
+        boolean changed;
+        if (saved) {
+            changed = !savedJobIds.contains(jobId);
+            if (changed) {
+                savedJobIds.add(jobId);
+            }
+        } else {
+            changed = savedJobIds.removeIf(jobId::equals);
+        }
+        if (changed) {
+            profile.setSavedJobIds(savedJobIds);
+            saveProfile(profile);
+        }
+        return changed;
     }
 
     // ---- Jobs ----
@@ -600,6 +649,138 @@ public class DataStorage {
         apps.add(app);
         save(APPLICATIONS_FILE, apps);
         return app;
+    }
+
+    // ---- Admin settings ----
+    public AdminSettings loadAdminSettings() throws IOException {
+        AdminSettings settings = load(SETTINGS_FILE, AdminSettings.class);
+        return settings != null ? settings : new AdminSettings();
+    }
+
+    public void saveAdminSettings(AdminSettings settings) throws IOException {
+        save(SETTINGS_FILE, settings != null ? settings : new AdminSettings());
+    }
+
+    // ---- Site notifications ----
+    @SuppressWarnings("unchecked")
+    public List<SiteNotification> loadSiteNotifications() throws IOException {
+        List<SiteNotification> list = load(SITE_NOTIFICATIONS_FILE, new TypeToken<ArrayList<SiteNotification>>(){}.getType());
+        return list != null ? list : new ArrayList<>();
+    }
+
+    public SiteNotification addSiteNotification(SiteNotification n) throws IOException {
+        List<SiteNotification> all = loadSiteNotifications();
+        String newId = "N" + String.format("%06d", all.size() + 1);
+        n.setId(newId);
+        if (n.getCreatedAt() == null || n.getCreatedAt().trim().isEmpty()) {
+            n.setCreatedAt(java.time.LocalDateTime.now().toString());
+        }
+        all.add(n);
+        save(SITE_NOTIFICATIONS_FILE, all);
+        return n;
+    }
+
+    public List<SiteNotification> getSiteNotificationsForUser(String userId) throws IOException {
+        return loadSiteNotifications().stream()
+                .filter(n -> Objects.equals(userId, n.getRecipientUserId()))
+                .sorted(Comparator.comparing(SiteNotification::getCreatedAt, Comparator.nullsLast(String::compareTo)).reversed())
+                .collect(Collectors.toList());
+    }
+
+    public int countUnreadSiteNotificationsForUser(String userId) throws IOException {
+        return (int) loadSiteNotifications().stream()
+                .filter(n -> Objects.equals(userId, n.getRecipientUserId()) && !n.isRead())
+                .count();
+    }
+
+    public SiteNotification getSiteNotificationByIdForUser(String notificationId, String userId) throws IOException {
+        return loadSiteNotifications().stream()
+                .filter(n -> Objects.equals(notificationId, n.getId()) && Objects.equals(userId, n.getRecipientUserId()))
+                .findFirst()
+                .orElse(null);
+    }
+
+    public boolean markSiteNotificationRead(String notificationId, String userId) throws IOException {
+        List<SiteNotification> all = loadSiteNotifications();
+        boolean changed = false;
+        for (SiteNotification n : all) {
+            if (Objects.equals(notificationId, n.getId()) && Objects.equals(userId, n.getRecipientUserId()) && !n.isRead()) {
+                n.setRead(true);
+                changed = true;
+            }
+        }
+        if (changed) {
+            save(SITE_NOTIFICATIONS_FILE, all);
+        }
+        return changed;
+    }
+
+    public int markAllSiteNotificationsReadForUser(String userId) throws IOException {
+        List<SiteNotification> all = loadSiteNotifications();
+        int changed = 0;
+        for (SiteNotification n : all) {
+            if (Objects.equals(userId, n.getRecipientUserId()) && !n.isRead()) {
+                n.setRead(true);
+                changed++;
+            }
+        }
+        if (changed > 0) {
+            save(SITE_NOTIFICATIONS_FILE, all);
+        }
+        return changed;
+    }
+
+    public int markSiteNotificationsReadForUser(String userId, Collection<String> notificationIds) throws IOException {
+        if (notificationIds == null || notificationIds.isEmpty()) {
+            return 0;
+        }
+        Set<String> idSet = notificationIds.stream().filter(Objects::nonNull).collect(Collectors.toSet());
+        List<SiteNotification> all = loadSiteNotifications();
+        int changed = 0;
+        for (SiteNotification n : all) {
+            if (Objects.equals(userId, n.getRecipientUserId()) && idSet.contains(n.getId()) && !n.isRead()) {
+                n.setRead(true);
+                changed++;
+            }
+        }
+        if (changed > 0) {
+            save(SITE_NOTIFICATIONS_FILE, all);
+        }
+        return changed;
+    }
+
+    public boolean markSiteNotificationUnread(String notificationId, String userId) throws IOException {
+        List<SiteNotification> all = loadSiteNotifications();
+        boolean changed = false;
+        for (SiteNotification n : all) {
+            if (Objects.equals(notificationId, n.getId()) && Objects.equals(userId, n.getRecipientUserId()) && n.isRead()) {
+                n.setRead(false);
+                changed = true;
+            }
+        }
+        if (changed) {
+            save(SITE_NOTIFICATIONS_FILE, all);
+        }
+        return changed;
+    }
+
+    public int markSiteNotificationsUnreadForUser(String userId, Collection<String> notificationIds) throws IOException {
+        if (notificationIds == null || notificationIds.isEmpty()) {
+            return 0;
+        }
+        Set<String> idSet = notificationIds.stream().filter(Objects::nonNull).collect(Collectors.toSet());
+        List<SiteNotification> all = loadSiteNotifications();
+        int changed = 0;
+        for (SiteNotification n : all) {
+            if (Objects.equals(userId, n.getRecipientUserId()) && idSet.contains(n.getId()) && n.isRead()) {
+                n.setRead(false);
+                changed++;
+            }
+        }
+        if (changed > 0) {
+            save(SITE_NOTIFICATIONS_FILE, all);
+        }
+        return changed;
     }
 
     public Path getBasePath() { return basePath; }

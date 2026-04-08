@@ -39,6 +39,8 @@ public class Job {
     private String interviewSchedule;
     /** Interview location (room/link) shown to candidates before applying. */
     private String interviewLocation;
+    /** Whether selected TA withdrawals should auto-promote from waitlist. */
+    private boolean autoFillFromWaitlist;
 
     public Job() {
         this.requiredSkills = new ArrayList<>();
@@ -90,4 +92,6 @@ public class Job {
     public void setInterviewSchedule(String interviewSchedule) { this.interviewSchedule = interviewSchedule; }
     public String getInterviewLocation() { return interviewLocation; }
     public void setInterviewLocation(String interviewLocation) { this.interviewLocation = interviewLocation; }
+    public boolean isAutoFillFromWaitlist() { return autoFillFromWaitlist; }
+    public void setAutoFillFromWaitlist(boolean autoFillFromWaitlist) { this.autoFillFromWaitlist = autoFillFromWaitlist; }
 }
