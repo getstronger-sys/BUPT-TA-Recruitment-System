@@ -89,6 +89,16 @@
         <input type="text" name="workingHours" required placeholder="e.g. Wed 14:00–16:00; or 6 hrs/week flexible" value="<%= fva(request, "fvWorkingHours") %>">
         <label>Workload *</label>
         <input type="text" name="workload" required placeholder="e.g. ~8 hours/week; 2 lab sessions" value="<%= fva(request, "fvWorkload") %>">
+        <label>TA slots *</label>
+        <input type="number" name="taSlots" min="1" required value="<%= fva(request, "fvTaSlots").isEmpty() ? "3" : fva(request, "fvTaSlots") %>">
+        <label>Course timeline &amp; exam milestones *</label>
+        <textarea name="examTimeline" required rows="4" placeholder="Week 1-3 onboarding; Week 4 quiz support; Week 8 mock exam; Week 12 final exam marking."><%= fva(request, "fvExamTimeline") %></textarea>
+        <label>TA allocation plan *</label>
+        <textarea name="taAllocationPlan" required rows="4" placeholder="When 3 TAs are selected: TA-1 labs, TA-2 coursework marking, TA-3 office hours + exam support."><%= fva(request, "fvTaAllocationPlan") %></textarea>
+        <label>Interview schedule *</label>
+        <input type="text" name="interviewSchedule" required placeholder="e.g. 2026-04-20 14:00-17:00 (15 min per candidate)" value="<%= fva(request, "fvInterviewSchedule") %>">
+        <label>Interview location *</label>
+        <input type="text" name="interviewLocation" required placeholder="e.g. EECS Bldg Room 402 / Teams link" value="<%= fva(request, "fvInterviewLocation") %>">
         <label>Payment / compensation *</label>
         <input type="text" name="payment" required placeholder="e.g. £15/hour; stipend amount" value="<%= fva(request, "fvPayment") %>">
         <label>Application deadline * <span class="muted-inline">(YYYY-MM-DD)</span></label>

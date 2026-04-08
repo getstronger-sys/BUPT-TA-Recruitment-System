@@ -29,6 +29,16 @@ public class Job {
     private String payment;
     /** Application deadline, ISO date yyyy-MM-dd preferred. */
     private String deadline;
+    /** Suggested number of TAs for this posting. */
+    private int taSlots;
+    /** Course timeline such as labs, coursework and exam milestones. */
+    private String examTimeline;
+    /** How work should be split when multiple TAs are selected. */
+    private String taAllocationPlan;
+    /** Interview arrangement shown to candidates before applying. */
+    private String interviewSchedule;
+    /** Interview location (room/link) shown to candidates before applying. */
+    private String interviewLocation;
     /** Whether selected TA withdrawals should auto-promote from waitlist. */
     private boolean autoFillFromWaitlist;
 
@@ -72,6 +82,16 @@ public class Job {
     public void setPayment(String payment) { this.payment = payment; }
     public String getDeadline() { return deadline; }
     public void setDeadline(String deadline) { this.deadline = deadline; }
+    public int getTaSlots() { return taSlots; }
+    public void setTaSlots(int taSlots) { this.taSlots = taSlots; }
+    public String getExamTimeline() { return examTimeline; }
+    public void setExamTimeline(String examTimeline) { this.examTimeline = examTimeline; }
+    public String getTaAllocationPlan() { return taAllocationPlan; }
+    public void setTaAllocationPlan(String taAllocationPlan) { this.taAllocationPlan = taAllocationPlan; }
+    public String getInterviewSchedule() { return interviewSchedule; }
+    public void setInterviewSchedule(String interviewSchedule) { this.interviewSchedule = interviewSchedule; }
+    public String getInterviewLocation() { return interviewLocation; }
+    public void setInterviewLocation(String interviewLocation) { this.interviewLocation = interviewLocation; }
     public boolean isAutoFillFromWaitlist() { return autoFillFromWaitlist; }
     public void setAutoFillFromWaitlist(boolean autoFillFromWaitlist) { this.autoFillFromWaitlist = autoFillFromWaitlist; }
 }

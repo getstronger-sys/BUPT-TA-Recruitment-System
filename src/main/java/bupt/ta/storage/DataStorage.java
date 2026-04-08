@@ -23,23 +23,25 @@ public class DataStorage {
     private static final String PROFILES_FILE = "profiles.json";
     private static final String JOBS_FILE = "jobs.json";
     private static final String APPLICATIONS_FILE = "applications.json";
-    private static final String JOB_TEMPLATES_FILE = "job-templates.json";
     private static final String SETTINGS_FILE = "settings.json";
-    private static final String SITE_NOTIFICATIONS_FILE = "notifications.json";
+    private static final String SITE_NOTIFICATIONS_FILE = "site-notifications.json";
 
     private final Path basePath;
     private final Gson gson;
+    private final boolean seedDemoData;
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
     public DataStorage(ServletContext ctx) {
         this.basePath = resolveServletBasePath(ctx);
         this.gson = new GsonBuilder().setPrettyPrinting().create();
+        this.seedDemoData = true;
         ensureDataDir();
     }
 
     public DataStorage(String baseDir) {
         this.basePath = Paths.get(baseDir, DATA_DIR);
         this.gson = new GsonBuilder().setPrettyPrinting().create();
+        this.seedDemoData = false;
         ensureDataDir();
     }
 
@@ -97,11 +99,14 @@ public class DataStorage {
             List<User> defaultUsers = Arrays.asList(
                     createUser("U001", "ta1", "ta123", "TA", "ta1@bupt.edu.cn", "Zhang San"),
                     createUser("U002", "ta2", "ta123", "TA", "ta2@bupt.edu.cn", "Li Si"),
+                    createUser("U005", "ta3", "ta123", "TA", "ta3@bupt.edu.cn", "Wang Wu"),
+                    createUser("U006", "ta4", "ta123", "TA", "ta4@bupt.edu.cn", "Zhao Liu"),
                     createUser("U003", "mo1", "mo123", "MO", "mo1@bupt.edu.cn", "Wang MO"),
                     createUser("U004", "admin", "admin123", "ADMIN", "admin@bupt.edu.cn", "System Admin")
             );
             save(USERS_FILE, defaultUsers);
         }
+        ensureDemoUsersExist();
         Path jobsPath = basePath.resolve(JOBS_FILE);
         if (!Files.exists(jobsPath) || Files.size(jobsPath) == 0) {
             Job j1 = new Job();
@@ -115,14 +120,323 @@ public class DataStorage {
             j1.setPostedByName("Wang MO");
             j1.setStatus("OPEN");
             j1.setCreatedAt(java.time.LocalDateTime.now().toString());
-            j1.setMaxApplicants(2);
+            j1.setMaxApplicants(8);
             j1.setJobType("MODULE_TA");
-            save(JOBS_FILE, Arrays.asList(j1));
+            j1.setWorkload("8 hours/week including one coding lab and one office hour block.");
+            j1.setWorkingHours("Wed 14:00-16:00 lab, Fri 11:00-12:00 office hour.");
+            j1.setPayment("15 GBP/hour.");
+            j1.setDeadline(java.time.LocalDate.now().plusDays(18).toString());
+            j1.setResponsibilities("Support lecture labs, answer Piazza/forum questions, and help with coursework marking and moderation.");
+            j1.setTaSlots(3);
+            j1.setExamTimeline("Week 4 quiz clinic; Week 8 midterm mock review; Week 12 final exam revision and marking.");
+            j1.setTaAllocationPlan("3 TAs: TA-1 handles labs and office hours; TA-2 covers coursework marking; TA-3 supports Piazza/forum and final exam script checks.");
+            j1.setInterviewSchedule("2026-04-18 14:00-17:00, 15 minutes per candidate.");
+            j1.setInterviewLocation("EECS Building Room 402 / Teams backup link.");
+
+            Job j2 = new Job();
+            j2.setId("J0002");
+            j2.setTitle("TA for Data Structures");
+            j2.setModuleCode("EBU6202");
+            j2.setModuleName("Data Structures and Algorithms");
+            j2.setDescription("Lead problem-solving sessions and support coding assessments.");
+            j2.setRequiredSkills(Arrays.asList("Java", "Algorithms", "Complexity Analysis"));
+            j2.setPostedBy("U003");
+            j2.setPostedByName("Wang MO");
+            j2.setStatus("OPEN");
+            j2.setCreatedAt(java.time.LocalDateTime.now().minusDays(2).toString());
+            j2.setMaxApplicants(6);
+            j2.setJobType("MODULE_TA");
+            j2.setTaSlots(2);
+            j2.setWorkload("6-8 hours/week including one lab block.");
+            j2.setWorkingHours("Tue 16:00-18:00 lab + weekly office hour.");
+            j2.setPayment("15 GBP/hour.");
+            j2.setDeadline(java.time.LocalDate.now().plusDays(20).toString());
+            j2.setResponsibilities("Support lab delivery, debug student code, and mark weekly coding exercises.");
+            j2.setExamTimeline("Week 6 timed coding quiz; Week 10 practical assessment; Week 13 final exam.");
+            j2.setTaAllocationPlan("2 TAs split by student groups (A-L and M-Z), rotate final exam invigilation.");
+            j2.setInterviewSchedule("2026-04-19 10:00-12:00.");
+            j2.setInterviewLocation("CS Teaching Lab 1.");
+
+            Job j3 = new Job();
+            j3.setId("J0003");
+            j3.setTitle("Invigilation Assistant - Digital Systems");
+            j3.setModuleCode("EBU5101");
+            j3.setModuleName("Digital Systems");
+            j3.setDescription("Invigilation and exam logistics support.");
+            j3.setRequiredSkills(Arrays.asList("Communication", "Time Management"));
+            j3.setPostedBy("U003");
+            j3.setPostedByName("Wang MO");
+            j3.setStatus("OPEN");
+            j3.setCreatedAt(java.time.LocalDateTime.now().minusDays(4).toString());
+            j3.setMaxApplicants(10);
+            j3.setJobType("INVIGILATION");
+            j3.setTaSlots(3);
+            j3.setWorkload("Two exam-day shifts + one prep briefing.");
+            j3.setWorkingHours("Exam week shifts, 3 hours each.");
+            j3.setPayment("Flat stipend 120 GBP.");
+            j3.setDeadline(java.time.LocalDate.now().plusDays(15).toString());
+            j3.setResponsibilities("Room setup, attendance checks, exam logistics, and script handover.");
+            j3.setExamTimeline("Week 11 briefing; Week 12 invigilation; Week 13 make-up exam support.");
+            j3.setTaAllocationPlan("3 TAs: entrance check, in-room invigilation, and script processing.");
+            j3.setInterviewSchedule("2026-04-21 15:00-16:30 (group interview).");
+            j3.setInterviewLocation("Main Building N201.");
+
+            save(JOBS_FILE, Arrays.asList(j1, j2, j3));
         }
+
         Path settingsPath = basePath.resolve(SETTINGS_FILE);
         if (!Files.exists(settingsPath) || Files.size(settingsPath) == 0) {
             save(SETTINGS_FILE, new AdminSettings());
         }
+        if (!seedDemoData) {
+            return;
+        }
+        Path appsPath = basePath.resolve(APPLICATIONS_FILE);
+        if (!Files.exists(appsPath) || Files.size(appsPath) == 0) {
+            List<Application> demoApps = new ArrayList<>();
+
+            Application a1 = new Application();
+            a1.setId("A00001");
+            a1.setJobId("J0001");
+            a1.setApplicantId("U001");
+            a1.setApplicantName("Zhang San");
+            a1.setStatus("PENDING");
+            a1.setAppliedAt(java.time.LocalDateTime.now().minusDays(1).toString());
+            a1.setPreferredRole("TA-1");
+            demoApps.add(a1);
+
+            Application a2 = new Application();
+            a2.setId("A00002");
+            a2.setJobId("J0001");
+            a2.setApplicantId("U002");
+            a2.setApplicantName("Li Si");
+            a2.setStatus("INTERVIEW");
+            a2.setAppliedAt(java.time.LocalDateTime.now().minusDays(2).toString());
+            a2.setInterviewTime("2026-04-18 14:30");
+            a2.setInterviewLocation("EECS Building Room 402");
+            a2.setInterviewAssessment("Teaching demo + Java debugging");
+            a2.setPreferredRole("TA-2");
+            demoApps.add(a2);
+
+            Application a3 = new Application();
+            a3.setId("A00003");
+            a3.setJobId("J0002");
+            a3.setApplicantId("U005");
+            a3.setApplicantName("Wang Wu");
+            a3.setStatus("PENDING");
+            a3.setAppliedAt(java.time.LocalDateTime.now().minusDays(1).toString());
+            a3.setPreferredRole("TA-1");
+            demoApps.add(a3);
+
+            Application a4 = new Application();
+            a4.setId("A00004");
+            a4.setJobId("J0003");
+            a4.setApplicantId("U006");
+            a4.setApplicantName("Zhao Liu");
+            a4.setStatus("SELECTED");
+            a4.setAppliedAt(java.time.LocalDateTime.now().minusDays(3).toString());
+            a4.setNotes("Strong exam supervision experience.");
+            a4.setPreferredRole("TA-3");
+            demoApps.add(a4);
+
+            save(APPLICATIONS_FILE, demoApps);
+        }
+        ensureDemoJobsAndApplicationsExist();
+    }
+
+    private void ensureDemoUsersExist() throws IOException {
+        List<User> users = loadUsers();
+        boolean changed = false;
+        changed |= addUserIfMissing(users, createUser("U005", "ta3", "ta123", "TA", "ta3@bupt.edu.cn", "Wang Wu"));
+        changed |= addUserIfMissing(users, createUser("U006", "ta4", "ta123", "TA", "ta4@bupt.edu.cn", "Zhao Liu"));
+        if (changed) {
+            save(USERS_FILE, users);
+        }
+    }
+
+    private boolean addUserIfMissing(List<User> users, User candidate) {
+        boolean exists = users.stream().anyMatch(u ->
+                Objects.equals(u.getId(), candidate.getId())
+                        || Objects.equals(u.getUsername(), candidate.getUsername()));
+        if (exists) {
+            return false;
+        }
+        users.add(candidate);
+        return true;
+    }
+
+    private void ensureDemoJobsAndApplicationsExist() throws IOException {
+        List<Job> jobs = loadJobs();
+        List<Application> apps = loadApplications();
+        boolean softwareEngUpdated = enrichSoftwareEngineeringJob(jobs);
+        if (softwareEngUpdated) {
+            save(JOBS_FILE, jobs);
+            jobs = loadJobs();
+        }
+        boolean normalizedRole = false;
+        for (Application app : apps) {
+            if (app.getPreferredRole() == null || app.getPreferredRole().trim().isEmpty()) {
+                app.setPreferredRole("TA-1");
+                normalizedRole = true;
+            }
+        }
+        if (normalizedRole) {
+            save(APPLICATIONS_FILE, apps);
+            apps = loadApplications();
+        }
+        if (jobs.size() >= 3 && apps.size() >= 4) {
+            return;
+        }
+        boolean jobsChanged = false;
+        boolean appsChanged = false;
+        if (jobs.stream().noneMatch(j -> "J0002".equals(j.getId()))) {
+            Job j2 = new Job();
+            j2.setId("J0002");
+            j2.setTitle("TA for Data Structures");
+            j2.setModuleCode("EBU6202");
+            j2.setModuleName("Data Structures and Algorithms");
+            j2.setDescription("Lead problem-solving sessions and support coding assessments.");
+            j2.setRequiredSkills(Arrays.asList("Java", "Algorithms", "Complexity Analysis"));
+            j2.setPostedBy("U003");
+            j2.setPostedByName("Wang MO");
+            j2.setStatus("OPEN");
+            j2.setCreatedAt(java.time.LocalDateTime.now().minusDays(2).toString());
+            j2.setMaxApplicants(6);
+            j2.setJobType("MODULE_TA");
+            j2.setTaSlots(2);
+            j2.setWorkload("6-8 hours/week including one lab block.");
+            j2.setWorkingHours("Tue 16:00-18:00 lab + weekly office hour.");
+            j2.setPayment("15 GBP/hour.");
+            j2.setDeadline(java.time.LocalDate.now().plusDays(20).toString());
+            j2.setResponsibilities("Support lab delivery, debug student code, and mark weekly coding exercises.");
+            j2.setExamTimeline("Week 6 timed coding quiz; Week 10 practical assessment; Week 13 final exam.");
+            j2.setTaAllocationPlan("2 TAs split by student groups (A-L and M-Z), rotate final exam invigilation.");
+            j2.setInterviewSchedule("2026-04-19 10:00-12:00.");
+            j2.setInterviewLocation("CS Teaching Lab 1.");
+            jobs.add(j2);
+            jobsChanged = true;
+        }
+        if (jobs.stream().noneMatch(j -> "J0003".equals(j.getId()))) {
+            Job j3 = new Job();
+            j3.setId("J0003");
+            j3.setTitle("Invigilation Assistant - Digital Systems");
+            j3.setModuleCode("EBU5101");
+            j3.setModuleName("Digital Systems");
+            j3.setDescription("Invigilation and exam logistics support.");
+            j3.setRequiredSkills(Arrays.asList("Communication", "Time Management"));
+            j3.setPostedBy("U003");
+            j3.setPostedByName("Wang MO");
+            j3.setStatus("OPEN");
+            j3.setCreatedAt(java.time.LocalDateTime.now().minusDays(4).toString());
+            j3.setMaxApplicants(10);
+            j3.setJobType("INVIGILATION");
+            j3.setTaSlots(3);
+            j3.setWorkload("Two exam-day shifts + one prep briefing.");
+            j3.setWorkingHours("Exam week shifts, 3 hours each.");
+            j3.setPayment("Flat stipend 120 GBP.");
+            j3.setDeadline(java.time.LocalDate.now().plusDays(15).toString());
+            j3.setResponsibilities("Room setup, attendance checks, exam logistics, and script handover.");
+            j3.setExamTimeline("Week 11 briefing; Week 12 invigilation; Week 13 make-up exam support.");
+            j3.setTaAllocationPlan("3 TAs: entrance check, in-room invigilation, and script processing.");
+            j3.setInterviewSchedule("2026-04-21 15:00-16:30 (group interview).");
+            j3.setInterviewLocation("Main Building N201.");
+            jobs.add(j3);
+            jobsChanged = true;
+        }
+        if (jobsChanged) {
+            save(JOBS_FILE, jobs);
+        }
+
+        if (apps.stream().noneMatch(a -> "A00003".equals(a.getId()))) {
+            Application a3 = new Application();
+            a3.setId("A00003");
+            a3.setJobId("J0002");
+            a3.setApplicantId("U005");
+            a3.setApplicantName("Wang Wu");
+            a3.setStatus("PENDING");
+            a3.setAppliedAt(java.time.LocalDateTime.now().minusDays(1).toString());
+            a3.setPreferredRole("TA-1");
+            apps.add(a3);
+            appsChanged = true;
+        }
+        if (apps.stream().noneMatch(a -> "A00004".equals(a.getId()))) {
+            Application a4 = new Application();
+            a4.setId("A00004");
+            a4.setJobId("J0003");
+            a4.setApplicantId("U006");
+            a4.setApplicantName("Zhao Liu");
+            a4.setStatus("SELECTED");
+            a4.setAppliedAt(java.time.LocalDateTime.now().minusDays(3).toString());
+            a4.setNotes("Strong exam supervision experience.");
+            a4.setPreferredRole("TA-3");
+            apps.add(a4);
+            appsChanged = true;
+        }
+        if (appsChanged) {
+            save(APPLICATIONS_FILE, apps);
+        }
+    }
+
+    private boolean enrichSoftwareEngineeringJob(List<Job> jobs) {
+        Job target = null;
+        for (Job j : jobs) {
+            boolean byCode = "EBU6304".equalsIgnoreCase(j.getModuleCode());
+            boolean byName = j.getModuleName() != null && j.getModuleName().toLowerCase().contains("software engineering");
+            if (byCode || byName) {
+                target = j;
+                break;
+            }
+        }
+        if (target == null) {
+            return false;
+        }
+
+        boolean changed = false;
+        if (target.getTaSlots() <= 0) {
+            target.setTaSlots(3);
+            changed = true;
+        }
+        if (isBlank(target.getWorkingHours())) {
+            target.setWorkingHours("Wed 14:00-16:00 lab block; Fri 11:00-12:00 office hour; ad-hoc pre-exam clinic.");
+            changed = true;
+        }
+        if (isBlank(target.getWorkload())) {
+            target.setWorkload("8-10 hours/week. Extra workload in Week 8 and Week 12 for assessment and exam support.");
+            changed = true;
+        }
+        if (isBlank(target.getPayment())) {
+            target.setPayment("15 GBP/hour.");
+            changed = true;
+        }
+        if (isBlank(target.getDeadline())) {
+            target.setDeadline(java.time.LocalDate.now().plusDays(18).toString());
+            changed = true;
+        }
+        if (isBlank(target.getResponsibilities())) {
+            target.setResponsibilities("Support weekly labs, maintain Piazza/forum Q&A, mark coursework with rubric, hold office hours, and assist exam logistics.");
+            changed = true;
+        }
+        if (isBlank(target.getExamTimeline())) {
+            target.setExamTimeline("Week 4: Lab onboarding and coding standards check; Week 8: Mid-course coursework demo and feedback triage; Week 10: Practice viva and revision clinic; Week 12: Final exam invigilation and script triage; Week 13: Re-sit support and moderation wrap-up.");
+            changed = true;
+        }
+        if (isBlank(target.getTaAllocationPlan())) {
+            target.setTaAllocationPlan("TA-1: Lead weekly labs (Groups A-L), maintain lab attendance, and first-pass debugging support; TA-2: Coursework marking (Groups M-Z), rubric calibration, and moderation notes; TA-3: Office hours, Piazza/forum response triage, and exam-day invigilation + script handover.");
+            changed = true;
+        }
+        if (isBlank(target.getInterviewSchedule())) {
+            target.setInterviewSchedule("2026-04-18 14:00-17:00, 15 minutes per candidate (teaching demo + Q&A).");
+            changed = true;
+        }
+        if (isBlank(target.getInterviewLocation())) {
+            target.setInterviewLocation("EECS Building Room 402 (backup: Teams meeting link in TA notice).");
+            changed = true;
+        }
+        return changed;
+    }
+
+    private static boolean isBlank(String value) {
+        return value == null || value.trim().isEmpty();
     }
 
     private User createUser(String id, String uname, String pwd, String role, String email, String name) {
@@ -289,33 +603,6 @@ public class DataStorage {
         return job;
     }
 
-    // ---- Job templates ----
-    @SuppressWarnings("unchecked")
-    public List<JobTemplate> loadJobTemplates() throws IOException {
-        List<JobTemplate> list = load(JOB_TEMPLATES_FILE, new TypeToken<ArrayList<JobTemplate>>(){}.getType());
-        return list != null ? list : new ArrayList<>();
-    }
-
-    public List<JobTemplate> getJobTemplatesByOwner(String ownerId) throws IOException {
-        return loadJobTemplates().stream()
-                .filter(t -> ownerId.equals(t.getOwnerId()))
-                .collect(Collectors.toList());
-    }
-
-    public JobTemplate getJobTemplateById(String id) throws IOException {
-        return loadJobTemplates().stream().filter(t -> t.getId().equals(id)).findFirst().orElse(null);
-    }
-
-    public JobTemplate addJobTemplate(JobTemplate template) throws IOException {
-        List<JobTemplate> templates = loadJobTemplates();
-        String newId = "T" + String.format("%04d", templates.size() + 1);
-        template.setId(newId);
-        template.setCreatedAt(java.time.LocalDateTime.now().toString());
-        templates.add(template);
-        save(JOB_TEMPLATES_FILE, templates);
-        return template;
-    }
-
     // ---- Applications ----
     @SuppressWarnings("unchecked")
     public List<Application> loadApplications() throws IOException {
@@ -343,7 +630,7 @@ public class DataStorage {
     }
 
     private static boolean blocksNewApplicationToJob(String status) {
-        return "PENDING".equals(status) || "INTERVIEW".equals(status) || "WAITLIST".equals(status) || "SELECTED".equals(status);
+        return "PENDING".equals(status) || "INTERVIEW".equals(status) || "SELECTED".equals(status);
     }
 
     public void saveApplication(Application app) throws IOException {
@@ -364,9 +651,6 @@ public class DataStorage {
         return app;
     }
 
-    public Path getBasePath() { return basePath; }
-    public Path getUploadPath() { return basePath.resolve("uploads"); }
-
     // ---- Admin settings ----
     public AdminSettings loadAdminSettings() throws IOException {
         AdminSettings settings = load(SETTINGS_FILE, AdminSettings.class);
@@ -377,233 +661,130 @@ public class DataStorage {
         save(SETTINGS_FILE, settings != null ? settings : new AdminSettings());
     }
 
-    // ---- In-app notifications (site messages, JSON file) ----
-    private List<SiteNotification> readSiteNotificationsFileUnsynchronized() throws IOException {
-        Path file = basePath.resolve(SITE_NOTIFICATIONS_FILE);
-        if (!Files.exists(file) || Files.size(file) == 0) {
-            return new ArrayList<>();
-        }
-        String json = new String(Files.readAllBytes(file), StandardCharsets.UTF_8);
-        List<SiteNotification> list = gson.fromJson(json, new TypeToken<ArrayList<SiteNotification>>(){}.getType());
+    // ---- Site notifications ----
+    @SuppressWarnings("unchecked")
+    public List<SiteNotification> loadSiteNotifications() throws IOException {
+        List<SiteNotification> list = load(SITE_NOTIFICATIONS_FILE, new TypeToken<ArrayList<SiteNotification>>(){}.getType());
         return list != null ? list : new ArrayList<>();
     }
 
-    private void writeSiteNotificationsFileUnsynchronized(List<SiteNotification> list) throws IOException {
-        Path file = basePath.resolve(SITE_NOTIFICATIONS_FILE);
-        String json = gson.toJson(list);
-        Files.write(file, json.getBytes(StandardCharsets.UTF_8), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
-    }
-
-    public List<SiteNotification> loadSiteNotifications() throws IOException {
-        lock.readLock().lock();
-        try {
-            return readSiteNotificationsFileUnsynchronized();
-        } finally {
-            lock.readLock().unlock();
-        }
-    }
-
-    /**
-     * Append a notification; assigns id and createdAt if missing.
-     */
     public SiteNotification addSiteNotification(SiteNotification n) throws IOException {
-        lock.writeLock().lock();
-        try {
-            List<SiteNotification> list = readSiteNotificationsFileUnsynchronized();
-            if (n.getId() == null || n.getId().trim().isEmpty()) {
-                String newId = "N" + String.format("%05d", list.size() + 1);
-                n.setId(newId);
-            }
-            if (n.getCreatedAt() == null || n.getCreatedAt().trim().isEmpty()) {
-                n.setCreatedAt(java.time.LocalDateTime.now().toString());
-            }
-            list.add(n);
-            writeSiteNotificationsFileUnsynchronized(list);
-            return n;
-        } finally {
-            lock.writeLock().unlock();
+        List<SiteNotification> all = loadSiteNotifications();
+        String newId = "N" + String.format("%06d", all.size() + 1);
+        n.setId(newId);
+        if (n.getCreatedAt() == null || n.getCreatedAt().trim().isEmpty()) {
+            n.setCreatedAt(java.time.LocalDateTime.now().toString());
         }
+        all.add(n);
+        save(SITE_NOTIFICATIONS_FILE, all);
+        return n;
     }
 
     public List<SiteNotification> getSiteNotificationsForUser(String userId) throws IOException {
-        if (userId == null || userId.trim().isEmpty()) {
-            return Collections.emptyList();
-        }
         return loadSiteNotifications().stream()
-                .filter(x -> userId.equals(x.getRecipientUserId()))
-                .sorted(Comparator.comparing(SiteNotification::getCreatedAt,
-                        Comparator.nullsLast(Comparator.reverseOrder())))
+                .filter(n -> Objects.equals(userId, n.getRecipientUserId()))
+                .sorted(Comparator.comparing(SiteNotification::getCreatedAt, Comparator.nullsLast(String::compareTo)).reversed())
                 .collect(Collectors.toList());
     }
 
     public int countUnreadSiteNotificationsForUser(String userId) throws IOException {
-        if (userId == null || userId.trim().isEmpty()) {
-            return 0;
-        }
         return (int) loadSiteNotifications().stream()
-                .filter(x -> userId.equals(x.getRecipientUserId()))
-                .filter(x -> !x.isRead())
+                .filter(n -> Objects.equals(userId, n.getRecipientUserId()) && !n.isRead())
                 .count();
     }
 
-    public boolean markSiteNotificationRead(String notificationId, String recipientUserId) throws IOException {
-        if (notificationId == null || recipientUserId == null) {
-            return false;
-        }
-        lock.writeLock().lock();
-        try {
-            List<SiteNotification> list = readSiteNotificationsFileUnsynchronized();
-            boolean changed = false;
-            for (SiteNotification n : list) {
-                if (notificationId.equals(n.getId()) && recipientUserId.equals(n.getRecipientUserId())) {
-                    if (!n.isRead()) {
-                        n.setRead(true);
-                        changed = true;
-                    }
-                    break;
-                }
-            }
-            if (changed) {
-                writeSiteNotificationsFileUnsynchronized(list);
-            }
-            return changed;
-        } finally {
-            lock.writeLock().unlock();
-        }
-    }
-
-    public boolean markSiteNotificationUnread(String notificationId, String recipientUserId) throws IOException {
-        if (notificationId == null || recipientUserId == null) {
-            return false;
-        }
-        lock.writeLock().lock();
-        try {
-            List<SiteNotification> list = readSiteNotificationsFileUnsynchronized();
-            boolean changed = false;
-            for (SiteNotification n : list) {
-                if (notificationId.equals(n.getId()) && recipientUserId.equals(n.getRecipientUserId())) {
-                    if (n.isRead()) {
-                        n.setRead(false);
-                        changed = true;
-                    }
-                    break;
-                }
-            }
-            if (changed) {
-                writeSiteNotificationsFileUnsynchronized(list);
-            }
-            return changed;
-        } finally {
-            lock.writeLock().unlock();
-        }
-    }
-
-    public int markAllSiteNotificationsReadForUser(String recipientUserId) throws IOException {
-        if (recipientUserId == null || recipientUserId.trim().isEmpty()) {
-            return 0;
-        }
-        lock.writeLock().lock();
-        try {
-            List<SiteNotification> list = readSiteNotificationsFileUnsynchronized();
-            int n = 0;
-            for (SiteNotification x : list) {
-                if (recipientUserId.equals(x.getRecipientUserId()) && !x.isRead()) {
-                    x.setRead(true);
-                    n++;
-                }
-            }
-            if (n > 0) {
-                writeSiteNotificationsFileUnsynchronized(list);
-            }
-            return n;
-        } finally {
-            lock.writeLock().unlock();
-        }
-    }
-
-    /**
-     * Returns a notification only if it belongs to the given user (for TA detail view).
-     */
-    public SiteNotification getSiteNotificationByIdForUser(String notificationId, String recipientUserId) throws IOException {
-        if (notificationId == null || notificationId.trim().isEmpty() || recipientUserId == null) {
-            return null;
-        }
-        String nid = notificationId.trim();
+    public SiteNotification getSiteNotificationByIdForUser(String notificationId, String userId) throws IOException {
         return loadSiteNotifications().stream()
-                .filter(x -> nid.equals(x.getId()) && recipientUserId.equals(x.getRecipientUserId()))
+                .filter(n -> Objects.equals(notificationId, n.getId()) && Objects.equals(userId, n.getRecipientUserId()))
                 .findFirst()
                 .orElse(null);
     }
 
-    /**
-     * Marks multiple notifications read in one write; ignores ids that do not belong to the user.
-     */
-    public int markSiteNotificationsReadForUser(String recipientUserId, Collection<String> notificationIds) throws IOException {
-        if (recipientUserId == null || recipientUserId.trim().isEmpty() || notificationIds == null || notificationIds.isEmpty()) {
-            return 0;
-        }
-        Set<String> idSet = new HashSet<>();
-        for (String id : notificationIds) {
-            if (id != null && !id.trim().isEmpty()) {
-                idSet.add(id.trim());
+    public boolean markSiteNotificationRead(String notificationId, String userId) throws IOException {
+        List<SiteNotification> all = loadSiteNotifications();
+        boolean changed = false;
+        for (SiteNotification n : all) {
+            if (Objects.equals(notificationId, n.getId()) && Objects.equals(userId, n.getRecipientUserId()) && !n.isRead()) {
+                n.setRead(true);
+                changed = true;
             }
         }
-        if (idSet.isEmpty()) {
-            return 0;
+        if (changed) {
+            save(SITE_NOTIFICATIONS_FILE, all);
         }
-        lock.writeLock().lock();
-        try {
-            List<SiteNotification> list = readSiteNotificationsFileUnsynchronized();
-            int n = 0;
-            for (SiteNotification x : list) {
-                if (recipientUserId.equals(x.getRecipientUserId()) && idSet.contains(x.getId()) && !x.isRead()) {
-                    x.setRead(true);
-                    n++;
-                }
-            }
-            if (n > 0) {
-                writeSiteNotificationsFileUnsynchronized(list);
-            }
-            return n;
-        } finally {
-            lock.writeLock().unlock();
-        }
+        return changed;
     }
 
-    /**
-     * Marks multiple notifications unread in one write; ignores ids that do not belong to the user.
-     */
-    public int markSiteNotificationsUnreadForUser(String recipientUserId, Collection<String> notificationIds) throws IOException {
-        if (recipientUserId == null || recipientUserId.trim().isEmpty() || notificationIds == null || notificationIds.isEmpty()) {
-            return 0;
-        }
-        Set<String> idSet = new HashSet<>();
-        for (String id : notificationIds) {
-            if (id != null && !id.trim().isEmpty()) {
-                idSet.add(id.trim());
+    public int markAllSiteNotificationsReadForUser(String userId) throws IOException {
+        List<SiteNotification> all = loadSiteNotifications();
+        int changed = 0;
+        for (SiteNotification n : all) {
+            if (Objects.equals(userId, n.getRecipientUserId()) && !n.isRead()) {
+                n.setRead(true);
+                changed++;
             }
         }
-        if (idSet.isEmpty()) {
-            return 0;
+        if (changed > 0) {
+            save(SITE_NOTIFICATIONS_FILE, all);
         }
-        lock.writeLock().lock();
-        try {
-            List<SiteNotification> list = readSiteNotificationsFileUnsynchronized();
-            int n = 0;
-            for (SiteNotification x : list) {
-                if (recipientUserId.equals(x.getRecipientUserId()) && idSet.contains(x.getId()) && x.isRead()) {
-                    x.setRead(false);
-                    n++;
-                }
-            }
-            if (n > 0) {
-                writeSiteNotificationsFileUnsynchronized(list);
-            }
-            return n;
-        } finally {
-            lock.writeLock().unlock();
-        }
+        return changed;
     }
+
+    public int markSiteNotificationsReadForUser(String userId, Collection<String> notificationIds) throws IOException {
+        if (notificationIds == null || notificationIds.isEmpty()) {
+            return 0;
+        }
+        Set<String> idSet = notificationIds.stream().filter(Objects::nonNull).collect(Collectors.toSet());
+        List<SiteNotification> all = loadSiteNotifications();
+        int changed = 0;
+        for (SiteNotification n : all) {
+            if (Objects.equals(userId, n.getRecipientUserId()) && idSet.contains(n.getId()) && !n.isRead()) {
+                n.setRead(true);
+                changed++;
+            }
+        }
+        if (changed > 0) {
+            save(SITE_NOTIFICATIONS_FILE, all);
+        }
+        return changed;
+    }
+
+    public boolean markSiteNotificationUnread(String notificationId, String userId) throws IOException {
+        List<SiteNotification> all = loadSiteNotifications();
+        boolean changed = false;
+        for (SiteNotification n : all) {
+            if (Objects.equals(notificationId, n.getId()) && Objects.equals(userId, n.getRecipientUserId()) && n.isRead()) {
+                n.setRead(false);
+                changed = true;
+            }
+        }
+        if (changed) {
+            save(SITE_NOTIFICATIONS_FILE, all);
+        }
+        return changed;
+    }
+
+    public int markSiteNotificationsUnreadForUser(String userId, Collection<String> notificationIds) throws IOException {
+        if (notificationIds == null || notificationIds.isEmpty()) {
+            return 0;
+        }
+        Set<String> idSet = notificationIds.stream().filter(Objects::nonNull).collect(Collectors.toSet());
+        List<SiteNotification> all = loadSiteNotifications();
+        int changed = 0;
+        for (SiteNotification n : all) {
+            if (Objects.equals(userId, n.getRecipientUserId()) && idSet.contains(n.getId()) && n.isRead()) {
+                n.setRead(false);
+                changed++;
+            }
+        }
+        if (changed > 0) {
+            save(SITE_NOTIFICATIONS_FILE, all);
+        }
+        return changed;
+    }
+
+    public Path getBasePath() { return basePath; }
+    public Path getUploadPath() { return basePath.resolve("uploads"); }
 
     private boolean equalsIgnoreCaseTrimmed(String left, String right) {
         if (left == null || right == null) {
