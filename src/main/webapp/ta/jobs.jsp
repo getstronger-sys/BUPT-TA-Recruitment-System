@@ -93,6 +93,17 @@
                 <% if (!deadline.isEmpty()) { %>
                 <p class="job-list-deadline"><strong>Apply by:</strong> <%= deadline %></p>
                 <% } %>
+                <p class="job-list-deadline"><strong>TA slots:</strong> <%= j.getTaSlots() > 0 ? j.getTaSlots() : 1 %></p>
+                <% if (j.getExamTimeline() != null && !j.getExamTimeline().isEmpty()) { %>
+                <p><strong>Timeline:</strong> <%= j.getExamTimeline() %></p>
+                <% } %>
+                <% if (j.getInterviewSchedule() != null && !j.getInterviewSchedule().isEmpty()) { %>
+                <p><strong>Interview:</strong> <%= j.getInterviewSchedule() %>
+                    <% if (j.getInterviewLocation() != null && !j.getInterviewLocation().isEmpty()) { %>
+                    @ <%= j.getInterviewLocation() %>
+                    <% } %>
+                </p>
+                <% } %>
                 <% if (match.matched != null && !match.matched.isEmpty()) { %>
                 <p class="ai-matched">Your matched skills: <%= escHtml(String.join(", ", match.matched)) %></p>
                 <% } %>

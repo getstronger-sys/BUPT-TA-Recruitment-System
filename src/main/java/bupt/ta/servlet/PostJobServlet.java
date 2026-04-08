@@ -1,7 +1,6 @@
 package bupt.ta.servlet;
 
 import bupt.ta.model.Job;
-import bupt.ta.model.JobTemplate;
 import bupt.ta.storage.DataStorage;
 
 import javax.servlet.ServletException;
@@ -19,31 +18,6 @@ public class PostJobServlet extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        String moId = (String) req.getSession().getAttribute("userId");
-        DataStorage storage = new DataStorage(getServletContext());
-        req.setAttribute("jobTemplates", storage.getJobTemplatesByOwner(moId));
-        String templateId = trim(req.getParameter("templateId"));
-        if (!templateId.isEmpty()) {
-            JobTemplate template = storage.getJobTemplateById(templateId);
-            if (template != null && moId.equals(template.getOwnerId())) {
-                repopulateForm(req,
-                        template.getTitle(),
-                        template.getModuleCode(),
-                        template.getModuleName(),
-                        template.getDescription(),
-                        template.getResponsibilities(),
-                        template.getWorkingHours(),
-                        template.getWorkload(),
-                        template.getPayment(),
-                        "",
-                        String.join(", ", template.getRequiredSkills()),
-                        String.valueOf(template.getMaxApplicants()),
-                        template.getJobType(),
-                        template.isAutoFillFromWaitlist(),
-                        template.getTemplateName());
-                req.setAttribute("selectedTemplateId", template.getId());
-            }
-        }
         req.getRequestDispatcher("/mo/post-job.jsp").forward(req, resp);
     }
 
@@ -58,12 +32,14 @@ public class PostJobServlet extends HttpServlet {
         String workload = trim(req.getParameter("workload"));
         String payment = trim(req.getParameter("payment"));
         String deadline = trim(req.getParameter("deadline"));
+        String examTimeline = trim(req.getParameter("examTimeline"));
+        String taAllocationPlan = trim(req.getParameter("taAllocationPlan"));
+        String interviewSchedule = trim(req.getParameter("interviewSchedule"));
+        String interviewLocation = trim(req.getParameter("interviewLocation"));
+        String taSlotsStr = trim(req.getParameter("taSlots"));
         String skillsStr = req.getParameter("skills");
         String maxApplicantsStr = req.getParameter("maxApplicants");
         String jobType = req.getParameter("jobType");
-        boolean autoFillFromWaitlist = req.getParameter("autoFillFromWaitlist") != null;
-        boolean saveAsTemplate = req.getParameter("saveAsTemplate") != null;
-        String templateName = trim(req.getParameter("templateName"));
         String postedBy = (String) req.getSession().getAttribute("userId");
         String postedByName = (String) req.getSession().getAttribute("realName");
 
@@ -82,13 +58,22 @@ public class PostJobServlet extends HttpServlet {
             }
         } catch (NumberFormatException ignored) {
         }
+        int taSlots = 1;
+        try {
+            if (!taSlotsStr.isEmpty()) {
+                taSlots = Integer.parseInt(taSlotsStr);
+            }
+        } catch (NumberFormatException ignored) {
+        }
 
-        String error = validateJobForm(title, moduleCode, moduleName, responsibilities, workingHours, workload, payment, deadline, skills, maxApplicants);
+        String error = validateJobForm(title, moduleCode, moduleName, responsibilities, workingHours, workload, payment,
+                deadline, examTimeline, taAllocationPlan, interviewSchedule, interviewLocation, skills, maxApplicants, taSlots);
 
         if (error != null) {
-            repopulateForm(req, title, moduleCode, moduleName, description, responsibilities, workingHours, workload, payment, deadline, skillsStr, maxApplicantsStr, jobType, autoFillFromWaitlist, templateName);
+            repopulateForm(req, title, moduleCode, moduleName, description, responsibilities, workingHours, workload, payment,
+                    deadline, examTimeline, taAllocationPlan, interviewSchedule, interviewLocation, taSlotsStr, skillsStr,
+                    maxApplicantsStr, jobType);
             req.setAttribute("error", error);
-            req.setAttribute("jobTemplates", new DataStorage(getServletContext()).getJobTemplatesByOwner(postedBy));
             req.getRequestDispatcher("/mo/post-job.jsp").forward(req, resp);
             return;
         }
@@ -103,34 +88,19 @@ public class PostJobServlet extends HttpServlet {
         job.setWorkload(workload);
         job.setPayment(payment);
         job.setDeadline(deadline);
+        job.setExamTimeline(examTimeline);
+        job.setTaAllocationPlan(taAllocationPlan);
+        job.setInterviewSchedule(interviewSchedule);
+        job.setInterviewLocation(interviewLocation);
+        job.setTaSlots(taSlots);
         job.setRequiredSkills(skills);
         job.setPostedBy(postedBy);
         job.setPostedByName(postedByName != null ? postedByName : "MO");
         job.setMaxApplicants(maxApplicants);
         job.setJobType(jobType != null && !jobType.isEmpty() ? jobType : "MODULE_TA");
-        job.setAutoFillFromWaitlist(autoFillFromWaitlist);
 
         DataStorage storage = new DataStorage(getServletContext());
         storage.addJob(job);
-        if (saveAsTemplate) {
-            JobTemplate template = new JobTemplate();
-            template.setOwnerId(postedBy);
-            template.setOwnerName(postedByName != null ? postedByName : "MO");
-            template.setTemplateName(!templateName.isEmpty() ? templateName : defaultTemplateName(moduleCode, title));
-            template.setTitle(title);
-            template.setModuleCode(moduleCode.toUpperCase());
-            template.setModuleName(moduleName);
-            template.setDescription(description);
-            template.setResponsibilities(responsibilities);
-            template.setWorkingHours(workingHours);
-            template.setWorkload(workload);
-            template.setPayment(payment);
-            template.setRequiredSkills(skills);
-            template.setJobType(jobType != null && !jobType.isEmpty() ? jobType : "MODULE_TA");
-            template.setMaxApplicants(maxApplicants);
-            template.setAutoFillFromWaitlist(autoFillFromWaitlist);
-            storage.addJobTemplate(template);
-        }
         resp.sendRedirect(req.getContextPath() + "/mo/jobs?success=1&jobId="
                 + java.net.URLEncoder.encode(job.getId(), java.nio.charset.StandardCharsets.UTF_8) + "&view=pending");
     }
@@ -144,7 +114,9 @@ public class PostJobServlet extends HttpServlet {
      */
     private static String validateJobForm(String title, String moduleCode, String moduleName,
                                            String responsibilities, String workingHours, String workload,
-                                           String payment, String deadline, List<String> skills, int maxApplicants) {
+                                          String payment, String deadline, String examTimeline, String taAllocationPlan,
+                                          String interviewSchedule, String interviewLocation,
+                                          List<String> skills, int maxApplicants, int taSlots) {
         if (title.isEmpty()) {
             return "Job title is required.";
         }
@@ -183,21 +155,29 @@ public class PostJobServlet extends HttpServlet {
         if (maxApplicants < 0) {
             return "Max applicants cannot be negative.";
         }
-        return null;
-    }
-
-    private static String defaultTemplateName(String moduleCode, String title) {
-        if (moduleCode != null && !moduleCode.isEmpty()) {
-            return moduleCode.toUpperCase() + " template";
+        if (taSlots <= 0) {
+            return "TA slots must be at least 1.";
         }
-        return title != null && !title.isEmpty() ? title + " template" : "Reusable template";
+        if (examTimeline.isEmpty()) {
+            return "Course timeline / exam milestones are required.";
+        }
+        if (taAllocationPlan.isEmpty()) {
+            return "TA allocation plan is required.";
+        }
+        if (interviewSchedule.isEmpty()) {
+            return "Interview schedule is required.";
+        }
+        if (interviewLocation.isEmpty()) {
+            return "Interview location is required.";
+        }
+        return null;
     }
 
     private static void repopulateForm(HttpServletRequest req, String title, String moduleCode, String moduleName,
                                        String description, String responsibilities, String workingHours,
-                                       String workload, String payment, String deadline, String skillsStr,
-                                       String maxApplicantsStr, String jobType, boolean autoFillFromWaitlist,
-                                       String templateName) {
+                                       String workload, String payment, String deadline, String examTimeline,
+                                       String taAllocationPlan, String interviewSchedule, String interviewLocation,
+                                       String taSlotsStr, String skillsStr, String maxApplicantsStr, String jobType) {
         req.setAttribute("fvTitle", title);
         req.setAttribute("fvModuleCode", moduleCode);
         req.setAttribute("fvModuleName", moduleName);
@@ -207,10 +187,13 @@ public class PostJobServlet extends HttpServlet {
         req.setAttribute("fvWorkload", workload);
         req.setAttribute("fvPayment", payment);
         req.setAttribute("fvDeadline", deadline);
+        req.setAttribute("fvExamTimeline", examTimeline);
+        req.setAttribute("fvTaAllocationPlan", taAllocationPlan);
+        req.setAttribute("fvInterviewSchedule", interviewSchedule);
+        req.setAttribute("fvInterviewLocation", interviewLocation);
+        req.setAttribute("fvTaSlots", taSlotsStr != null ? taSlotsStr : "1");
         req.setAttribute("fvSkills", skillsStr != null ? skillsStr : "");
         req.setAttribute("fvMaxApplicants", maxApplicantsStr != null ? maxApplicantsStr : "0");
         req.setAttribute("fvJobType", jobType != null ? jobType : "MODULE_TA");
-        req.setAttribute("fvAutoFillFromWaitlist", autoFillFromWaitlist);
-        req.setAttribute("fvTemplateName", templateName != null ? templateName : "");
     }
 }

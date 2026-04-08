@@ -15,6 +15,8 @@ public class Application {
     private String interviewTime;
     private String interviewLocation;
     private String interviewAssessment;
+    /** TA-selected preferred role/slot for this job, e.g. TA-1, TA-2. */
+    private String preferredRole;
 
     public Application() {
         this.status = "PENDING";
@@ -41,4 +43,6 @@ public class Application {
     public void setInterviewLocation(String interviewLocation) { this.interviewLocation = interviewLocation; }
     public String getInterviewAssessment() { return interviewAssessment; }
     public void setInterviewAssessment(String interviewAssessment) { this.interviewAssessment = interviewAssessment; }
+    public String getPreferredRole() { return preferredRole; }
+    public void setPreferredRole(String preferredRole) { this.preferredRole = preferredRole; }
 }

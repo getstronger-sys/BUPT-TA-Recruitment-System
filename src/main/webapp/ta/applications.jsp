@@ -31,16 +31,8 @@
         }
         return datePart + " " + timePart;
     }
-
-    /** TA-facing note for rejected applications. */
-    static String rejectionNote(String raw) {
-        if (raw == null || raw.trim().isEmpty()) {
-            return "Thank you for your application. This application was not selected.";
-        }
-        return raw.trim();
-    }
 %>
-<% 
+<%
     List<Object[]> applications = (List<Object[]>) request.getAttribute("applications");
     if (applications == null) applications = java.util.Collections.emptyList();
     Integer pointsObj = (Integer) request.getAttribute("points");
@@ -53,17 +45,11 @@
     int rejectedCount = rejectedObj != null ? rejectedObj : 0;
     Integer interviewObj = (Integer) request.getAttribute("interviewCount");
     int interviewCount = interviewObj != null ? interviewObj : 0;
-    Integer waitlistObj = (Integer) request.getAttribute("waitlistCount");
-    int waitlistCount = waitlistObj != null ? waitlistObj : 0;
-    Integer autoClosedObj = (Integer) request.getAttribute("autoClosedCount");
-    int autoClosedCount = autoClosedObj != null ? autoClosedObj : 0;
-    request.setAttribute("taNavActive", "applications");
 %>
 <!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
-    <%@ include file="/WEB-INF/jspf/viewport.jspf" %>
     <title>My Applications - TA Recruitment</title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css">
 </head>
@@ -77,15 +63,18 @@
         <div class="left-nav-wrap">
             <div class="icon-rail">
                 <div class="icon-dot">F</div>
-                <div class="icon-dot">S</div>
                 <div class="icon-dot active">A</div>
                 <div class="icon-dot">P</div>
             </div>
-            <%@ include file="/WEB-INF/jspf/ta-side-nav.jspf" %>
+            <aside class="side-nav">
+                <a href="${pageContext.request.contextPath}/ta/dashboard">Home</a>
+                <a href="${pageContext.request.contextPath}/ta/jobs">Find Jobs</a>
+                <a class="active" href="${pageContext.request.contextPath}/ta/applications">My Applications</a>
+                <a href="${pageContext.request.contextPath}/ta/profile">My Profile</a>
+            </aside>
         </div>
-        <main class="main-panel ta-main">
+        <main class="main-panel">
             <h1>My Applications</h1>
-            <p class="ta-page-lead">Track each submission, open interview notices from the organiser, and withdraw while still pending or in interview.</p>
             <div class="context-card">
                 <strong>How it works</strong>
                 <p>Pending &rarr; Interview (see time and location posted by the module organiser) &rarr; Selected or rejected. Notices are in-app only (no email).</p>
@@ -106,7 +95,7 @@
                 <div class="stat-card">
                     <div>
                         <div class="stat-title">Status Overview</div>
-                        <div class="stat-meta">Selected <%= selectedCount %> | Pending <%= pendingCount %> | Interview <%= interviewCount %> | Waitlist <%= waitlistCount %> | Closed <%= rejectedCount + autoClosedCount %></div>
+                        <div class="stat-meta">Selected <%= selectedCount %> | Pending <%= pendingCount %> | Interview <%= interviewCount %> | Closed <%= rejectedCount %></div>
                     </div>
                 </div>
             </div>
@@ -114,18 +103,16 @@
             <p class="applications-table-hint muted-inline">Swipe or drag the bar below to see all columns if the table is wide.</p>
             <div class="applications-table-scroll">
             <table class="applications-table">
-                <thead>
                 <tr>
                     <th class="col-job">Job</th>
                     <th class="col-module">Module</th>
+                    <th class="col-module">Preferred role</th>
                     <th class="col-applied">Applied at</th>
                     <th class="col-progress">Progress</th>
                     <th class="col-status">Status</th>
                     <th class="col-notice">Interview</th>
                     <th class="col-action">Action</th>
                 </tr>
-                </thead>
-                <tbody>
                 <% for (Object[] row : applications) {
                     Application a = (Application) row[0];
                     Job j = (Job) row[1];
@@ -134,8 +121,6 @@
                     if ("SELECTED".equals(a.getStatus())) { statusClass = "status-selected"; progress = 100; }
                     else if ("REJECTED".equals(a.getStatus())) { statusClass = "status-rejected"; progress = 100; }
                     else if ("WITHDRAWN".equals(a.getStatus())) { statusClass = "status-rejected"; progress = 100; }
-                    else if ("AUTO_CLOSED".equals(a.getStatus())) { statusClass = "status-rejected"; progress = 100; }
-                    else if ("WAITLIST".equals(a.getStatus())) { statusClass = "status-pending"; progress = 60; }
                     else if ("INTERVIEW".equals(a.getStatus())) { statusClass = "status-pending"; progress = 75; }
                     boolean hasNotice = (a.getInterviewTime() != null && !a.getInterviewTime().isEmpty())
                             || (a.getInterviewLocation() != null && !a.getInterviewLocation().isEmpty())
@@ -149,6 +134,7 @@
                 <tr>
                     <td class="col-job"><%= escHtml(jobTitle) %></td>
                     <td class="col-module"><%= j != null ? escHtml(j.getModuleCode()) : "-" %></td>
+                    <td class="col-module"><%= escHtml(a.getPreferredRole() != null && !a.getPreferredRole().isEmpty() ? a.getPreferredRole() : "Not selected") %></td>
                     <td class="col-applied"><%= formatAppliedAt(a.getAppliedAt()) %></td>
                     <td class="col-progress">
                         <div class="progress-wrap">
@@ -156,14 +142,7 @@
                         </div>
                         <div class="progress-text"><%= progress %>%</div>
                     </td>
-                    <td class="col-status <%= statusClass %>">
-                        <div><%= a.getStatus() %></div>
-                        <% if ("AUTO_CLOSED".equals(a.getStatus()) && a.getNotes() != null && !a.getNotes().isEmpty()) { %>
-                        <div class="status-subtext"><%= escHtml(a.getNotes()) %></div>
-                        <% } else if ("REJECTED".equals(a.getStatus())) { %>
-                        <div class="status-subtext"><%= escHtml(rejectionNote(a.getNotes())) %></div>
-                        <% } %>
-                    </td>
+                    <td class="col-status <%= statusClass %>"><%= a.getStatus() %></td>
                     <td class="col-notice interview-notice-cell">
                         <% if (hasNotice) { %>
                         <button type="button" class="btn btn-primary btn-sm ta-notice-btn" data-template="<%= noticeTplId %>">View notice</button>
@@ -187,7 +166,7 @@
                         <% } %>
                     </td>
                     <td class="col-action">
-                        <% if ("PENDING".equals(a.getStatus()) || "INTERVIEW".equals(a.getStatus()) || "WAITLIST".equals(a.getStatus()) || "SELECTED".equals(a.getStatus())) { %>
+                        <% if ("PENDING".equals(a.getStatus()) || "INTERVIEW".equals(a.getStatus())) { %>
                         <form action="${pageContext.request.contextPath}/ta/withdraw" method="post" style="display:inline;">
                             <input type="hidden" name="applicationId" value="<%= a.getId() %>">
                             <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Withdraw this application?')">Withdraw</button>
@@ -197,9 +176,8 @@
                 </tr>
                 <% }
                    if (applications.isEmpty()) { %>
-                <tr class="applications-empty-row"><td colspan="7" class="applications-empty-cell">No applications yet. <a href="${pageContext.request.contextPath}/ta/jobs">Find jobs</a> to apply.</td></tr>
+                <tr><td colspan="8">No applications yet. <a href="${pageContext.request.contextPath}/ta/jobs">Find jobs</a> to apply.</td></tr>
                 <% } %>
-                </tbody>
             </table>
             </div>
         </main>
@@ -207,7 +185,7 @@
             <div class="widget-card">
                 <div class="widget-title">TA Points</div>
                 <p class="widget-line">Current: <%= points %></p>
-                <p class="widget-line">Selected: <%= selectedCount %> | Pending: <%= pendingCount %> | Interview: <%= interviewCount %> | Waitlist: <%= waitlistCount %></p>
+                <p class="widget-line">Selected: <%= selectedCount %> | Pending: <%= pendingCount %> | Interview: <%= interviewCount %></p>
             </div>
             <div class="widget-card">
                 <div class="widget-title">Reminders</div>
