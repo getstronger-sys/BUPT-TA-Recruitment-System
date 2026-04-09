@@ -33,6 +33,7 @@
     }
 %>
 <%
+    request.setAttribute("taNavActive", "applications");
     List<Object[]> applications = (List<Object[]>) request.getAttribute("applications");
     if (applications == null) applications = java.util.Collections.emptyList();
     Integer pointsObj = (Integer) request.getAttribute("points");
@@ -50,13 +51,14 @@
 <html>
 <head>
     <meta charset="UTF-8">
+    <%@ include file="/WEB-INF/jspf/viewport.jspf" %>
     <title>My Applications - TA Recruitment</title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css">
 </head>
 <body>
 <div class="container">
     <div class="nav top-nav">
-        <span class="brand">QM TA Portal</span>
+        <span class="brand">BUPT Teaching Assistant Recruitment System</span>
         <span class="user"><%= session.getAttribute("realName") %> | <a href="${pageContext.request.contextPath}/logout">Logout</a></span>
     </div>
     <div class="page-layout">
@@ -66,14 +68,9 @@
                 <div class="icon-dot active">A</div>
                 <div class="icon-dot">P</div>
             </div>
-            <aside class="side-nav">
-                <a href="${pageContext.request.contextPath}/ta/dashboard">Home</a>
-                <a href="${pageContext.request.contextPath}/ta/jobs">Find Jobs</a>
-                <a class="active" href="${pageContext.request.contextPath}/ta/applications">My Applications</a>
-                <a href="${pageContext.request.contextPath}/ta/profile">My Profile</a>
-            </aside>
+            <%@ include file="/WEB-INF/jspf/ta-side-nav.jspf" %>
         </div>
-        <main class="main-panel">
+        <main class="main-panel ta-main">
             <h1>My Applications</h1>
             <div class="context-card">
                 <strong>How it works</strong>

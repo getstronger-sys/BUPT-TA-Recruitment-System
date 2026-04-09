@@ -29,13 +29,14 @@
 <html>
 <head>
     <meta charset="UTF-8">
+    <%@ include file="/WEB-INF/jspf/viewport.jspf" %>
     <title><%= moPastJobsPage ? "Past postings - MO" : "My Jobs - MO" %></title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css">
 </head>
 <body>
 <div class="container">
     <div class="nav top-nav">
-        <span class="brand">QM TA Portal</span>
+        <span class="brand">BUPT Teaching Assistant Recruitment System</span>
         <span class="user"><%= session.getAttribute("realName") %> | <a href="${pageContext.request.contextPath}/logout">Logout</a></span>
     </div>
     <div class="page-layout">
@@ -51,7 +52,7 @@
                 <a class="<%= moPastJobsPage ? "active" : "" %>" href="<%= moCtx %>/mo/past-jobs">Past postings</a>
             </aside>
         </div>
-        <main class="main-panel">
+        <main class="main-panel mo-main">
             <% if ("1".equals(request.getParameter("success"))) { %><p class="success">Job posted successfully!</p><% } %>
             <% if ("1".equals(request.getParameter("updated"))) { %><p class="success">Applicant status updated.</p><% } %>
             <% if ("1".equals(request.getParameter("notice"))) { %><p class="success">Interview notice saved (in-app message).</p><% } %>
@@ -68,6 +69,11 @@
 
             <% if (moJobListMode) { %>
             <h1><%= moPastJobsPage ? "Past postings" : "Your postings" %></h1>
+            <p class="mo-page-lead">
+                <%= moPastJobsPage
+                        ? "Review closed or expired postings for history and records."
+                        : "Choose one posting to manage applicants, interviews, and outcomes in a focused workflow." %>
+            </p>
             <div class="context-card">
                 <% if (moPastJobsPage) { %>
                 <strong>Closed or past deadline</strong>
@@ -117,6 +123,7 @@
             <% Job hdr = jobsWithApps.isEmpty() ? null : (Job) ((Object[]) jobsWithApps.get(0))[0]; %>
             <h1><%= hdr != null ? escHtml(hdr.getTitle()) : "Job management" %></h1>
             <% if (hdr != null) { %><p class="pick-meta"><%= escHtml(hdr.getModuleCode()) %> · <%= escHtml(hdr.getModuleName() != null ? hdr.getModuleName() : "") %></p><% } %>
+            <p class="mo-page-lead">Manage one posting end-to-end: screen applicants, send interview notices, and record final outcomes.</p>
             <% if (hdr != null) {
                    int taSlots = hdr.getTaSlots() > 0 ? hdr.getTaSlots() : 1;
                    List<String> allocationItems = new ArrayList<>();
@@ -215,7 +222,7 @@
                 <a href="<%= moBase %>?view=withdrawn<%= moJobIdQ %>" class="mo-jobs-tab <%= "withdrawn".equals(moView) ? "active" : "" %>">Withdrawn<span class="tab-count"><%= moCntW %></span></a>
                 <a href="<%= moBase %>?view=outcome<%= moJobIdQ %>" class="mo-jobs-tab <%= "outcome".equals(moView) ? "active" : "" %>">Outcomes<span class="tab-count"><%= moCntO %></span></a>
             </nav>
-            <p class="ai-hint"><strong>AI hint</strong>: Within each group, applicants are sorted by match score and workload.</p>
+            <p class="ai-hint mo-ai-hint"><strong>AI hint</strong>: Within each group, applicants are sorted by match score and workload.</p>
             <p><a href="${pageContext.request.contextPath}/mo/post-job" class="btn btn-primary">Post New Job</a></p>
 
             <% for (Object[] row : jobsWithApps) {
@@ -232,7 +239,7 @@
                 String batchPendingFormId = "batch_pending_" + j.getId().replaceAll("[^A-Za-z0-9]", "_");
                 String batchNoticeFormId = "batch_notice_" + j.getId().replaceAll("[^A-Za-z0-9]", "_");
             %>
-            <div class="job-card">
+            <div class="job-card mo-job-manage-card">
                 <div class="job-card-head">
                     <div class="job-card-title">
                         <h3><%= j.getTitle() %> - <%= j.getModuleCode() %> <span class="job-status-text">(<%= j.getStatus() %>)</span></h3>
