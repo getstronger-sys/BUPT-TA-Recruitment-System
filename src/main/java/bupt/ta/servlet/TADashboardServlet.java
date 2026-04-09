@@ -2,6 +2,7 @@ package bupt.ta.servlet;
 
 import bupt.ta.model.Application;
 import bupt.ta.model.TAProfile;
+import bupt.ta.model.User;
 import bupt.ta.storage.DataStorage;
 
 import javax.servlet.ServletException;
@@ -42,6 +43,16 @@ public class TADashboardServlet extends HttpServlet {
         boolean hasCv = profile.getCvFilePath() != null && !profile.getCvFilePath().trim().isEmpty();
         boolean hasSkills = profile.getSkills() != null && !profile.getSkills().isEmpty();
         boolean hasStudentId = profile.getStudentId() != null && !profile.getStudentId().trim().isEmpty();
+        boolean hasEmail = profile.getEmail() != null && !profile.getEmail().trim().isEmpty();
+        if (!hasEmail) {
+            try {
+                User u = storage.findUserById(userId);
+                if (u != null && u.getEmail() != null && !u.getEmail().trim().isEmpty()) {
+                    hasEmail = true;
+                }
+            } catch (IOException ignored) {
+            }
+        }
 
         req.setAttribute("profile", profile);
         req.setAttribute("totalApplications", apps.size());
@@ -53,6 +64,7 @@ public class TADashboardServlet extends HttpServlet {
         req.setAttribute("hasCv", hasCv);
         req.setAttribute("hasSkills", hasSkills);
         req.setAttribute("hasStudentId", hasStudentId);
+        req.setAttribute("hasEmail", hasEmail);
 
         req.getRequestDispatcher("/ta/dashboard.jsp").forward(req, resp);
     }

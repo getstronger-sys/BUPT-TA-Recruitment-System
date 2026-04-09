@@ -60,6 +60,10 @@ public class SelectApplicantServlet extends HttpServlet {
             redirectJobs(resp, req, listPath, "pending", jobId, "error=forbidden");
             return;
         }
+        if (JobActivity.isInactive(job)) {
+            redirectJobs(resp, req, JobActivity.PATH_INACTIVE, "pending", jobId, "error=job_inactive");
+            return;
+        }
 
         if ("interview".equalsIgnoreCase(action)) {
             if (!"PENDING".equals(target.getStatus())) {

@@ -1,13 +1,16 @@
 package bupt.ta.servlet;
 
 import bupt.ta.model.Job;
+import bupt.ta.model.WorkArrangementItem;
 import bupt.ta.storage.DataStorage;
+import bupt.ta.util.WorkArrangementSupport;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.*;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -28,17 +31,14 @@ public class PostJobServlet extends HttpServlet {
         String moduleName = trim(req.getParameter("moduleName"));
         String description = trim(req.getParameter("description"));
         String responsibilities = trim(req.getParameter("responsibilities"));
-        String workingHours = trim(req.getParameter("workingHours"));
-        String workload = trim(req.getParameter("workload"));
         String payment = trim(req.getParameter("payment"));
         String deadline = trim(req.getParameter("deadline"));
         String examTimeline = trim(req.getParameter("examTimeline"));
-        String taAllocationPlan = trim(req.getParameter("taAllocationPlan"));
         String interviewSchedule = trim(req.getParameter("interviewSchedule"));
         String interviewLocation = trim(req.getParameter("interviewLocation"));
-        String taSlotsStr = trim(req.getParameter("taSlots"));
         String skillsStr = req.getParameter("skills");
         String maxApplicantsStr = req.getParameter("maxApplicants");
+        String plannedTaCountStr = req.getParameter("plannedTaCount");
         String jobType = req.getParameter("jobType");
         String postedBy = (String) req.getSession().getAttribute("userId");
         String postedByName = (String) req.getSession().getAttribute("realName");
@@ -58,21 +58,25 @@ public class PostJobServlet extends HttpServlet {
             }
         } catch (NumberFormatException ignored) {
         }
-        int taSlots = 1;
+        int plannedTaCount = 0;
         try {
-            if (!taSlotsStr.isEmpty()) {
-                taSlots = Integer.parseInt(taSlotsStr);
+            if (plannedTaCountStr != null && !plannedTaCountStr.trim().isEmpty()) {
+                plannedTaCount = Integer.parseInt(plannedTaCountStr.trim());
             }
         } catch (NumberFormatException ignored) {
         }
 
-        String error = validateJobForm(title, moduleCode, moduleName, responsibilities, workingHours, workload, payment,
-                deadline, examTimeline, taAllocationPlan, interviewSchedule, interviewLocation, skills, maxApplicants, taSlots);
+        List<WorkArrangementItem> workRows = parseWorkArrangements(req);
+        String error = validateWorkArrangements(workRows);
+        if (error == null) {
+            error = validateJobForm(title, moduleCode, moduleName, responsibilities, payment, deadline, examTimeline,
+                    interviewSchedule, interviewLocation, skills, maxApplicants, plannedTaCount);
+        }
 
         if (error != null) {
-            repopulateForm(req, title, moduleCode, moduleName, description, responsibilities, workingHours, workload, payment,
-                    deadline, examTimeline, taAllocationPlan, interviewSchedule, interviewLocation, taSlotsStr, skillsStr,
-                    maxApplicantsStr, jobType);
+            repopulateForm(req, title, moduleCode, moduleName, description, responsibilities, payment, deadline,
+                    examTimeline, interviewSchedule, interviewLocation, skillsStr, maxApplicantsStr, jobType, workRows,
+                    req.getParameter("autoFillFromWaitlist") != null, plannedTaCountStr);
             req.setAttribute("error", error);
             req.getRequestDispatcher("/mo/post-job.jsp").forward(req, resp);
             return;
@@ -84,39 +88,98 @@ public class PostJobServlet extends HttpServlet {
         job.setModuleName(moduleName);
         job.setDescription(description);
         job.setResponsibilities(responsibilities);
-        job.setWorkingHours(workingHours);
-        job.setWorkload(workload);
+        WorkArrangementSupport.applyDerivedFields(job, workRows);
+        job.setTaSlots(plannedTaCount);
         job.setPayment(payment);
         job.setDeadline(deadline);
         job.setExamTimeline(examTimeline);
-        job.setTaAllocationPlan(taAllocationPlan);
         job.setInterviewSchedule(interviewSchedule);
         job.setInterviewLocation(interviewLocation);
-        job.setTaSlots(taSlots);
         job.setRequiredSkills(skills);
         job.setPostedBy(postedBy);
         job.setPostedByName(postedByName != null ? postedByName : "MO");
         job.setMaxApplicants(maxApplicants);
         job.setJobType(jobType != null && !jobType.isEmpty() ? jobType : "MODULE_TA");
+        job.setAutoFillFromWaitlist(req.getParameter("autoFillFromWaitlist") != null);
 
         DataStorage storage = new DataStorage(getServletContext());
         storage.addJob(job);
-        resp.sendRedirect(req.getContextPath() + "/mo/jobs?success=1&jobId="
-                + java.net.URLEncoder.encode(job.getId(), java.nio.charset.StandardCharsets.UTF_8) + "&view=pending");
+        resp.sendRedirect(req.getContextPath() + "/mo/job?posted=1&jobId="
+                + java.net.URLEncoder.encode(job.getId(), java.nio.charset.StandardCharsets.UTF_8));
     }
 
     private static String trim(String s) {
         return s != null ? s.trim() : "";
     }
 
-    /**
-     * @return error message or null if valid
-     */
+    private static List<WorkArrangementItem> parseWorkArrangements(HttpServletRequest req) {
+        String[] names = req.getParameterValues("waWorkName");
+        if (names == null || names.length == 0) {
+            return new ArrayList<>();
+        }
+        String[] sessionDurs = req.getParameterValues("waSessionDuration");
+        String[] occCounts = req.getParameterValues("waOccurrenceCount");
+        String[] taCounts = req.getParameterValues("waTaCount");
+        String[] times = req.getParameterValues("waSpecificTime");
+        List<WorkArrangementItem> out = new ArrayList<>();
+        for (int i = 0; i < names.length; i++) {
+            String n = trim(names[i]);
+            String sd = sessionDurs != null && i < sessionDurs.length ? trim(sessionDurs[i]) : "";
+            int oc = 0;
+            if (occCounts != null && i < occCounts.length) {
+                try {
+                    oc = Integer.parseInt(trim(occCounts[i]));
+                } catch (NumberFormatException ignored) {
+                }
+            }
+            int tc = 0;
+            if (taCounts != null && i < taCounts.length) {
+                try {
+                    tc = Integer.parseInt(trim(taCounts[i]));
+                } catch (NumberFormatException ignored) {
+                }
+            }
+            String t = times != null && i < times.length ? trim(times[i]) : "";
+            if (n.isEmpty() && sd.isEmpty() && oc <= 0 && tc <= 0 && t.isEmpty()) {
+                continue;
+            }
+            WorkArrangementItem it = new WorkArrangementItem();
+            it.setWorkName(n);
+            it.setSessionDuration(sd);
+            it.setOccurrenceCount(oc);
+            it.setTaCount(tc);
+            it.setSpecificTime(t);
+            out.add(it);
+        }
+        return out;
+    }
+
+    private static String validateWorkArrangements(List<WorkArrangementItem> items) {
+        if (items.isEmpty()) {
+            return "Add at least one work arrangement row (work name, per-session duration, occurrences, and TA count are required).";
+        }
+        for (int i = 0; i < items.size(); i++) {
+            WorkArrangementItem it = items.get(i);
+            if (trim(it.getWorkName()).isEmpty()) {
+                return "Work arrangement row " + (i + 1) + ": work name is required.";
+            }
+            if (trim(it.getResolvedSessionDuration()).isEmpty()) {
+                return "Work arrangement row " + (i + 1) + ": per-session duration is required.";
+            }
+            if (it.getOccurrenceCount() < 1) {
+                return "Work arrangement row " + (i + 1) + ": number of occurrences must be at least 1.";
+            }
+            if (it.getTaCount() < 1) {
+                return "Work arrangement row " + (i + 1) + ": TA count must be at least 1.";
+            }
+        }
+        return null;
+    }
+
     private static String validateJobForm(String title, String moduleCode, String moduleName,
-                                           String responsibilities, String workingHours, String workload,
-                                          String payment, String deadline, String examTimeline, String taAllocationPlan,
+                                          String responsibilities, String payment, String deadline, String examTimeline,
                                           String interviewSchedule, String interviewLocation,
-                                          List<String> skills, int maxApplicants, int taSlots) {
+                                          List<String> skills, int maxApplicants, int plannedTaCount) {
         if (title.isEmpty()) {
             return "Job title is required.";
         }
@@ -128,12 +191,6 @@ public class PostJobServlet extends HttpServlet {
         }
         if (responsibilities.length() < MIN_RESPONSIBILITIES_LEN) {
             return "Responsibilities must be at least " + MIN_RESPONSIBILITIES_LEN + " characters.";
-        }
-        if (workingHours.isEmpty()) {
-            return "Working hours / schedule is required.";
-        }
-        if (workload.isEmpty()) {
-            return "Workload is required.";
         }
         if (payment.isEmpty()) {
             return "Payment / compensation is required.";
@@ -155,14 +212,11 @@ public class PostJobServlet extends HttpServlet {
         if (maxApplicants < 0) {
             return "Max applicants cannot be negative.";
         }
-        if (taSlots <= 0) {
-            return "TA slots must be at least 1.";
+        if (plannedTaCount < 1) {
+            return "Planned recruits must be at least 1.";
         }
         if (examTimeline.isEmpty()) {
             return "Course timeline / exam milestones are required.";
-        }
-        if (taAllocationPlan.isEmpty()) {
-            return "TA allocation plan is required.";
         }
         if (interviewSchedule.isEmpty()) {
             return "Interview schedule is required.";
@@ -174,26 +228,26 @@ public class PostJobServlet extends HttpServlet {
     }
 
     private static void repopulateForm(HttpServletRequest req, String title, String moduleCode, String moduleName,
-                                       String description, String responsibilities, String workingHours,
-                                       String workload, String payment, String deadline, String examTimeline,
-                                       String taAllocationPlan, String interviewSchedule, String interviewLocation,
-                                       String taSlotsStr, String skillsStr, String maxApplicantsStr, String jobType) {
+                                       String description, String responsibilities, String payment, String deadline,
+                                       String examTimeline, String interviewSchedule, String interviewLocation,
+                                       String skillsStr, String maxApplicantsStr, String jobType,
+                                       List<WorkArrangementItem> workRows, boolean autoFillFromWaitlist,
+                                       String plannedTaCountStr) {
         req.setAttribute("fvTitle", title);
         req.setAttribute("fvModuleCode", moduleCode);
         req.setAttribute("fvModuleName", moduleName);
         req.setAttribute("fvDescription", description);
         req.setAttribute("fvResponsibilities", responsibilities);
-        req.setAttribute("fvWorkingHours", workingHours);
-        req.setAttribute("fvWorkload", workload);
         req.setAttribute("fvPayment", payment);
         req.setAttribute("fvDeadline", deadline);
         req.setAttribute("fvExamTimeline", examTimeline);
-        req.setAttribute("fvTaAllocationPlan", taAllocationPlan);
         req.setAttribute("fvInterviewSchedule", interviewSchedule);
         req.setAttribute("fvInterviewLocation", interviewLocation);
-        req.setAttribute("fvTaSlots", taSlotsStr != null ? taSlotsStr : "1");
         req.setAttribute("fvSkills", skillsStr != null ? skillsStr : "");
         req.setAttribute("fvMaxApplicants", maxApplicantsStr != null ? maxApplicantsStr : "0");
         req.setAttribute("fvJobType", jobType != null ? jobType : "MODULE_TA");
+        req.setAttribute("fvWorkArrangements", workRows != null ? workRows : new ArrayList<>());
+        req.setAttribute("fvAutoFillFromWaitlist", autoFillFromWaitlist);
+        req.setAttribute("fvPlannedTaCount", plannedTaCountStr != null ? plannedTaCountStr : "");
     }
 }

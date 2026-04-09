@@ -34,6 +34,17 @@ public class MOBatchApplicantServlet extends HttpServlet {
             resp.sendRedirect(moJobsUrl(ctx, moListPath(storage, returnJobId, moId), "pending", returnJobId, "error=batch_empty"));
             return;
         }
+        if (!returnJobId.isEmpty()) {
+            Job fixedJob = storage.getJobById(returnJobId);
+            if (fixedJob == null || !moId.equals(fixedJob.getPostedBy())) {
+                resp.sendRedirect(moJobsUrl(ctx, JobActivity.PATH_ACTIVE, "pending", returnJobId, "error=invalid_job"));
+                return;
+            }
+            if (JobActivity.isInactive(fixedJob)) {
+                resp.sendRedirect(moJobsUrl(ctx, JobActivity.PATH_INACTIVE, "pending", returnJobId, "error=job_inactive"));
+                return;
+            }
+        }
 
         Set<String> idSet = new HashSet<>(Arrays.asList(ids));
 
@@ -43,6 +54,7 @@ public class MOBatchApplicantServlet extends HttpServlet {
                 if (target == null) continue;
                 Job job = storage.getJobById(target.getJobId());
                 if (job == null || !moId.equals(job.getPostedBy())) continue;
+                if (JobActivity.isInactive(job)) continue;
                 if (!returnJobId.isEmpty() && !returnJobId.equals(target.getJobId())) continue;
                 if (!"PENDING".equals(target.getStatus())) continue;
                 target.setStatus("INTERVIEW");
@@ -65,6 +77,7 @@ public class MOBatchApplicantServlet extends HttpServlet {
                 if (target == null) continue;
                 Job job = storage.getJobById(target.getJobId());
                 if (job == null || !moId.equals(job.getPostedBy())) continue;
+                if (JobActivity.isInactive(job)) continue;
                 if (!returnJobId.isEmpty() && !returnJobId.equals(target.getJobId())) continue;
                 if (!"INTERVIEW".equals(target.getStatus())) continue;
                 target.setInterviewTime(time);

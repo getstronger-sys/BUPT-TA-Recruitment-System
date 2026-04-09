@@ -13,6 +13,7 @@
     boolean hasCv = Boolean.TRUE.equals(request.getAttribute("hasCv"));
     boolean hasSkills = Boolean.TRUE.equals(request.getAttribute("hasSkills"));
     boolean hasStudentId = Boolean.TRUE.equals(request.getAttribute("hasStudentId"));
+    boolean hasEmail = Boolean.TRUE.equals(request.getAttribute("hasEmail"));
     request.setAttribute("taNavActive", "home");
 %>
 <!DOCTYPE html>
@@ -41,6 +42,10 @@
         <main class="main-panel ta-home-dashboard">
             <h1>Welcome back, <%= escHtml(session.getAttribute("realName") != null ? session.getAttribute("realName").toString() : "TA") %></h1>
             <p class="muted-inline">Use the shortcuts below to manage applications and keep your profile ready for module organisers.</p>
+            <div class="context-card ta-dash-email-hint">
+                <strong>Contact email for module organisers</strong>
+                <p>Enter or confirm your email under <strong>My Profile</strong> (sidebar) — it appears to organisers when you apply. <a href="${pageContext.request.contextPath}/ta/profile#ta-profile-email">Go to email field</a></p>
+            </div>
 
             <div class="stats-row ta-dash-stats">
                 <div class="stat-card">
@@ -75,6 +80,7 @@
                 <p>MOs review your <strong>saved profile and CV</strong> when you apply. Items marked missing may weaken your application.</p>
                 <ul class="dash-checklist">
                     <li class="<%= hasStudentId ? "dash-ok" : "dash-miss" %>"><%= hasStudentId ? "Student ID on file" : "Add student ID" %></li>
+                    <li class="<%= hasEmail ? "dash-ok" : "dash-miss" %>"><%= hasEmail ? "Contact email on file" : "Add contact email (My Profile)" %></li>
                     <li class="<%= hasSkills ? "dash-ok" : "dash-miss" %>"><%= hasSkills ? "Skills listed" : "Add skills for better AI matching" %></li>
                     <li class="<%= hasCv ? "dash-ok" : "dash-miss" %>"><%= hasCv ? "CV uploaded" : "Upload a CV (PDF/DOC/DOCX/TXT)" %></li>
                 </ul>

@@ -9,6 +9,8 @@ import java.util.List;
 public class TAProfile {
     private String userId;
     private String studentId;
+    /** Contact email (shown to module organisers with applications). */
+    private String email;
     private String phone;
     private String cvFilePath;  // relative path to uploaded CV
     private List<String> skills;  // e.g. Java, Python, Teaching
@@ -40,6 +42,8 @@ public class TAProfile {
     public void setUserId(String userId) { this.userId = userId; }
     public String getStudentId() { return studentId; }
     public void setStudentId(String studentId) { this.studentId = studentId; }
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
     public String getPhone() { return phone; }
     public void setPhone(String phone) { this.phone = phone; }
     public String getCvFilePath() { return cvFilePath; }

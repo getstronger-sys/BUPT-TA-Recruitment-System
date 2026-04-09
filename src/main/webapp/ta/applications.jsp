@@ -3,6 +3,7 @@
 <%@ page import="java.util.List" %>
 <%@ page import="bupt.ta.model.Application" %>
 <%@ page import="bupt.ta.model.Job" %>
+<%@ page import="bupt.ta.util.JobActivity" %>
 <%!
     /** Format stored appliedAt (ISO-like) to yyyy-MM-dd HH:mm */
     static String formatAppliedAt(String raw) {
@@ -116,6 +117,7 @@
                 <% for (Object[] row : applications) {
                     Application a = (Application) row[0];
                     Job j = (Job) row[1];
+                    boolean jobInactive = j == null || JobActivity.isInactive(j);
                     String statusClass = "status-pending";
                     int progress = 40;
                     if ("SELECTED".equals(a.getStatus())) { statusClass = "status-selected"; progress = 100; }
@@ -142,7 +144,12 @@
                         </div>
                         <div class="progress-text"><%= progress %>%</div>
                     </td>
-                    <td class="col-status <%= statusClass %>"><%= a.getStatus() %></td>
+                    <td class="col-status <%= statusClass %>">
+                        <%= a.getStatus() %>
+                        <% if (jobInactive && ("PENDING".equals(a.getStatus()) || "INTERVIEW".equals(a.getStatus()) || "WAITLIST".equals(a.getStatus()))) { %>
+                        <div class="muted-inline">Posting expired/closed</div>
+                        <% } %>
+                    </td>
                     <td class="col-notice interview-notice-cell">
                         <% if (hasNotice) { %>
                         <button type="button" class="btn btn-primary btn-sm ta-notice-btn" data-template="<%= noticeTplId %>">View notice</button>
@@ -167,10 +174,14 @@
                     </td>
                     <td class="col-action">
                         <% if ("PENDING".equals(a.getStatus()) || "INTERVIEW".equals(a.getStatus())) { %>
+                        <% if (jobInactive) { %>
+                        <span class="muted-inline">Unavailable (posting inactive)</span>
+                        <% } else { %>
                         <form action="${pageContext.request.contextPath}/ta/withdraw" method="post" style="display:inline;">
                             <input type="hidden" name="applicationId" value="<%= a.getId() %>">
                             <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Withdraw this application?')">Withdraw</button>
                         </form>
+                        <% } %>
                         <% } %>
                     </td>
                 </tr>

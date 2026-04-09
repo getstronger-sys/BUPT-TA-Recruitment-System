@@ -41,9 +41,12 @@ public class Job {
     private String interviewLocation;
     /** Whether selected TA withdrawals should auto-promote from waitlist. */
     private boolean autoFillFromWaitlist;
+    /** Structured work items (name, duration, TA count, optional time) from MO posting form. */
+    private List<WorkArrangementItem> workArrangements;
 
     public Job() {
         this.requiredSkills = new ArrayList<>();
+        this.workArrangements = new ArrayList<>();
         this.status = "OPEN";
     }
 
@@ -94,4 +97,12 @@ public class Job {
     public void setInterviewLocation(String interviewLocation) { this.interviewLocation = interviewLocation; }
     public boolean isAutoFillFromWaitlist() { return autoFillFromWaitlist; }
     public void setAutoFillFromWaitlist(boolean autoFillFromWaitlist) { this.autoFillFromWaitlist = autoFillFromWaitlist; }
+
+    public List<WorkArrangementItem> getWorkArrangements() {
+        return workArrangements != null ? workArrangements : new ArrayList<>();
+    }
+
+    public void setWorkArrangements(List<WorkArrangementItem> workArrangements) {
+        this.workArrangements = workArrangements != null ? workArrangements : new ArrayList<>();
+    }
 }

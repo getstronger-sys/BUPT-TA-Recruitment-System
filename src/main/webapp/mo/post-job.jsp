@@ -1,7 +1,9 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ include file="/WEB-INF/jspf/html-esc.jspf" %>
 <%@ page import="java.util.List" %>
+<%@ page import="java.util.ArrayList" %>
 <%@ page import="bupt.ta.model.JobTemplate" %>
+<%@ page import="bupt.ta.model.WorkArrangementItem" %>
 <%!
     static String fv(javax.servlet.http.HttpServletRequest r, String key, String def) {
         Object o = r.getAttribute(key);
@@ -15,6 +17,15 @@
    if (jobTemplates == null) jobTemplates = java.util.Collections.emptyList();
    String selectedTemplateId = request.getAttribute("selectedTemplateId") != null ? request.getAttribute("selectedTemplateId").toString() : "";
    boolean fvAutoFill = Boolean.TRUE.equals(request.getAttribute("fvAutoFillFromWaitlist"));
+   @SuppressWarnings("unchecked")
+   List<WorkArrangementItem> waRows = (List<WorkArrangementItem>) request.getAttribute("fvWorkArrangements");
+   if (waRows == null || waRows.isEmpty()) {
+       waRows = new ArrayList<>();
+       waRows.add(new WorkArrangementItem("", "", 1, 1, ""));
+   }
+   int waDefaultPlannedTaCount = waRows.stream().mapToInt(WorkArrangementItem::getTaCount).sum();
+   if (waDefaultPlannedTaCount < 1) waDefaultPlannedTaCount = 1;
+   String fvPlannedTaCount = fv(request, "fvPlannedTaCount", "");
 %>
 <!DOCTYPE html>
 <html>
@@ -45,28 +56,18 @@
         </div>
         <main class="main-panel mo-main">
     <h1>Post a New Job</h1>
-    <p class="mo-page-lead">Create a clear listing so TAs can judge fit before applying. Required fields are marked below.</p>
-    <div class="context-card">
-        <strong>Posting checklist</strong>
-        <p>Fields marked * are required. Deadline must be YYYY-MM-DD and not in the past. Responsibilities at least 20 characters. At least one skill.</p>
-    </div>
-    <div class="context-card">
-        <strong>Reusable templates</strong>
-        <p>Load a saved template to prefill course code, skills, workload and description, then adjust only the fields that changed for this term.</p>
-        <form action="${pageContext.request.contextPath}/mo/post-job" method="get" class="search-form">
-            <select name="templateId">
-                <option value="">Choose a saved template</option>
-                <% for (JobTemplate t : jobTemplates) { %>
-                <option value="<%= escHtml(t.getId()) %>" <%= t.getId().equals(selectedTemplateId) ? "selected" : "" %>><%= escHtml(t.getTemplateName()) %> - <%= escHtml(t.getModuleCode()) %></option>
-                <% } %>
-            </select>
-            <button type="submit" class="btn btn-primary">Load template</button>
-        </form>
-    </div>
+    <nav class="mo-post-anchor-nav" aria-label="Post job section shortcuts">
+        <a href="#post-basic">Basic info</a>
+        <a href="#post-work-arrangements">Work arrangements</a>
+        <a href="#post-recruitment">Recruitment setup</a>
+        <a href="#post-submit">Submit</a>
+    </nav>
     <% String err = (String) request.getAttribute("error"); if (err != null) { %>
     <p class="error"><%= escHtml(err) %></p>
     <% } %>
     <form action="${pageContext.request.contextPath}/mo/post-job" method="post" class="form form--mo-post">
+        <div id="post-basic" class="mo-post-section-anchor"></div>
+        <h2 class="mo-post-section-title">Basic information</h2>
         <label>Job Title *</label>
         <input type="text" name="title" required placeholder="e.g. TA for Software Engineering" value="<%= fva(request, "fvTitle") %>">
         <label>Module Code *</label>
@@ -85,16 +86,66 @@
         <textarea name="description" placeholder="Short overview for the listing..."><%= fva(request, "fvDescription") %></textarea>
         <label>Responsibilities * <span class="muted-inline">(min 20 characters)</span></label>
         <textarea name="responsibilities" required minlength="20" rows="5" placeholder="What the TA will do: labs, marking, office hours..."><%= fva(request, "fvResponsibilities") %></textarea>
-        <label>Working hours / schedule *</label>
-        <input type="text" name="workingHours" required placeholder="e.g. Wed 14:00–16:00; or 6 hrs/week flexible" value="<%= fva(request, "fvWorkingHours") %>">
-        <label>Workload *</label>
-        <input type="text" name="workload" required placeholder="e.g. ~8 hours/week; 2 lab sessions" value="<%= fva(request, "fvWorkload") %>">
-        <label>TA slots *</label>
-        <input type="number" name="taSlots" min="1" required value="<%= fva(request, "fvTaSlots").isEmpty() ? "3" : fva(request, "fvTaSlots") %>">
+
+        <div id="post-work-arrangements" class="mo-post-section-anchor"></div>
+        <h2 class="mo-post-section-title">Work arrangements</h2>
+        <div class="wa-section">
+        <label>Work arrangements *</label>
+            <div id="wa-rows" class="wa-rows" role="group" aria-label="Work arrangement rows">
+                <% for (int waIdx = 0; waIdx < waRows.size(); waIdx++) {
+                       WorkArrangementItem w = waRows.get(waIdx);
+                       String wid = "wa-" + waIdx;
+                       String wn = w.getWorkName() != null ? w.getWorkName() : "";
+                       String sd = w.getSessionDuration() != null && !w.getSessionDuration().isEmpty()
+                               ? w.getSessionDuration()
+                               : (w.getDuration() != null ? w.getDuration() : "");
+                       int oc = w.getOccurrenceCount() > 0 ? w.getOccurrenceCount() : 1;
+                       int wc = w.getTaCount() > 0 ? w.getTaCount() : 1;
+                       String wt = w.getSpecificTime() != null ? w.getSpecificTime() : "";
+                %>
+                <div class="wa-row" data-wa-row>
+                    <div class="wa-field wa-field-name">
+                        <label for="<%= wid %>-wn">Work name *</label>
+                        <input id="<%= wid %>-wn" type="text" name="waWorkName" required value="<%= escHtml(wn) %>" placeholder="e.g. Lab support" autocomplete="off">
+                    </div>
+                    <div class="wa-field wa-field-session">
+                        <label for="<%= wid %>-sd">Per-session duration *</label>
+                        <input id="<%= wid %>-sd" type="text" name="waSessionDuration" required value="<%= escHtml(sd) %>" placeholder="e.g. 2 hours" autocomplete="off">
+                    </div>
+                    <div class="wa-field wa-field-num">
+                        <label for="<%= wid %>-oc">Sessions *</label>
+                        <input id="<%= wid %>-oc" type="number" name="waOccurrenceCount" min="1" required value="<%= oc %>" class="wa-input-num">
+                    </div>
+                    <div class="wa-field wa-field-num">
+                        <label for="<%= wid %>-tc">TAs *</label>
+                        <input id="<%= wid %>-tc" type="number" name="waTaCount" min="1" required value="<%= wc %>" class="wa-input-num">
+                    </div>
+                    <div class="wa-field wa-field-time">
+                        <label for="<%= wid %>-st">Specific time <span class="muted-inline">(optional)</span></label>
+                        <input id="<%= wid %>-st" type="text" name="waSpecificTime" value="<%= escHtml(wt) %>" placeholder="e.g. Wed 14:00" autocomplete="off">
+                    </div>
+                    <div class="wa-field wa-field-actions">
+                        <button type="button" class="btn btn-secondary wa-remove-compact" title="Remove row" aria-label="Remove this row">&minus;</button>
+                    </div>
+                </div>
+                <% } %>
+            </div>
+            <div class="wa-toolbar">
+                <button type="button" id="wa-add-row" class="btn btn-secondary" title="Add work arrangement row">+ Add row</button>
+                <button type="button" id="wa-suggest-quota" class="btn btn-secondary" title="Suggest balanced TA quotas">Smart quota recommendation</button>
+            </div>
+            <div id="wa-suggestion-panel" class="wa-suggestion-panel" hidden>
+                <p id="wa-suggestion-meta" class="muted-inline wa-suggestion-meta"></p>
+                <div id="wa-suggestion-list" class="wa-suggestion-list"></div>
+            </div>
+        </div>
+        <label>Planned recruits *</label>
+        <input type="number" name="plannedTaCount" min="1" required value="<%= fvPlannedTaCount.isEmpty() ? String.valueOf(waDefaultPlannedTaCount) : escHtml(fvPlannedTaCount) %>">
+
+        <div id="post-recruitment" class="mo-post-section-anchor"></div>
+        <h2 class="mo-post-section-title">Recruitment setup</h2>
         <label>Course timeline &amp; exam milestones *</label>
         <textarea name="examTimeline" required rows="4" placeholder="Week 1-3 onboarding; Week 4 quiz support; Week 8 mock exam; Week 12 final exam marking."><%= fva(request, "fvExamTimeline") %></textarea>
-        <label>TA allocation plan *</label>
-        <textarea name="taAllocationPlan" required rows="4" placeholder="When 3 TAs are selected: TA-1 labs, TA-2 coursework marking, TA-3 office hours + exam support."><%= fva(request, "fvTaAllocationPlan") %></textarea>
         <label>Interview schedule *</label>
         <input type="text" name="interviewSchedule" required placeholder="e.g. 2026-04-20 14:00-17:00 (15 min per candidate)" value="<%= fva(request, "fvInterviewSchedule") %>">
         <label>Interview location *</label>
@@ -111,17 +162,191 @@
         <label class="checkbox-line"><input type="checkbox" name="saveAsTemplate"> Save this posting setup as a reusable template</label>
         <label>Template name <span class="muted-inline">(optional when saving)</span></label>
         <input type="text" name="templateName" placeholder="e.g. EBU6304 standard TA template" value="<%= fva(request, "fvTemplateName") %>">
+        <div id="post-submit" class="mo-post-section-anchor"></div>
         <button type="submit" class="btn btn-primary">Post Job</button>
     </form>
         </main>
         <aside class="right-sidebar">
-            <div class="widget-card">
-                <div class="widget-title">Why these fields</div>
-                <p class="widget-line">TAs see full detail before applying.</p>
-                <p class="widget-line">Payment and hours reduce mismatched expectations.</p>
+            <div class="context-card mo-post-side-card mo-post-checklist-card">
+                <strong>Posting checklist</strong>
+                <ul class="mo-side-list">
+                    <li>Fields marked * are required.</li>
+                    <li>Deadline must be YYYY-MM-DD and not in the past.</li>
+                    <li>Responsibilities must be at least 20 characters.</li>
+                    <li>Set a fixed planned recruits count.</li>
+                </ul>
+            </div>
+            <div class="context-card mo-post-side-card mo-post-template-card">
+                <strong>Reusable templates</strong>
+                <ul class="mo-side-list">
+                    <li>Load a saved template to prefill fields.</li>
+                    <li>Adjust only what changed.</li>
+                </ul>
+                <form action="${pageContext.request.contextPath}/mo/post-job" method="get" class="search-form search-form--mo-template">
+                    <select name="templateId">
+                        <option value="">Choose a saved template</option>
+                        <% for (JobTemplate t : jobTemplates) { %>
+                        <option value="<%= escHtml(t.getId()) %>" <%= t.getId().equals(selectedTemplateId) ? "selected" : "" %>><%= escHtml(t.getTemplateName()) %> - <%= escHtml(t.getModuleCode()) %></option>
+                        <% } %>
+                    </select>
+                    <button type="submit" class="btn btn-primary">Load template</button>
+                </form>
             </div>
         </aside>
     </div>
 </div>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    var rowsBox = document.getElementById("wa-rows");
+    var addBtn = document.getElementById("wa-add-row");
+    var suggestBtn = document.getElementById("wa-suggest-quota");
+    var suggestionPanel = document.getElementById("wa-suggestion-panel");
+    var suggestionMeta = document.getElementById("wa-suggestion-meta");
+    var suggestionList = document.getElementById("wa-suggestion-list");
+    var plannedTaInput = document.querySelector("input[name='plannedTaCount']");
+    if (!rowsBox || !addBtn) return;
+
+    function clearRowInputs(row) {
+        row.querySelectorAll("input").forEach(function (inp) {
+            if (inp.name === "waTaCount" || inp.name === "waOccurrenceCount") {
+                inp.value = "1";
+            } else {
+                inp.value = "";
+            }
+        });
+    }
+
+    function bindRemove(row) {
+        var btn = row.querySelector(".wa-remove-compact");
+        if (!btn) return;
+        btn.addEventListener("click", function () {
+            if (rowsBox.querySelectorAll(".wa-row").length <= 1) return;
+            row.remove();
+        });
+    }
+
+    rowsBox.querySelectorAll(".wa-row").forEach(bindRemove);
+
+    function stripIdsForClone(row) {
+        row.querySelectorAll("[id]").forEach(function (el) { el.removeAttribute("id"); });
+        row.querySelectorAll("label[for]").forEach(function (lb) { lb.removeAttribute("for"); });
+    }
+
+    addBtn.addEventListener("click", function () {
+        var first = rowsBox.querySelector(".wa-row");
+        if (!first) return;
+        var clone = first.cloneNode(true);
+        clearRowInputs(clone);
+        stripIdsForClone(clone);
+        rowsBox.appendChild(clone);
+        bindRemove(clone);
+    });
+
+    function parseDurationHours(raw) {
+        var text = (raw || "").trim().toLowerCase();
+        if (!text) return null;
+        var valMatch = text.match(/(\d+(\.\d+)?)/);
+        if (!valMatch) return null;
+        var value = parseFloat(valMatch[1]);
+        if (!isFinite(value) || value <= 0) return null;
+        if (text.indexOf("min") >= 0 || text.indexOf("minute") >= 0) return value / 60;
+        if (text.indexOf("hr") >= 0 || text.indexOf("hour") >= 0 || text.indexOf("h") >= 0) return value;
+        return value;
+    }
+
+    function collectRows() {
+        var rows = [];
+        rowsBox.querySelectorAll(".wa-row").forEach(function (row) {
+            var name = (row.querySelector("input[name='waWorkName']") || {}).value || "";
+            var duration = (row.querySelector("input[name='waSessionDuration']") || {}).value || "";
+            var occRaw = parseInt(((row.querySelector("input[name='waOccurrenceCount']") || {}).value || "0"), 10);
+            var taRaw = parseInt(((row.querySelector("input[name='waTaCount']") || {}).value || "0"), 10);
+            var occ = isFinite(occRaw) ? occRaw : 0;
+            var ta = isFinite(taRaw) ? taRaw : 0;
+            rows.push({
+                workName: name.trim(),
+                durationText: duration.trim(),
+                occurrenceCount: occ,
+                taCount: ta
+            });
+        });
+        return rows;
+    }
+
+    function renderSuggestion(result) {
+        if (!suggestionPanel || !suggestionMeta || !suggestionList) return;
+        suggestionPanel.hidden = false;
+        suggestionMeta.textContent = result.meta;
+        suggestionList.innerHTML = "";
+        result.assignments.forEach(function (ta) {
+            var card = document.createElement("div");
+            card.className = "wa-suggestion-card";
+            var details = [];
+            Object.keys(ta.workCount).sort().forEach(function (workName) {
+                details.push(workName + " x " + ta.workCount[workName]);
+            });
+            card.innerHTML =
+                "<strong>" + ta.name + "</strong>" +
+                "<div class='wa-suggestion-hours'>Estimated load: " + ta.hours.toFixed(2) + " h</div>" +
+                "<div class='wa-suggestion-work'>" + (details.length ? details.join(" | ") : "No assigned items") + "</div>";
+            suggestionList.appendChild(card);
+        });
+    }
+
+    if (suggestBtn) {
+        suggestBtn.addEventListener("click", function () {
+            var rows = collectRows();
+            var units = [];
+            var unknownDurationRows = 0;
+            rows.forEach(function (r, idx) {
+                if (!r.workName || r.occurrenceCount < 1 || r.taCount < 1) return;
+                var hours = parseDurationHours(r.durationText);
+                if (hours == null) {
+                    unknownDurationRows += 1;
+                    hours = 1;
+                }
+                var totalUnits = r.occurrenceCount * r.taCount;
+                for (var i = 0; i < totalUnits; i++) {
+                    units.push({
+                        workName: r.workName,
+                        hours: hours,
+                        rowIndex: idx
+                    });
+                }
+            });
+            if (!units.length) {
+                alert("Please complete at least one valid work arrangement row before requesting recommendations.");
+                return;
+            }
+            var taCountRaw = parseInt((plannedTaInput && plannedTaInput.value ? plannedTaInput.value : "0"), 10);
+            var taCount = isFinite(taCountRaw) ? taCountRaw : 0;
+            if (taCount < 1) {
+                alert("Planned recruits must be at least 1.");
+                return;
+            }
+            var tas = [];
+            for (var t = 0; t < taCount; t++) {
+                tas.push({ name: "TA " + (t + 1), hours: 0, workCount: {} });
+            }
+            units.sort(function (a, b) { return b.hours - a.hours; });
+            units.forEach(function (u) {
+                tas.sort(function (a, b) { return a.hours - b.hours; });
+                var pick = tas[0];
+                pick.hours += u.hours;
+                pick.workCount[u.workName] = (pick.workCount[u.workName] || 0) + 1;
+            });
+            var totalHours = units.reduce(function (s, u) { return s + u.hours; }, 0);
+            var avg = totalHours / taCount;
+            var max = Math.max.apply(null, tas.map(function (x) { return x.hours; }));
+            var min = Math.min.apply(null, tas.map(function (x) { return x.hours; }));
+            var meta = "Planned recruits: " + taCount + "; total estimated workload: " + totalHours.toFixed(2) + " h; average per TA: " + avg.toFixed(2) + " h; imbalance (max-min): " + (max - min).toFixed(2) + " h.";
+            if (unknownDurationRows > 0) {
+                meta += " " + unknownDurationRows + " row(s) used default 1h because duration text could not be parsed.";
+            }
+            renderSuggestion({ meta: meta, assignments: tas });
+        });
+    }
+});
+</script>
 </body>
 </html>
