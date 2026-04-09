@@ -73,7 +73,7 @@
         <div class="detail-card">
             <h3>Basic Information</h3>
             <p><strong>Name:</strong> <%= user != null && user.getRealName() != null && !user.getRealName().isEmpty() ? escHtml(user.getRealName()) : "-" %></p>
-            <p><strong>Email:</strong> <%= user != null && user.getEmail() != null && !user.getEmail().isEmpty() ? escHtml(user.getEmail()) : "-" %></p>
+            <p><strong>Email:</strong> <%= (profile != null && profile.getEmail() != null && !profile.getEmail().isEmpty()) ? escHtml(profile.getEmail()) : (user != null && user.getEmail() != null && !user.getEmail().isEmpty() ? escHtml(user.getEmail()) : "-") %></p>
             <p><strong>Student ID:</strong> <%= profile != null && profile.getStudentId() != null && !profile.getStudentId().isEmpty() ? escHtml(profile.getStudentId()) : "-" %></p>
             <p><strong>Phone:</strong> <%= profile != null && profile.getPhone() != null && !profile.getPhone().isEmpty() ? escHtml(profile.getPhone()) : "-" %></p>
             <p><strong>Availability:</strong> <%= profile != null && profile.getAvailability() != null && !profile.getAvailability().isEmpty() ? escHtml(profile.getAvailability()) : "-" %></p>

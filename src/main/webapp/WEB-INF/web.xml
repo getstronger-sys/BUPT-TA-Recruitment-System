@@ -190,6 +190,24 @@
     </servlet-mapping>
 
     <servlet>
+        <servlet-name>MOJobDetailServlet</servlet-name>
+        <servlet-class>bupt.ta.servlet.MOJobDetailServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>MOJobDetailServlet</servlet-name>
+        <url-pattern>/mo/job</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>MOUpdateWorkTaCountsServlet</servlet-name>
+        <servlet-class>bupt.ta.servlet.MOUpdateWorkTaCountsServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>MOUpdateWorkTaCountsServlet</servlet-name>
+        <url-pattern>/mo/update-work-ta-counts</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
         <servlet-name>ApplicantDetailServlet</servlet-name>
         <servlet-class>bupt.ta.servlet.ApplicantDetailServlet</servlet-class>
     </servlet>

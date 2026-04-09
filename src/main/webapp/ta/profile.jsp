@@ -1,8 +1,16 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ include file="/WEB-INF/jspf/html-esc.jspf" %>
 <%@ page import="bupt.ta.model.TAProfile" %>
+<%@ page import="bupt.ta.model.User" %>
 <%@ page import="java.util.List" %>
 <% TAProfile profile = (TAProfile) request.getAttribute("profile"); if (profile == null) profile = new TAProfile();
+   User accountUser = (User) request.getAttribute("accountUser");
+   String emailValue = "";
+   if (profile.getEmail() != null && !profile.getEmail().isEmpty()) {
+       emailValue = profile.getEmail();
+   } else if (accountUser != null && accountUser.getEmail() != null && !accountUser.getEmail().isEmpty()) {
+       emailValue = accountUser.getEmail();
+   }
    String returnUrlAttr = (String) request.getAttribute("returnUrl");
    request.setAttribute("taNavActive", "profile");
 %>
@@ -35,7 +43,7 @@
             <p class="ta-page-lead">Keep your skills and CV up to date so module organisers and the matching system can rank you fairly.</p>
             <div class="context-card">
                 <strong>Profile Tip</strong>
-                <p>Profiles with complete academic details, experience, skills, availability and CV are easier for MO to review and shortlist.</p>
+                <p>Profiles with complete academic details, experience, skills, availability and CV are easier for MO to review and shortlist. The <strong>Email</strong> field below is shown to module organisers when you apply (along with your Student ID and phone).</p>
             </div>
             <% if ("1".equals(request.getParameter("success"))) { %><p class="success">Profile saved.</p><% } %>
             <% if ("cv_success".equals(request.getParameter("cv_success")) || "1".equals(request.getParameter("cv_success"))) { %><p class="success">CV uploaded successfully.</p><% } %>
@@ -49,6 +57,10 @@
                 <% } %>
                 <label>Student ID</label>
                 <input type="text" name="studentId" required value="<%= escHtml(profile.getStudentId() != null ? profile.getStudentId() : "") %>">
+                <div id="ta-profile-email" class="ta-profile-email-block">
+                <label for="ta-profile-email-input">Contact email <span class="muted-inline">(shown to module organisers)</span></label>
+                <input id="ta-profile-email-input" type="email" name="email" required autocomplete="email" value="<%= escHtml(emailValue) %>" placeholder="name@university.edu">
+                </div>
                 <label>Phone</label>
                 <input type="tel" name="phone" required value="<%= escHtml(profile.getPhone() != null ? profile.getPhone() : "") %>">
                 <label>Degree</label>

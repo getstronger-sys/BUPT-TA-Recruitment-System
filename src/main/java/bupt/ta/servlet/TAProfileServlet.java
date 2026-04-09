@@ -1,6 +1,7 @@
 package bupt.ta.servlet;
 
 import bupt.ta.model.TAProfile;
+import bupt.ta.model.User;
 import bupt.ta.storage.DataStorage;
 
 import javax.servlet.ServletException;
@@ -22,6 +23,8 @@ public class TAProfileServlet extends HttpServlet {
         if (profile == null) {
             profile = new TAProfile(userId);
         }
+        User accountUser = storage.findUserById(userId);
+        req.setAttribute("accountUser", accountUser);
         req.setAttribute("profile", profile);
         String returnUrl = req.getParameter("returnUrl");
         if (isSafeTaRelativeReturn(returnUrl)) {
@@ -34,6 +37,7 @@ public class TAProfileServlet extends HttpServlet {
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         String userId = (String) req.getSession().getAttribute("userId");
         String studentId = trim(req.getParameter("studentId"));
+        String email = trim(req.getParameter("email"));
         String phone = trim(req.getParameter("phone"));
         String availability = trim(req.getParameter("availability"));
         String introduction = trim(req.getParameter("introduction"));
@@ -52,7 +56,7 @@ public class TAProfileServlet extends HttpServlet {
         if (profile == null) {
             profile = new TAProfile(userId);
         }
-        populateProfile(profile, studentId, phone, availability, introduction, degree, programme, yearOfStudy, taExperience, skills);
+        populateProfile(profile, studentId, email, phone, availability, introduction, degree, programme, yearOfStudy, taExperience, skills);
 
         String error = validateProfile(profile);
         if (error != null) {
@@ -66,6 +70,11 @@ public class TAProfileServlet extends HttpServlet {
         profile.setSkills(skills);
 
         storage.saveProfile(profile);
+        User account = storage.findUserById(userId);
+        if (account != null) {
+            account.setEmail(profile.getEmail());
+            storage.saveUser(account);
+        }
 
         String returnUrl = req.getParameter("returnUrl");
         if (isSafeTaRelativeReturn(returnUrl)) {
@@ -75,10 +84,11 @@ public class TAProfileServlet extends HttpServlet {
         resp.sendRedirect(req.getContextPath() + "/ta/profile?success=1");
     }
 
-    static void populateProfile(TAProfile profile, String studentId, String phone, String availability,
+    static void populateProfile(TAProfile profile, String studentId, String email, String phone, String availability,
                                 String introduction, String degree, String programme, String yearOfStudy,
                                 String taExperience, List<String> skills) {
         profile.setStudentId(studentId != null ? studentId : "");
+        profile.setEmail(email != null ? email : "");
         profile.setPhone(phone != null ? phone : "");
         profile.setAvailability(availability != null ? availability : "");
         profile.setIntroduction(introduction != null ? introduction : "");
@@ -91,6 +101,10 @@ public class TAProfileServlet extends HttpServlet {
 
     static String validateProfile(TAProfile profile) {
         if (isBlank(profile.getStudentId())) return "Student ID is required.";
+        if (isBlank(profile.getEmail())) return "Email is required.";
+        if (!isValidEmail(profile.getEmail())) {
+            return "Please enter a valid email address.";
+        }
         if (isBlank(profile.getPhone())) return "Phone is required.";
         if (isBlank(profile.getDegree())) return "Degree is required.";
         if (isBlank(profile.getProgramme())) return "Programme / major is required.";
@@ -108,6 +122,15 @@ public class TAProfileServlet extends HttpServlet {
 
     private static boolean isBlank(String value) {
         return value == null || value.trim().isEmpty();
+    }
+
+    private static boolean isValidEmail(String raw) {
+        if (raw == null) return false;
+        String e = raw.trim();
+        int at = e.indexOf('@');
+        if (at <= 0) return false;
+        int dot = e.indexOf('.', at + 1);
+        return dot > at + 1 && dot < e.length() - 1;
     }
 
     /** Only allow in-app redirects under /ta/ (no open redirect). */

@@ -17,6 +17,7 @@ public class TAProfileServletTest {
         TAProfileServlet.populateProfile(
                 profile,
                 "20230001",
+                "ta@bupt.edu.cn",
                 "13800138000",
                 "Mon/Wed 9-12",
                 "Patient and organized teaching assistant candidate.",
@@ -36,6 +37,7 @@ public class TAProfileServletTest {
         TAProfileServlet.populateProfile(
                 profile,
                 "20230001",
+                "ta@bupt.edu.cn",
                 "13800138000",
                 "Mon/Wed 9-12",
                 "Patient and organized teaching assistant candidate.",
@@ -55,6 +57,7 @@ public class TAProfileServletTest {
         TAProfileServlet.populateProfile(
                 profile,
                 "20230001",
+                "ta@bupt.edu.cn",
                 "13800138000",
                 "Mon/Wed 9-12",
                 "Patient and organized teaching assistant candidate.",

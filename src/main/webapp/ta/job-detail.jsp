@@ -1,9 +1,13 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ include file="/WEB-INF/jspf/html-esc.jspf" %>
 <%@ page import="bupt.ta.model.Job" %>
+<%@ page import="bupt.ta.model.WorkArrangementItem" %>
 <%@ page import="bupt.ta.ai.AIMatchService" %>
+<%@ page import="bupt.ta.util.WorkQuotaPlanner" %>
 <%@ page import="java.util.ArrayList" %>
 <%@ page import="java.util.List" %>
+<%@ page import="java.util.Locale" %>
+<%@ page import="java.util.Map" %>
 <%@ page import="java.util.regex.Matcher" %>
 <%@ page import="java.util.regex.Pattern" %>
 <%
@@ -24,26 +28,18 @@
     String taPlan = job.getTaAllocationPlan() != null && !job.getTaAllocationPlan().isEmpty() ? escHtml(job.getTaAllocationPlan()) : "—";
     String interviewSchedule = job.getInterviewSchedule() != null && !job.getInterviewSchedule().isEmpty() ? escHtml(job.getInterviewSchedule()) : "—";
     String interviewLocation = job.getInterviewLocation() != null && !job.getInterviewLocation().isEmpty() ? escHtml(job.getInterviewLocation()) : "—";
-    int taSlots = job.getTaSlots() > 0 ? job.getTaSlots() : 1;
-    List<String> allocationItems = new ArrayList<>();
-    String taPlanRaw = job.getTaAllocationPlan();
-    if (taPlanRaw != null) {
-        String[] planParts = taPlanRaw.split("[\\n;；]+");
-        for (String p : planParts) {
-            String t = p != null ? p.trim() : "";
-            if (!t.isEmpty()) allocationItems.add(escHtml(t));
-        }
-    }
+    int plannedRecruits = job.getTaSlots() > 0 ? job.getTaSlots() : 1;
+    WorkQuotaPlanner.Recommendation quotaRec = WorkQuotaPlanner.recommend(job.getWorkArrangements(), plannedRecruits);
     List<String[]> weekMilestones = new ArrayList<>();
     String timelineRaw = job.getExamTimeline() != null ? job.getExamTimeline() : "";
-    Matcher weekMatcher = Pattern.compile("(?:Week|W|第)\\s*(\\d{1,2})\\s*(?:周)?\\s*[:：-]?\\s*([^;；\\n]+)?", Pattern.CASE_INSENSITIVE).matcher(timelineRaw);
+    Matcher weekMatcher = Pattern.compile("(?:Week|W)\\s*(\\d{1,2})\\s*[:\\-]?\\s*([^;\\n]+)?", Pattern.CASE_INSENSITIVE).matcher(timelineRaw);
     while (weekMatcher.find()) {
         String weekNo = weekMatcher.group(1);
         String detail = weekMatcher.group(2) != null ? weekMatcher.group(2).trim() : "";
         weekMilestones.add(new String[]{weekNo, escHtml(detail)});
     }
     if (weekMilestones.isEmpty() && !timelineRaw.trim().isEmpty()) {
-        String[] fallback = timelineRaw.split("[;；\\n]+");
+        String[] fallback = timelineRaw.split("[;\\n]+");
         int wk = 1;
         for (String f : fallback) {
             String t = f != null ? f.trim() : "";
@@ -95,6 +91,38 @@
             </p>
             <% } %>
 
+            <% if (job.getWorkArrangements() != null && !job.getWorkArrangements().isEmpty()) { %>
+            <h2 class="job-wa-heading">Work arrangements</h2>
+            <table class="job-wa-table">
+                <thead>
+                <tr>
+                    <th scope="col">Work name</th>
+                    <th scope="col">Per-session duration</th>
+                    <th scope="col">Occurrences</th>
+                    <th scope="col">TAs needed</th>
+                    <th scope="col">Specific time</th>
+                </tr>
+                </thead>
+                <tbody>
+                <% for (WorkArrangementItem wa : job.getWorkArrangements()) {
+                       String wn = wa.getWorkName() != null ? escHtml(wa.getWorkName()) : "—";
+                       String sd = escHtml(wa.getResolvedSessionDuration());
+                       if (sd.isEmpty()) sd = "—";
+                       int occ = wa.getResolvedOccurrenceCount();
+                       int wc = wa.getTaCount() > 0 ? wa.getTaCount() : 0;
+                %>
+                <tr>
+                    <td><%= wn %></td>
+                    <td class="pre-wrap"><%= sd %></td>
+                    <td><%= occ %></td>
+                    <td><%= wc %></td>
+                    <td class="pre-wrap"><% if (wa.getSpecificTime() != null && !wa.getSpecificTime().isEmpty()) { %><%= escHtml(wa.getSpecificTime()) %><% } else { %><span class="muted-inline">TBD &mdash; to be arranged as needed</span><% } %></td>
+                </tr>
+                <% } %>
+                </tbody>
+            </table>
+            <% } %>
+
             <dl class="job-detail-dl">
                 <dt>Module code</dt><dd><%= escHtml(job.getModuleCode() != null ? job.getModuleCode() : "—") %></dd>
                 <dt>Module name</dt><dd><%= moduleName %></dd>
@@ -103,7 +131,7 @@
                 <dt>Required skills</dt><dd><%= job.getRequiredSkills() != null && !job.getRequiredSkills().isEmpty() ? escHtml(String.join(", ", job.getRequiredSkills())) : "—" %></dd>
                 <dt>Responsibilities</dt><dd class="pre-wrap"><%= respText %></dd>
                 <dt>Workload</dt><dd class="pre-wrap"><%= wl %></dd>
-                <dt>TA slots</dt><dd><%= job.getTaSlots() > 0 ? job.getTaSlots() : 1 %></dd>
+                <dt>Planned recruits</dt><dd><%= plannedRecruits %></dd>
                 <dt>Course timeline</dt>
                 <dd>
                     <% if (weekMilestones.isEmpty()) { %>
@@ -133,15 +161,24 @@
                 <dt>Open status</dt><dd><%= isOpen ? "Open for applications" : "Closed" %></dd>
             </dl>
             <h2>Per-TA responsibilities</h2>
+            <p class="muted-inline job-wa-edit-hint">
+                Balanced by planned recruits: total estimated workload <strong><%= String.format(Locale.US, "%.2f", quotaRec.getTotalHours()) %> h</strong>,
+                average per TA <strong><%= String.format(Locale.US, "%.2f", quotaRec.getAverageHours()) %> h</strong>,
+                imbalance (max-min) <strong><%= String.format(Locale.US, "%.2f", quotaRec.getImbalanceHours()) %> h</strong>.
+            </p>
             <div class="ta-duty-board">
-                <% for (int idx = 1; idx <= taSlots; idx++) {
-                       String allocation = idx <= allocationItems.size()
-                               ? allocationItems.get(idx - 1)
-                               : "General support: lab/tutorial assistance, Q&A, and exam-day backup.";
+                <% for (WorkQuotaPlanner.TAQuota q : quotaRec.getQuotas()) {
+                       StringBuilder duty = new StringBuilder();
+                       for (Map.Entry<String, Integer> e : q.getWorkCounts().entrySet()) {
+                           if (duty.length() > 0) duty.append("; ");
+                           duty.append(escHtml(e.getKey())).append(" x ").append(e.getValue());
+                       }
+                       if (duty.length() == 0) duty.append("No assigned work units.");
                 %>
                 <article class="ta-duty-card">
-                    <div class="ta-duty-head"><span class="arr-icon arr-icon-slots" aria-hidden="true">TA</span>TA-<%= idx %></div>
-                    <p class="pre-wrap"><%= allocation %></p>
+                    <div class="ta-duty-head"><span class="arr-icon arr-icon-slots" aria-hidden="true">TA</span><%= escHtml(q.getName()) %></div>
+                    <p><strong>Estimated load:</strong> <%= String.format(Locale.US, "%.2f", q.getTotalHours()) %> h</p>
+                    <p class="pre-wrap"><%= duty.toString() %></p>
                 </article>
                 <% } %>
             </div>

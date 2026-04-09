@@ -4,9 +4,12 @@
 <%@ page import="java.util.ArrayList" %>
 <%@ page import="java.util.regex.Matcher" %>
 <%@ page import="java.util.regex.Pattern" %>
+<%@ page import="java.util.Locale" %>
+<%@ page import="java.util.Map" %>
 <%@ page import="bupt.ta.model.Job" %>
 <%@ page import="bupt.ta.model.Application" %>
 <%@ page import="bupt.ta.ai.AIMatchService" %>
+<%@ page import="bupt.ta.util.WorkQuotaPlanner" %>
 <% List<Object[]> jobsWithApps = (List<Object[]>) request.getAttribute("jobsWithApps"); if (jobsWithApps == null) jobsWithApps = java.util.Collections.emptyList();
    List<Object[]> moJobPickList = (List<Object[]>) request.getAttribute("moJobPickList");
    if (moJobPickList == null) moJobPickList = java.util.Collections.emptyList();
@@ -18,11 +21,13 @@
    if (moView == null) moView = "pending";
    int moCntP = request.getAttribute("moJobsCountPending") != null ? (Integer) request.getAttribute("moJobsCountPending") : 0;
    int moCntI = request.getAttribute("moJobsCountInterview") != null ? (Integer) request.getAttribute("moJobsCountInterview") : 0;
+   int moCntWl = request.getAttribute("moJobsCountWaitlist") != null ? (Integer) request.getAttribute("moJobsCountWaitlist") : 0;
    int moCntW = request.getAttribute("moJobsCountWithdrawn") != null ? (Integer) request.getAttribute("moJobsCountWithdrawn") : 0;
    int moCntO = request.getAttribute("moJobsCountOutcome") != null ? (Integer) request.getAttribute("moJobsCountOutcome") : 0;
    String moJobsBaseAttr = (String) request.getAttribute("moJobsBase");
    String moBase = moJobsBaseAttr != null ? moJobsBaseAttr : request.getContextPath() + "/mo/jobs";
    boolean moPastJobsPage = Boolean.TRUE.equals(request.getAttribute("moPastJobsPage"));
+   boolean moReadOnly = moPastJobsPage;
    String moCtx = request.getContextPath();
 %>
 <!DOCTYPE html>
@@ -65,6 +70,7 @@
                    else if ("batch_empty".equals(err)) errMsg = "Select at least one row.";
                    else if ("invalid_action".equals(err)) errMsg = "Invalid action.";
                    else if ("invalid_job".equals(err)) errMsg = "Invalid posting or access denied.";
+                   else if ("job_inactive".equals(err)) errMsg = "This posting is closed or past deadline. Management actions are disabled.";
             %><p class="error">Error: <%= errMsg %></p><% } %>
 
             <% if (moJobListMode) { %>
@@ -96,15 +102,18 @@
                 Job pj = (Job) pick[0];
                 List<AIMatchService.ApplicantRecommendation> pr = (List<AIMatchService.ApplicantRecommendation>) pick[1];
                 List<AIMatchService.ApplicantRecommendation> ir = (List<AIMatchService.ApplicantRecommendation>) pick[2];
-                List<AIMatchService.ApplicantRecommendation> wr = (List<AIMatchService.ApplicantRecommendation>) pick[3];
-                List<AIMatchService.ApplicantRecommendation> or = (List<AIMatchService.ApplicantRecommendation>) pick[4];
+                List<AIMatchService.ApplicantRecommendation> wlr = (List<AIMatchService.ApplicantRecommendation>) pick[3];
+                List<AIMatchService.ApplicantRecommendation> wdr = (List<AIMatchService.ApplicantRecommendation>) pick[4];
+                List<AIMatchService.ApplicantRecommendation> ou = (List<AIMatchService.ApplicantRecommendation>) pick[5];
                 if (pr == null) pr = java.util.Collections.emptyList();
                 if (ir == null) ir = java.util.Collections.emptyList();
-                if (wr == null) wr = java.util.Collections.emptyList();
-                if (or == null) or = java.util.Collections.emptyList();
+                if (wlr == null) wlr = java.util.Collections.emptyList();
+                if (wdr == null) wdr = java.util.Collections.emptyList();
+                if (ou == null) ou = java.util.Collections.emptyList();
                 String pickHref = moBase + "?jobId=" + java.net.URLEncoder.encode(pj.getId(), "UTF-8") + "&view=pending";
+                String detailHref = moCtx + "/mo/job?jobId=" + java.net.URLEncoder.encode(pj.getId(), "UTF-8");
             %>
-                <a class="mo-job-pick-card context-card" href="<%= pickHref %>">
+                <div class="mo-job-pick-card context-card">
                     <h3><%= escHtml(pj.getTitle()) %></h3>
                     <p class="pick-meta"><%= escHtml(pj.getModuleCode()) %> · <%= escHtml(pj.getModuleName() != null ? pj.getModuleName() : "") %></p>
                     <p class="pick-meta"><span class="job-status-text">(<%= escHtml(pj.getStatus()) %>)</span>
@@ -112,9 +121,12 @@
                         <span class="muted-inline"> · Deadline <%= escHtml(pj.getDeadline()) %></span>
                         <% } %>
                     </p>
-                    <p class="pick-stats">App <span class="tab-count"><%= pr.size() %></span> · Int <span class="tab-count"><%= ir.size() %></span> · Wdn <span class="tab-count"><%= wr.size() %></span> · Out <span class="tab-count"><%= or.size() %></span></p>
-                    <span class="btn btn-primary mo-job-pick-cta">Manage this posting</span>
-                </a>
+                    <p class="pick-stats">App <span class="tab-count"><%= pr.size() %></span> · Int <span class="tab-count"><%= ir.size() %></span> · Wl <span class="tab-count"><%= wlr.size() %></span> · Wdn <span class="tab-count"><%= wdr.size() %></span> · Out <span class="tab-count"><%= ou.size() %></span></p>
+                    <p class="mo-job-pick-actions">
+                        <a class="btn btn-primary" href="<%= pickHref %>">Manage applicants</a>
+                        <a class="btn btn-secondary" href="<%= detailHref %>">Full posting</a>
+                    </p>
+                </div>
             <% } %>
             </div>
             <% } %>
@@ -122,29 +134,29 @@
             <p class="breadcrumb-row"><a href="<%= moBase %>" class="mini-link">&larr; Back to posting list</a></p>
             <% Job hdr = jobsWithApps.isEmpty() ? null : (Job) ((Object[]) jobsWithApps.get(0))[0]; %>
             <h1><%= hdr != null ? escHtml(hdr.getTitle()) : "Job management" %></h1>
-            <% if (hdr != null) { %><p class="pick-meta"><%= escHtml(hdr.getModuleCode()) %> · <%= escHtml(hdr.getModuleName() != null ? hdr.getModuleName() : "") %></p><% } %>
+            <% if (hdr != null) { %><p class="pick-meta"><%= escHtml(hdr.getModuleCode()) %> · <%= escHtml(hdr.getModuleName() != null ? hdr.getModuleName() : "") %></p>
+            <div class="context-card mo-posting-detail-card">
+                <strong>Full posting (all fields from the publish form)</strong>
+                <p class="muted-inline">Description, responsibilities, pay, deadline, skills, hours, timeline, interview info, planned recruits, and waitlist settings are listed on one page.</p>
+                <p class="mo-posting-detail-actions">
+                    <a class="btn btn-primary" href="<%= moCtx %>/mo/job?jobId=<%= java.net.URLEncoder.encode(hdr.getId(), "UTF-8") %>">View full posting</a>
+                </p>
+            </div>
+            <% } %>
             <p class="mo-page-lead">Manage one posting end-to-end: screen applicants, send interview notices, and record final outcomes.</p>
             <% if (hdr != null) {
-                   int taSlots = hdr.getTaSlots() > 0 ? hdr.getTaSlots() : 1;
-                   List<String> allocationItems = new ArrayList<>();
-                   String planRaw = hdr.getTaAllocationPlan();
-                   if (planRaw != null) {
-                       String[] parts = planRaw.split("[\\n;；]+");
-                       for (String p : parts) {
-                           String t = p != null ? p.trim() : "";
-                           if (!t.isEmpty()) allocationItems.add(t);
-                       }
-                   }
+                   int plannedRecruits = hdr.getTaSlots() > 0 ? hdr.getTaSlots() : 1;
+                   WorkQuotaPlanner.Recommendation quotaRec = WorkQuotaPlanner.recommend(hdr.getWorkArrangements(), plannedRecruits);
                    List<String[]> weekMilestones = new ArrayList<>();
                    String timelineRaw = hdr.getExamTimeline() != null ? hdr.getExamTimeline() : "";
-                   Matcher weekMatcher = Pattern.compile("(?:Week|W|第)\\s*(\\d{1,2})\\s*(?:周)?\\s*[:：-]?\\s*([^;；\\n]+)?", Pattern.CASE_INSENSITIVE).matcher(timelineRaw);
+                   Matcher weekMatcher = Pattern.compile("(?:Week|W)\\s*(\\d{1,2})\\s*[:\\-]?\\s*([^;\\n]+)?", Pattern.CASE_INSENSITIVE).matcher(timelineRaw);
                    while (weekMatcher.find()) {
                        String weekNo = weekMatcher.group(1);
                        String detail = weekMatcher.group(2) != null ? weekMatcher.group(2).trim() : "";
                        weekMilestones.add(new String[]{weekNo, detail});
                    }
                    if (weekMilestones.isEmpty() && !timelineRaw.trim().isEmpty()) {
-                       String[] fallback = timelineRaw.split("[;；\\n]+");
+                       String[] fallback = timelineRaw.split("[;\\n]+");
                        int wk = 1;
                        for (String f : fallback) {
                            String t = f != null ? f.trim() : "";
@@ -159,8 +171,8 @@
                 <table class="arrangement-table">
                     <tbody>
                     <tr>
-                        <th><span class="arr-icon arr-icon-slots" aria-hidden="true">TA</span>TA slots</th>
-                        <td><%= taSlots %></td>
+                        <th><span class="arr-icon arr-icon-slots" aria-hidden="true">TA</span>Planned recruits</th>
+                        <td><%= plannedRecruits %></td>
                     </tr>
                     <tr>
                         <th><span class="arr-icon arr-icon-timeline" aria-hidden="true">TL</span>Course timeline</th>
@@ -196,15 +208,24 @@
                     </tr>
                     </tbody>
                 </table>
+                <p class="muted-inline job-wa-edit-hint">
+                    Balanced by planned recruits: total estimated workload <strong><%= String.format(Locale.US, "%.2f", quotaRec.getTotalHours()) %> h</strong>,
+                    average per TA <strong><%= String.format(Locale.US, "%.2f", quotaRec.getAverageHours()) %> h</strong>,
+                    imbalance (max-min) <strong><%= String.format(Locale.US, "%.2f", quotaRec.getImbalanceHours()) %> h</strong>.
+                </p>
                 <div class="ta-duty-board">
-                    <% for (int idx = 1; idx <= taSlots; idx++) {
-                           String item = idx <= allocationItems.size()
-                                   ? allocationItems.get(idx - 1)
-                                   : "General support: lab/tutorial assistance, Q&A, and exam-day backup.";
+                    <% for (WorkQuotaPlanner.TAQuota q : quotaRec.getQuotas()) {
+                           StringBuilder duty = new StringBuilder();
+                           for (Map.Entry<String, Integer> e : q.getWorkCounts().entrySet()) {
+                               if (duty.length() > 0) duty.append("; ");
+                               duty.append(escHtml(e.getKey())).append(" x ").append(e.getValue());
+                           }
+                           if (duty.length() == 0) duty.append("No assigned work units.");
                     %>
                     <article class="ta-duty-card">
-                        <div class="ta-duty-head"><span class="arr-icon arr-icon-slots" aria-hidden="true">TA</span>TA-<%= idx %></div>
-                        <p class="pre-wrap"><%= escHtml(item) %></p>
+                        <div class="ta-duty-head"><span class="arr-icon arr-icon-slots" aria-hidden="true">TA</span><%= escHtml(q.getName()) %></div>
+                        <p><strong>Estimated load:</strong> <%= String.format(Locale.US, "%.2f", q.getTotalHours()) %> h</p>
+                        <p class="pre-wrap"><%= duty.toString() %></p>
                     </article>
                     <% } %>
                 </div>
@@ -212,13 +233,14 @@
             <% } %>
             <div class="context-card">
                 <strong>Workflow</strong>
-                <p>Use the four tabs: Applicants &rarr; Interview &rarr; Withdrawn &rarr; Outcomes. This page shows only <strong>this posting</strong>.
-                <% if (moPastJobsPage) { %><span class="muted-inline"> (Closed or past deadline; you can still review and adjust records.)</span><% } %>
+                <p>Use the tabs: Applicants &rarr; Interview &rarr; Waitlist &rarr; Withdrawn &rarr; Outcomes (selected, rejected, and other final states). This page shows only <strong>this posting</strong>.
+                <% if (moPastJobsPage) { %><span class="muted-inline"> (Closed or past deadline; this page is read-only.)</span><% } %>
                 </p>
             </div>
             <nav class="mo-jobs-tabs" aria-label="Application views">
                 <a href="<%= moBase %>?view=pending<%= moJobIdQ %>" class="mo-jobs-tab <%= "pending".equals(moView) ? "active" : "" %>">Applicants<span class="tab-count"><%= moCntP %></span></a>
                 <a href="<%= moBase %>?view=interview<%= moJobIdQ %>" class="mo-jobs-tab <%= "interview".equals(moView) ? "active" : "" %>">Interview<span class="tab-count"><%= moCntI %></span></a>
+                <a href="<%= moBase %>?view=waitlist<%= moJobIdQ %>" class="mo-jobs-tab <%= "waitlist".equals(moView) ? "active" : "" %>">Waitlist<span class="tab-count"><%= moCntWl %></span></a>
                 <a href="<%= moBase %>?view=withdrawn<%= moJobIdQ %>" class="mo-jobs-tab <%= "withdrawn".equals(moView) ? "active" : "" %>">Withdrawn<span class="tab-count"><%= moCntW %></span></a>
                 <a href="<%= moBase %>?view=outcome<%= moJobIdQ %>" class="mo-jobs-tab <%= "outcome".equals(moView) ? "active" : "" %>">Outcomes<span class="tab-count"><%= moCntO %></span></a>
             </nav>
@@ -229,13 +251,15 @@
                 Job j = (Job) row[0];
                 List<AIMatchService.ApplicantRecommendation> pendingRecs = (List<AIMatchService.ApplicantRecommendation>) row[1];
                 List<AIMatchService.ApplicantRecommendation> interviewRecs = (List<AIMatchService.ApplicantRecommendation>) row[2];
-                List<AIMatchService.ApplicantRecommendation> withdrawnRecs = (List<AIMatchService.ApplicantRecommendation>) row[3];
-                List<AIMatchService.ApplicantRecommendation> outcomeRecs = (List<AIMatchService.ApplicantRecommendation>) row[4];
+                List<AIMatchService.ApplicantRecommendation> waitlistRecs = (List<AIMatchService.ApplicantRecommendation>) row[3];
+                List<AIMatchService.ApplicantRecommendation> withdrawnRecs = (List<AIMatchService.ApplicantRecommendation>) row[4];
+                List<AIMatchService.ApplicantRecommendation> outcomeRecs = (List<AIMatchService.ApplicantRecommendation>) row[5];
                 if (pendingRecs == null) pendingRecs = java.util.Collections.emptyList();
                 if (interviewRecs == null) interviewRecs = java.util.Collections.emptyList();
+                if (waitlistRecs == null) waitlistRecs = java.util.Collections.emptyList();
                 if (withdrawnRecs == null) withdrawnRecs = java.util.Collections.emptyList();
                 if (outcomeRecs == null) outcomeRecs = java.util.Collections.emptyList();
-                int totalApps = pendingRecs.size() + interviewRecs.size() + withdrawnRecs.size() + outcomeRecs.size();
+                int totalApps = pendingRecs.size() + interviewRecs.size() + waitlistRecs.size() + withdrawnRecs.size() + outcomeRecs.size();
                 String batchPendingFormId = "batch_pending_" + j.getId().replaceAll("[^A-Za-z0-9]", "_");
                 String batchNoticeFormId = "batch_notice_" + j.getId().replaceAll("[^A-Za-z0-9]", "_");
             %>
@@ -248,6 +272,7 @@
                         <% } %>
                     </div>
                     <div class="job-card-actions">
+                        <a href="<%= moCtx %>/mo/job?jobId=<%= java.net.URLEncoder.encode(j.getId(), "UTF-8") %>" class="btn btn-primary">Full detail</a>
                         <% if ("OPEN".equals(j.getStatus())) { %>
                         <form action="${pageContext.request.contextPath}/mo/close-job" method="post">
                             <input type="hidden" name="jobId" value="<%= j.getId() %>">
@@ -272,27 +297,30 @@
                 <div class="applicants-panel">
                     <div class="applicants-head">
                         <h4>
-                            <% if ("pending".equals(moView)) { %>Applicants<% } else if ("interview".equals(moView)) { %>Interview<% } else if ("withdrawn".equals(moView)) { %>Withdrawn<% } else { %>Outcomes<% } %>
-                            <span class="job-apps-count">(this posting: <%= "pending".equals(moView) ? pendingRecs.size() : "interview".equals(moView) ? interviewRecs.size() : "withdrawn".equals(moView) ? withdrawnRecs.size() : outcomeRecs.size() %>)</span>
+                            <% if ("pending".equals(moView)) { %>Applicants<% } else if ("interview".equals(moView)) { %>Interview<% } else if ("waitlist".equals(moView)) { %>Waitlist<% } else if ("withdrawn".equals(moView)) { %>Withdrawn<% } else { %>Outcomes<% } %>
+                            <span class="job-apps-count">(this posting: <%= "pending".equals(moView) ? pendingRecs.size() : "interview".equals(moView) ? interviewRecs.size() : "waitlist".equals(moView) ? waitlistRecs.size() : "withdrawn".equals(moView) ? withdrawnRecs.size() : outcomeRecs.size() %>)</span>
                         </h4>
                     </div>
 
                     <% if (totalApps == 0) { %>
                     <div class="empty-applicants-card">No applications yet.</div>
                     <% } else if ("pending".equals(moView)) { %>
-                    <form id="<%= batchPendingFormId %>" action="${pageContext.request.contextPath}/mo/batch-applicants" method="post" class="batch-form-hidden">
+                    <% if (!moReadOnly) { %><form id="<%= batchPendingFormId %>" action="${pageContext.request.contextPath}/mo/batch-applicants" method="post" class="batch-form-hidden">
                         <input type="hidden" name="action" value="toInterview">
                         <input type="hidden" name="returnJobId" value="<%= j.getId() %>">
-                    </form>
+                    </form><% } %>
                     <% if (!pendingRecs.isEmpty()) { %>
-                    <p class="batch-toolbar">
+                    <% if (moReadOnly) { %>
+                    <p class="muted-inline section-empty">Read-only: this posting is inactive, so applicant actions are disabled.</p>
+                    <% } else { %><p class="batch-toolbar">
                         <button type="submit" class="btn btn-primary" form="<%= batchPendingFormId %>">Set selected to interview (batch)</button>
-                    </p>
+                    </p><% } %>
                     <% for (AIMatchService.ApplicantRecommendation rec : pendingRecs) {
                         Application a = rec.application;
                         String appliedText = a.getAppliedAt() != null ? a.getAppliedAt().replace("T", " ").replaceFirst("\\..*$", "") : "-";
                         String applicantName = a.getApplicantName() != null ? a.getApplicantName() : a.getApplicantId();
                         boolean hasProfile = rec.profile != null;
+                        String emailDisp = hasProfile && rec.profile.getEmail() != null && !rec.profile.getEmail().isEmpty() ? escHtml(rec.profile.getEmail()) : "";
                         String skillsText = hasProfile && rec.profile.getSkills() != null && !rec.profile.getSkills().isEmpty() ? String.join(", ", rec.profile.getSkills()) : "Not provided";
                         String missingText = rec.matchResult.missing != null && !rec.matchResult.missing.isEmpty() ? String.join(", ", rec.matchResult.missing) : "No major gaps";
                         boolean hasCv = hasProfile && rec.profile.getCvFilePath() != null && !rec.profile.getCvFilePath().isEmpty();
@@ -311,10 +339,10 @@
                         }
                     %>
                     <article class="applicant-card">
-                        <label class="batch-check-label">
+                        <% if (!moReadOnly) { %><label class="batch-check-label">
                             <input type="checkbox" name="applicationId" value="<%= a.getId() %>" class="batch-checkbox" form="<%= batchPendingFormId %>">
                             <span class="batch-check-hint">Include in batch</span>
-                        </label>
+                        </label><% } %>
                         <div class="applicant-topline">
                             <div class="applicant-title-group">
                                 <div class="applicant-name-row">
@@ -323,6 +351,9 @@
                                     <span class="load-badge" title="Lower workload">Low load</span>
                                     <% } %>
                                 </div>
+                                <% if (!emailDisp.isEmpty()) { %>
+                                <p class="muted-inline applicant-email-line"><strong>Email:</strong> <%= emailDisp %></p>
+                                <% } %>
                                 <div class="applicant-links">
                                     <button type="button" class="btn btn-primary applicant-quick-btn" data-template="<%= templateId %>">Quick view</button>
                                     <a href="${pageContext.request.contextPath}/mo/applicant-detail?applicantId=<%= a.getApplicantId() %>" class="mini-link">Full profile</a>
@@ -342,6 +373,9 @@
                         <div class="applicant-sections applicant-sections-compact">
                             <section class="applicant-section">
                                 <div class="section-label">Profile</div>
+                                <% if (!emailDisp.isEmpty()) { %>
+                                <p class="section-copy"><strong>Email:</strong> <%= emailDisp %></p>
+                                <% } %>
                                 <p class="section-copy"><strong>Skills:</strong> <%= skillsText %></p>
                                 <p class="section-copy muted-inline"><%= profileStateText %></p>
                             </section>
@@ -357,7 +391,9 @@
                             </section>
                         </div>
                         <div class="applicant-actions">
-                            <div class="decision-bar">
+                            <% if (moReadOnly) { %>
+                            <div class="decision-bar decision-bar-recorded"><p class="muted-inline">Read-only: no actions available for inactive postings.</p></div>
+                            <% } else { %><div class="decision-bar">
                                 <form action="${pageContext.request.contextPath}/mo/select-applicant" method="post" class="decision-form decision-form-inline">
                                     <input type="hidden" name="applicationId" value="<%= a.getId() %>">
                                     <input type="text" name="notes" placeholder="Optional notes" class="note-input">
@@ -366,11 +402,14 @@
                                         <button type="submit" name="action" value="reject" class="btn btn-danger decision-btn">Reject</button>
                                     </div>
                                 </form>
-                            </div>
+                            </div><% } %>
                         </div>
                         <template id="<%= templateId %>">
                             <div class="quick-detail-sheet">
                                 <p class="quick-detail-name"><%= escHtml(applicantName) %></p>
+                                <% if (!emailDisp.isEmpty()) { %>
+                                <p><strong>Email:</strong> <%= emailDisp %></p>
+                                <% } %>
                                 <p><strong>Degree:</strong> <%= degreeText %></p>
                                 <p><strong>Programme:</strong> <%= programmeText %></p>
                                 <p><strong>Skills:</strong> <%= escHtml(skillsText) %></p>
@@ -391,13 +430,13 @@
                         </template>
                     </article>
                     <% } %>
-                    <p class="batch-toolbar">
+                    <% if (!moReadOnly) { %><p class="batch-toolbar">
                         <button type="submit" class="btn btn-primary" form="<%= batchPendingFormId %>">Set selected to interview (batch)</button>
-                    </p>
+                    </p><% } %>
                     <% } else { %><p class="muted-inline section-empty">No applicants for this posting.</p><% } %>
                     <% } else if ("interview".equals(moView)) { %>
                     <% if (!interviewRecs.isEmpty()) { %>
-                    <form id="<%= batchNoticeFormId %>" action="${pageContext.request.contextPath}/mo/batch-applicants" method="post" class="notice-form-fields">
+                    <% if (!moReadOnly) { %><form id="<%= batchNoticeFormId %>" action="${pageContext.request.contextPath}/mo/batch-applicants" method="post" class="notice-form-fields">
                         <input type="hidden" name="action" value="sendNotice">
                         <input type="hidden" name="returnJobId" value="<%= j.getId() %>">
                         <div class="notice-fields">
@@ -409,11 +448,15 @@
                     <p class="batch-toolbar">
                         <button type="submit" class="btn btn-success" form="<%= batchNoticeFormId %>">Send/update in-app interview notice</button>
                     </p>
+                    <% } else { %>
+                    <p class="muted-inline section-empty">Read-only: interview notices and decisions are disabled for inactive postings.</p>
+                    <% } %>
                     <% for (AIMatchService.ApplicantRecommendation rec : interviewRecs) {
                         Application a = rec.application;
                         String appliedText = a.getAppliedAt() != null ? a.getAppliedAt().replace("T", " ").replaceFirst("\\..*$", "") : "-";
                         String applicantName = a.getApplicantName() != null ? a.getApplicantName() : a.getApplicantId();
                         boolean hasProfile = rec.profile != null;
+                        String emailDisp = hasProfile && rec.profile.getEmail() != null && !rec.profile.getEmail().isEmpty() ? escHtml(rec.profile.getEmail()) : "";
                         String skillsText = hasProfile && rec.profile.getSkills() != null && !rec.profile.getSkills().isEmpty() ? String.join(", ", rec.profile.getSkills()) : "Not provided";
                         String missingText = rec.matchResult.missing != null && !rec.matchResult.missing.isEmpty() ? String.join(", ", rec.matchResult.missing) : "No major gaps";
                         boolean hasCv = hasProfile && rec.profile.getCvFilePath() != null && !rec.profile.getCvFilePath().isEmpty();
@@ -423,15 +466,18 @@
                                 || (a.getInterviewAssessment() != null && !a.getInterviewAssessment().isEmpty());
                     %>
                     <article class="applicant-card">
-                        <label class="batch-check-label">
+                        <% if (!moReadOnly) { %><label class="batch-check-label">
                             <input type="checkbox" name="applicationId" value="<%= a.getId() %>" class="batch-checkbox" form="<%= batchNoticeFormId %>">
                             <span class="batch-check-hint">Select for notice</span>
-                        </label>
+                        </label><% } %>
                         <div class="applicant-topline">
                             <div class="applicant-title-group">
                                 <div class="applicant-name-row">
                                     <h5><%= applicantName %></h5>
                                 </div>
+                                <% if (!emailDisp.isEmpty()) { %>
+                                <p class="muted-inline applicant-email-line"><strong>Email:</strong> <%= emailDisp %></p>
+                                <% } %>
                                 <div class="applicant-links">
                                     <a href="${pageContext.request.contextPath}/mo/applicant-detail?applicantId=<%= a.getApplicantId() %>" class="mini-link">Full profile</a>
                                     <% if (hasCv) { %>
@@ -457,6 +503,9 @@
                         <div class="applicant-sections applicant-sections-compact">
                             <section class="applicant-section">
                                 <div class="section-label">Profile</div>
+                                <% if (!emailDisp.isEmpty()) { %>
+                                <p class="section-copy"><strong>Email:</strong> <%= emailDisp %></p>
+                                <% } %>
                                 <p class="section-copy"><strong>Skills:</strong> <%= skillsText %></p>
                                 <p class="section-copy muted-inline"><%= profileStateText %></p>
                             </section>
@@ -471,7 +520,9 @@
                             </section>
                         </div>
                         <div class="applicant-actions">
-                            <div class="decision-bar">
+                            <% if (moReadOnly) { %>
+                            <div class="decision-bar decision-bar-recorded"><p class="muted-inline">Read-only: no actions available for inactive postings.</p></div>
+                            <% } else { %><div class="decision-bar">
                                 <form action="${pageContext.request.contextPath}/mo/select-applicant" method="post" class="decision-form decision-form-inline">
                                     <input type="hidden" name="applicationId" value="<%= a.getId() %>">
                                     <input type="text" name="notes" placeholder="Optional notes" class="note-input">
@@ -480,14 +531,85 @@
                                         <button type="submit" name="action" value="reject" class="btn btn-danger decision-btn">Reject</button>
                                     </div>
                                 </form>
-                            </div>
+                            </div><% } %>
                         </div>
                     </article>
                     <% } %>
-                    <p class="batch-toolbar">
+                    <% if (!moReadOnly) { %><p class="batch-toolbar">
                         <button type="submit" class="btn btn-success" form="<%= batchNoticeFormId %>">Send/update in-app interview notice</button>
-                    </p>
+                    </p><% } %>
                     <% } else { %><p class="muted-inline section-empty">No interviewees for this posting.</p><% } %>
+                    <% } else if ("waitlist".equals(moView)) { %>
+                    <% if (!waitlistRecs.isEmpty()) { %>
+                    <% for (AIMatchService.ApplicantRecommendation rec : waitlistRecs) {
+                        Application a = rec.application;
+                        String appliedText = a.getAppliedAt() != null ? a.getAppliedAt().replace("T", " ").replaceFirst("\\..*$", "") : "-";
+                        String applicantName = a.getApplicantName() != null ? a.getApplicantName() : a.getApplicantId();
+                        boolean hasProfile = rec.profile != null;
+                        String emailDisp = hasProfile && rec.profile.getEmail() != null && !rec.profile.getEmail().isEmpty() ? escHtml(rec.profile.getEmail()) : "";
+                        String skillsText = hasProfile && rec.profile.getSkills() != null && !rec.profile.getSkills().isEmpty() ? String.join(", ", rec.profile.getSkills()) : "Not provided";
+                        String missingText = rec.matchResult.missing != null && !rec.matchResult.missing.isEmpty() ? String.join(", ", rec.matchResult.missing) : "No major gaps";
+                        boolean hasCv = hasProfile && rec.profile.getCvFilePath() != null && !rec.profile.getCvFilePath().isEmpty();
+                        String profileStateText = !hasProfile ? "No profile submitted yet." : (hasCv ? "Profile available, CV uploaded." : "Profile available, CV missing.");
+                    %>
+                    <article class="applicant-card">
+                        <div class="applicant-topline">
+                            <div class="applicant-title-group">
+                                <div class="applicant-name-row">
+                                    <h5><%= applicantName %></h5>
+                                </div>
+                                <% if (!emailDisp.isEmpty()) { %>
+                                <p class="muted-inline applicant-email-line"><strong>Email:</strong> <%= emailDisp %></p>
+                                <% } %>
+                                <div class="applicant-links">
+                                    <a href="${pageContext.request.contextPath}/mo/applicant-detail?applicantId=<%= a.getApplicantId() %>" class="mini-link">Full profile</a>
+                                    <% if (hasCv) { %>
+                                    <a href="${pageContext.request.contextPath}/view-cv?userId=<%= a.getApplicantId() %>" target="_blank" rel="noopener" class="mini-link">View CV</a>
+                                    <a href="${pageContext.request.contextPath}/view-cv?userId=<%= a.getApplicantId() %>&amp;download=1" class="mini-link">Download CV</a>
+                                    <% } else { %><span class="muted-inline">CV not uploaded</span><% } %>
+                                </div>
+                            </div>
+                            <div class="applicant-score-area">
+                                <span class="match-badge" title="<%= rec.matchResult.explanation %>"><%= (int)rec.matchResult.score %>% match</span>
+                                <span class="status-pill status-pill-pending">WAITLIST</span>
+                            </div>
+                        </div>
+                        <div class="applicant-sections applicant-sections-compact">
+                            <section class="applicant-section">
+                                <div class="section-label">Profile</div>
+                                <% if (!emailDisp.isEmpty()) { %>
+                                <p class="section-copy"><strong>Email:</strong> <%= emailDisp %></p>
+                                <% } %>
+                                <p class="section-copy"><strong>Skills:</strong> <%= skillsText %></p>
+                                <p class="section-copy muted-inline"><%= profileStateText %></p>
+                            </section>
+                            <section class="applicant-section">
+                                <div class="section-label">AI Review</div>
+                                <p class="section-copy"><strong>Missing skills:</strong> <%= missingText %></p>
+                            </section>
+                            <section class="applicant-section">
+                                <div class="section-label">Application</div>
+                                <p class="section-copy"><strong>Applied:</strong> <%= appliedText %></p>
+                                <p class="section-copy"><strong>Preferred role:</strong> <%= escHtml(a.getPreferredRole() != null && !a.getPreferredRole().isEmpty() ? a.getPreferredRole() : "Not selected") %></p>
+                            </section>
+                        </div>
+                        <div class="applicant-actions">
+                            <% if (moReadOnly) { %>
+                            <div class="decision-bar decision-bar-recorded"><p class="muted-inline">Read-only: no actions available for inactive postings.</p></div>
+                            <% } else { %><div class="decision-bar">
+                                <form action="${pageContext.request.contextPath}/mo/select-applicant" method="post" class="decision-form decision-form-inline">
+                                    <input type="hidden" name="applicationId" value="<%= a.getId() %>">
+                                    <input type="text" name="notes" placeholder="Optional notes" class="note-input">
+                                    <div class="decision-buttons decision-buttons-inline">
+                                        <button type="submit" name="action" value="select" class="btn btn-success decision-btn">Select</button>
+                                        <button type="submit" name="action" value="reject" class="btn btn-danger decision-btn">Reject</button>
+                                    </div>
+                                </form>
+                            </div><% } %>
+                        </div>
+                    </article>
+                    <% } %>
+                    <% } else { %><p class="muted-inline section-empty">No waitlisted applicants for this posting.</p><% } %>
                     <% } else if ("withdrawn".equals(moView)) { %>
                     <% for (AIMatchService.ApplicantRecommendation rec : withdrawnRecs) {
                         Application a = rec.application;
@@ -513,6 +635,7 @@
                         String appliedText = a.getAppliedAt() != null ? a.getAppliedAt().replace("T", " ").replaceFirst("\\..*$", "") : "-";
                         String applicantName = a.getApplicantName() != null ? a.getApplicantName() : a.getApplicantId();
                         boolean hasProfile = rec.profile != null;
+                        String emailDisp = hasProfile && rec.profile.getEmail() != null && !rec.profile.getEmail().isEmpty() ? escHtml(rec.profile.getEmail()) : "";
                         String skillsText = hasProfile && rec.profile.getSkills() != null && !rec.profile.getSkills().isEmpty() ? String.join(", ", rec.profile.getSkills()) : "Not provided";
                         String missingText = rec.matchResult.missing != null && !rec.matchResult.missing.isEmpty() ? String.join(", ", rec.matchResult.missing) : "No major gaps";
                         boolean hasCv = hasProfile && rec.profile.getCvFilePath() != null && !rec.profile.getCvFilePath().isEmpty();
@@ -530,6 +653,9 @@
                                 <div class="applicant-name-row">
                                     <h5><%= applicantName %></h5>
                                 </div>
+                                <% if (!emailDisp.isEmpty()) { %>
+                                <p class="muted-inline applicant-email-line"><strong>Email:</strong> <%= emailDisp %></p>
+                                <% } %>
                                 <div class="applicant-links">
                                     <button type="button" class="btn btn-primary applicant-quick-btn" data-template="<%= templateId %>">Quick view</button>
                                     <a href="${pageContext.request.contextPath}/mo/applicant-detail?applicantId=<%= a.getApplicantId() %>" class="mini-link">Full profile</a>
@@ -549,6 +675,9 @@
                         <div class="applicant-sections applicant-sections-compact">
                             <section class="applicant-section">
                                 <div class="section-label">Profile</div>
+                                <% if (!emailDisp.isEmpty()) { %>
+                                <p class="section-copy"><strong>Email:</strong> <%= emailDisp %></p>
+                                <% } %>
                                 <p class="section-copy"><strong>Skills:</strong> <%= skillsText %></p>
                                 <p class="section-copy muted-inline"><%= profileStateText %></p>
                             </section>
@@ -576,6 +705,9 @@
                         <template id="<%= templateId %>">
                             <div class="quick-detail-sheet">
                                 <p class="quick-detail-name"><%= escHtml(applicantName) %></p>
+                                <% if (!emailDisp.isEmpty()) { %>
+                                <p><strong>Email:</strong> <%= emailDisp %></p>
+                                <% } %>
                                 <p><strong>Degree:</strong> <%= degreeText %></p>
                                 <p><strong>Programme:</strong> <%= programmeText %></p>
                                 <p><strong>Skills:</strong> <%= escHtml(skillsText) %></p>

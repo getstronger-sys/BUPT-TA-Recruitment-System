@@ -52,7 +52,7 @@ public class ViewCVServlet extends HttpServlet {
         if (!file.startsWith(dataRoot)) {
             resp.sendError(HttpServletResponse.SC_FORBIDDEN, "Invalid CV path");
             return;
-        }
+          }
         if (!Files.exists(file) || !Files.isRegularFile(file)) {
             resp.sendError(HttpServletResponse.SC_NOT_FOUND, "CV file not found");
             return;

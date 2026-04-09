@@ -31,14 +31,14 @@
     }
     List<String[]> weekMilestones = new ArrayList<>();
     String timelineRaw = job.getExamTimeline() != null ? job.getExamTimeline() : "";
-    Matcher weekMatcher = Pattern.compile("(?:Week|W|第)\\s*(\\d{1,2})\\s*(?:周)?\\s*[:：-]?\\s*([^;；\\n]+)?", Pattern.CASE_INSENSITIVE).matcher(timelineRaw);
+    Matcher weekMatcher = Pattern.compile("(?:Week|W)\\s*(\\d{1,2})\\s*[:\\-]?\\s*([^;\\n]+)?", Pattern.CASE_INSENSITIVE).matcher(timelineRaw);
     while (weekMatcher.find()) {
         String weekNo = weekMatcher.group(1);
         String detail = weekMatcher.group(2) != null ? weekMatcher.group(2).trim() : "";
         weekMilestones.add(new String[]{weekNo, escHtml(detail)});
     }
     if (weekMilestones.isEmpty() && !timelineRaw.trim().isEmpty()) {
-        String[] fallback = timelineRaw.split("[;；\\n]+");
+        String[] fallback = timelineRaw.split("[;\\n]+");
         int wk = 1;
         for (String f : fallback) {
             String t = f != null ? f.trim() : "";
