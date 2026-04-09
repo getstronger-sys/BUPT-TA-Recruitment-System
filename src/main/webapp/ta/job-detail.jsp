@@ -11,6 +11,7 @@
 <%@ page import="java.util.regex.Matcher" %>
 <%@ page import="java.util.regex.Pattern" %>
 <%
+    request.setAttribute("taNavActive", "jobs");
     Job job = (Job) request.getAttribute("job");
     AIMatchService.MatchResult match = (AIMatchService.MatchResult) request.getAttribute("match");
     if (job == null) {
@@ -55,13 +56,14 @@
 <html>
 <head>
     <meta charset="UTF-8">
+    <%@ include file="/WEB-INF/jspf/viewport.jspf" %>
     <title><%= safeTitle %> - Job Detail</title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css">
 </head>
 <body>
 <div class="container">
     <div class="nav top-nav">
-        <span class="brand">QM TA Portal</span>
+        <span class="brand">BUPT Teaching Assistant Recruitment System</span>
         <span class="user"><%= session.getAttribute("realName") %> | <a href="${pageContext.request.contextPath}/logout">Logout</a></span>
     </div>
     <div class="page-layout">
@@ -71,14 +73,9 @@
                 <div class="icon-dot">A</div>
                 <div class="icon-dot">P</div>
             </div>
-            <aside class="side-nav">
-                <a href="${pageContext.request.contextPath}/ta/dashboard">Home</a>
-                <a class="active" href="${pageContext.request.contextPath}/ta/jobs">Find Jobs</a>
-                <a href="${pageContext.request.contextPath}/ta/applications">My Applications</a>
-                <a href="${pageContext.request.contextPath}/ta/profile">My Profile</a>
-            </aside>
+            <%@ include file="/WEB-INF/jspf/ta-side-nav.jspf" %>
         </div>
-        <main class="main-panel">
+        <main class="main-panel ta-main">
             <p class="breadcrumb-line"><a href="${pageContext.request.contextPath}/ta/jobs">&larr; Back to job list</a></p>
             <h1><%= safeTitle %></h1>
             <p class="job-detail-meta">

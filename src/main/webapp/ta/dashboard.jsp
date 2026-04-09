@@ -20,13 +20,14 @@
 <html>
 <head>
     <meta charset="UTF-8">
+    <%@ include file="/WEB-INF/jspf/viewport.jspf" %>
     <title>Home - TA</title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css">
 </head>
 <body>
 <div class="container">
     <div class="nav top-nav">
-        <span class="brand">QM TA Portal</span>
+        <span class="brand">BUPT Teaching Assistant Recruitment System</span>
         <span class="user"><%= session.getAttribute("realName") %> | <a href="${pageContext.request.contextPath}/logout">Logout</a></span>
     </div>
     <div class="page-layout">
@@ -39,9 +40,9 @@
             </div>
             <%@ include file="/WEB-INF/jspf/ta-side-nav.jspf" %>
         </div>
-        <main class="main-panel ta-home-dashboard">
+        <main class="main-panel ta-main ta-home-dashboard">
             <h1>Welcome back, <%= escHtml(session.getAttribute("realName") != null ? session.getAttribute("realName").toString() : "TA") %></h1>
-            <p class="muted-inline">Use the shortcuts below to manage applications and keep your profile ready for module organisers.</p>
+            <p class="ta-page-lead">Use the shortcuts below to track your applications and keep your profile ready for module organisers.</p>
             <div class="context-card ta-dash-email-hint">
                 <strong>Contact email for module organisers</strong>
                 <p>Enter or confirm your email under <strong>My Profile</strong> (sidebar) — it appears to organisers when you apply. <a href="${pageContext.request.contextPath}/ta/profile#ta-profile-email">Go to email field</a></p>

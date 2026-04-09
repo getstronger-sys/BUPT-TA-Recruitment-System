@@ -11,7 +11,7 @@
 <body>
 <div class="container container--auth">
     <header class="auth-topbar">
-        <span class="brand">QM TA Portal</span>
+        <span class="brand">BUPT Teaching Assistant Recruitment System</span>
     </header>
     <div class="auth-shell">
         <div class="auth-card auth-card--wide">

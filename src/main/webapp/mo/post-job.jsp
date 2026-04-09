@@ -38,7 +38,7 @@
 <body>
 <div class="container">
     <div class="nav top-nav">
-        <span class="brand">QM TA Portal</span>
+        <span class="brand">BUPT Teaching Assistant Recruitment System</span>
         <span class="user"><%= session.getAttribute("realName") %> | <a href="${pageContext.request.contextPath}/logout">Logout</a></span>
     </div>
     <div class="page-layout">

@@ -2361,19 +2361,53 @@ tr:hover { background: #f8f7ff; }
 
 .table-scroll-wrap {
     overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border: 1px solid #d8e5f3;
+    border-radius: 10px;
+    background: #ffffff;
+}
+
+.table-scroll-wrap-hint {
+    margin: 6px 0 10px;
+    font-size: 0.86rem;
+    color: #5a7194;
 }
 
 .admin-table {
     width: 100%;
     min-width: 760px;
+    margin-top: 0;
 }
 
 .admin-table th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: linear-gradient(90deg, #1452a3, #1e69c8);
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.24) inset;
     white-space: nowrap;
 }
 
 .admin-table td {
     vertical-align: top;
+}
+
+.admin-table tbody tr:nth-child(even) {
+    background: #fafcfe;
+}
+
+.admin-table tbody tr:hover {
+    background: #f0f5fc;
+}
+
+.balance-ok {
+    color: #14724f;
+    font-weight: 700;
+}
+
+.balance-warn {
+    color: #9d6400;
+    font-weight: 700;
 }
 
 .workload-warning {
@@ -2826,4 +2860,32 @@ body.ta-messages-list-body .ta-msg-pagination--list {
     flex: 0 0 auto;
     margin-top: 12px;
     margin-bottom: 0;
+}
+
+/* Global card interaction language:
+   default = light blue surface, hover = purple-highlighted surface */
+.context-card,
+.detail-card,
+.widget-card,
+.stat-card,
+.job-card,
+.applicant-card,
+.mo-job-pick-card,
+.ta-message-item {
+    background: #f4f8ff;
+    border-color: #d3e2f3;
+    transition: background-color 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.context-card:hover,
+.detail-card:hover,
+.widget-card:hover,
+.stat-card:hover,
+.job-card:hover,
+.applicant-card:hover,
+.mo-job-pick-card:hover,
+.ta-message-item:hover {
+    background: #f5efff;
+    border-color: #c5006b;
+    box-shadow: 0 8px 22px rgba(90, 56, 140, 0.14);
 }

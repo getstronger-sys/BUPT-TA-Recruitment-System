@@ -25,9 +25,9 @@
 <div class="container container--error-page">
     <header class="error-page-topbar">
         <% if (loggedIn) { %>
-        <a class="brand brand-link" href="<%= ctx %>/dashboard.jsp">QM TA Portal</a>
+        <a class="brand brand-link" href="<%= ctx %>/dashboard.jsp">BUPT Teaching Assistant Recruitment System</a>
         <% } else { %>
-        <a class="brand brand-link" href="<%= ctx %>/index.jsp">QM TA Portal</a>
+        <a class="brand brand-link" href="<%= ctx %>/index.jsp">BUPT Teaching Assistant Recruitment System</a>
         <% } %>
     </header>
     <div class="error-page-body">
