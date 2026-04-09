@@ -22,7 +22,7 @@
 <body>
 <div class="container">
     <div class="nav top-nav">
-        <span class="brand">QM TA Portal</span>
+        <span class="brand">BUPT Teaching Assistant Recruitment System</span>
         <span class="user"><%= session.getAttribute("realName") %> | <a href="${pageContext.request.contextPath}/logout">Logout</a></span>
     </div>
     <div class="page-layout">
@@ -40,12 +40,14 @@
         </div>
         <main class="main-panel admin-main">
             <h1>TA Overall Workload</h1>
+            <p class="ta-page-lead">Review selected and pending load distribution across TAs to keep recruitment decisions balanced and policy-compliant.</p>
             <div class="context-card">
                 <strong>Workload rule</strong>
                 <p>Average selected jobs per TA: <strong><%= String.format("%.1f", avgWorkload) %></strong>. Hard limit: <strong><%= settings.hasWorkloadLimit() ? settings.getMaxSelectedJobsPerTa() : 0 %></strong>. Auto-close pending: <strong><%= settings.isAutoClosePendingWhenLimitReached() ? "ON" : "OFF" %></strong>.</p>
             </div>
             <p><a href="${pageContext.request.contextPath}/admin/export-workload" class="btn btn-primary">Export to CSV</a></p>
 
+            <p class="table-scroll-wrap-hint">Tip: swipe horizontally on narrow screens to view all columns.</p>
             <div class="table-scroll-wrap">
                 <table class="admin-table">
                     <thead>

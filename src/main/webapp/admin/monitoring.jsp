@@ -27,7 +27,7 @@
 <body>
 <div class="container">
     <div class="nav top-nav">
-        <span class="brand">QM TA Portal</span>
+        <span class="brand">BUPT Teaching Assistant Recruitment System</span>
         <span class="user"><%= session.getAttribute("realName") %> | <a href="${pageContext.request.contextPath}/logout">Logout</a></span>
     </div>
     <div class="page-layout">
@@ -88,6 +88,7 @@
                 <% if (monitoring.getLimitAlerts().isEmpty()) { %>
                 <p class="section-empty section-empty--card">No workload-limit conflicts found.</p>
                 <% } else { %>
+                <p class="table-scroll-wrap-hint">Tip: swipe horizontally on narrow screens to view all columns.</p>
                 <div class="table-scroll-wrap">
                     <table class="admin-table">
                         <thead>
@@ -118,6 +119,7 @@
                 <% if (monitoring.getInterviewNoticeAlerts().isEmpty()) { %>
                 <p class="section-empty section-empty--card">All interview-stage applications have time and location filled in.</p>
                 <% } else { %>
+                <p class="table-scroll-wrap-hint">Tip: swipe horizontally on narrow screens to view all columns.</p>
                 <div class="table-scroll-wrap">
                     <table class="admin-table">
                         <thead>
@@ -154,6 +156,7 @@
                 <% if (monitoring.getInactiveJobAlerts().isEmpty()) { %>
                 <p class="section-empty section-empty--card">No pending or interview applications remain on closed / expired jobs.</p>
                 <% } else { %>
+                <p class="table-scroll-wrap-hint">Tip: swipe horizontally on narrow screens to view all columns.</p>
                 <div class="table-scroll-wrap">
                     <table class="admin-table">
                         <thead>
@@ -186,6 +189,7 @@
                 <% if (monitoring.getMissingJobAlerts().isEmpty()) { %>
                 <p class="section-empty section-empty--card">No missing-job references found.</p>
                 <% } else { %>
+                <p class="table-scroll-wrap-hint">Tip: swipe horizontally on narrow screens to view all columns.</p>
                 <div class="table-scroll-wrap">
                     <table class="admin-table">
                         <thead>
@@ -218,6 +222,7 @@
                 <% if (monitoring.getCapacityAlerts().isEmpty()) { %>
                 <p class="section-empty section-empty--card">No job exceeds its max-applicant capacity.</p>
                 <% } else { %>
+                <p class="table-scroll-wrap-hint">Tip: swipe horizontally on narrow screens to view all columns.</p>
                 <div class="table-scroll-wrap">
                     <table class="admin-table">
                         <thead>
