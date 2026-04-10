@@ -272,6 +272,33 @@
     </servlet-mapping>
 
     <servlet>
+        <servlet-name>AdminUsersServlet</servlet-name>
+        <servlet-class>bupt.ta.servlet.AdminUsersServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>AdminUsersServlet</servlet-name>
+        <url-pattern>/admin/users</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>AdminTADetailServlet</servlet-name>
+        <servlet-class>bupt.ta.servlet.AdminTADetailServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>AdminTADetailServlet</servlet-name>
+        <url-pattern>/admin/ta-detail</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>AdminMODetailServlet</servlet-name>
+        <servlet-class>bupt.ta.servlet.AdminMODetailServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>AdminMODetailServlet</servlet-name>
+        <url-pattern>/admin/mo-detail</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
         <servlet-name>ExportWorkloadServlet</servlet-name>
         <servlet-class>bupt.ta.servlet.ExportWorkloadServlet</servlet-class>
     </servlet>

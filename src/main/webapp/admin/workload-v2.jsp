@@ -31,11 +31,13 @@
                 <div class="icon-dot">D</div>
                 <div class="icon-dot active">W</div>
                 <div class="icon-dot">M</div>
+                <div class="icon-dot">U</div>
             </div>
             <aside class="side-nav">
                 <a href="${pageContext.request.contextPath}/admin/dashboard">Summary</a>
                 <a class="active" href="${pageContext.request.contextPath}/admin/workload">Workload</a>
                 <a href="${pageContext.request.contextPath}/admin/monitoring">Monitoring</a>
+                <a href="${pageContext.request.contextPath}/admin/users">Users</a>
             </aside>
         </div>
         <main class="main-panel admin-main">
@@ -64,7 +66,7 @@
                     <tbody>
                     <% for (AdminService.WorkloadRow row : workloadRows) { %>
                     <tr class="<%= row.isAboveLimit() ? "workload-high" : row.isAtOrOverLimit() ? "workload-warning" : "" %>">
-                        <td><%= escHtml(row.getApplicantName()) %></td>
+                        <td><a href="${pageContext.request.contextPath}/admin/ta-detail?userId=<%= row.getApplicantId() %>" class="admin-inline-link"><%= escHtml(row.getApplicantName()) %></a></td>
                         <td><%= escHtml(row.getApplicantId()) %></td>
                         <td><strong><%= row.getSelectedCount() %></strong></td>
                         <td><%= row.getPendingCount() %></td>
@@ -103,6 +105,7 @@
                 <div class="widget-title">Interpretation</div>
                 <p class="widget-line">"At limit" means the TA reached the configured cap exactly.</p>
                 <p class="widget-line">"Over limit" means selected jobs already exceed the configured cap.</p>
+                <p class="widget-line"><a href="${pageContext.request.contextPath}/admin/users">Open user directory</a></p>
             </div>
         </aside>
     </div>
