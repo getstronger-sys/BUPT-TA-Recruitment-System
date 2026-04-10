@@ -1,0 +1,33 @@
+<%-- One-shot confetti after successful login; consumes session flag. --%>
+<% if (session != null && Boolean.TRUE.equals(session.getAttribute("justLoggedIn"))) {
+ session.removeAttribute("justLoggedIn");
+%>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+<script>
+(function () {
+    function burst() {
+        if (typeof confetti !== 'function') return;
+        var count = 200;
+        var defaults = { origin: { y: 0.72 }, zIndex: 10000 };
+        function fire(particleRatio, opts) {
+            confetti(Object.assign({}, defaults, opts, {
+                particleCount: Math.floor(count * particleRatio)
+            }));
+        }
+        fire(0.22, { spread: 28, startVelocity: 52 });
+        fire(0.18, { spread: 62 });
+        fire(0.32, { spread: 100, decay: 0.91, scalar: 0.85 });
+        fire(0.12, { spread: 120, startVelocity: 28, decay: 0.92, scalar: 1.15 });
+        fire(0.1, { spread: 115, startVelocity: 42 });
+        setTimeout(function () {
+            confetti(Object.assign({}, defaults, { particleCount: 90, spread: 100, startVelocity: 35, ticks: 55 }));
+        }, 220);
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', burst);
+    } else {
+        burst();
+    }
+})();
+</script>
+<% } %>
