@@ -115,9 +115,9 @@ a { color: #1f56a7; }
     align-items: center;
     justify-content: center;
     box-sizing: border-box;
-    width: clamp(210px, 32vw, 272px);
-    height: 64px;
-    padding: 8px 12px;
+    width: clamp(232px, 36vw, 304px);
+    height: 76px;
+    padding: 5px 10px;
     background: linear-gradient(180deg, #ffffff 0%, #f2f6fa 100%);
     border-radius: 12px;
     border: 1px solid rgba(255, 255, 255, 0.65);
@@ -141,7 +141,7 @@ a { color: #1f56a7; }
 .auth-logo-mat .auth-logo {
     filter: none;
     max-width: 100%;
-    max-height: 48px;
+    max-height: 64px;
     width: auto;
     height: auto;
     object-fit: contain;
