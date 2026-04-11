@@ -56,18 +56,20 @@
     String safeTitle = escHtml(job.getTitle() != null ? job.getTitle() : "");
     String createdAt = job.getCreatedAt() != null && !job.getCreatedAt().isEmpty() ? escHtml(job.getCreatedAt()) : "&mdash;";
     String maxAppText = job.getMaxApplicants() <= 0 ? "No limit" : String.valueOf(job.getMaxApplicants());
+    request.setAttribute("moNavActive", moPastJobsPage ? "past" : "jobs");
 %>
 <!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
+    <%@ include file="/WEB-INF/jspf/viewport.jspf" %>
     <title><%= safeTitle %> - Posting detail</title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css">
 </head>
 <body>
 <div class="container">
     <div class="nav top-nav">
-        <span class="brand">QM TA Portal</span>
+        <span class="brand">BUPT Teaching Assistant Recruitment System</span>
         <span class="user"><%= session.getAttribute("realName") %> | <a href="${pageContext.request.contextPath}/logout">Logout</a></span>
     </div>
     <div class="page-layout">
@@ -77,11 +79,7 @@
                 <div class="icon-dot">P</div>
                 <div class="icon-dot">D</div>
             </div>
-            <aside class="side-nav">
-                <a class="<%= moPastJobsPage ? "" : "active" %>" href="<%= moCtx %>/mo/jobs">My Jobs</a>
-                <a href="<%= moCtx %>/mo/post-job">Post Job</a>
-                <a class="<%= moPastJobsPage ? "active" : "" %>" href="<%= moCtx %>/mo/past-jobs">Past postings</a>
-            </aside>
+            <%@ include file="/WEB-INF/jspf/mo-side-nav.jspf" %>
         </div>
         <main class="main-panel">
             <p class="breadcrumb-line">

@@ -42,11 +42,7 @@
                 <div class="icon-dot">P</div>
                 <div class="icon-dot active">D</div>
             </div>
-            <aside class="side-nav">
-                <a href="${pageContext.request.contextPath}/mo/jobs">My Jobs</a>
-                <a href="${pageContext.request.contextPath}/mo/post-job">Post Job</a>
-                <a href="${pageContext.request.contextPath}/mo/past-jobs">Past postings</a>
-            </aside>
+            <%@ include file="/WEB-INF/jspf/mo-side-nav.jspf" %>
         </div>
         <main class="main-panel mo-main">
     <div class="mo-applicant-head">

@@ -1,0 +1,14 @@
+<%-- MO sidebar: set request attribute "moNavActive" to jobs | past | post | calendar (omit for detail pages). --%>
+<%
+    String moNavActive = (String) request.getAttribute("moNavActive");
+    if (moNavActive == null) {
+        moNavActive = "";
+    }
+    String moNavCtx = request.getContextPath();
+%>
+<aside class="side-nav">
+    <a class="<%= "jobs".equals(moNavActive) ? "active" : "" %>" href="<%= moNavCtx %>/mo/jobs">My Jobs</a>
+    <a class="<%= "post".equals(moNavActive) ? "active" : "" %>" href="<%= moNavCtx %>/mo/post-job">Post Job</a>
+    <a class="<%= "past".equals(moNavActive) ? "active" : "" %>" href="<%= moNavCtx %>/mo/past-jobs">Past postings</a>
+    <a class="<%= "calendar".equals(moNavActive) ? "active" : "" %>" href="<%= moNavCtx %>/mo/interview-calendar">Interview calendar</a>
+</aside>

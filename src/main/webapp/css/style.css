@@ -1289,6 +1289,7 @@ tr:hover { background: #f8f7ff; }
 .week-progress-fill {
     display: block;
     height: 100%;
+    width: calc(var(--week-p, 0) * 1%);
     background: linear-gradient(90deg, #4f7fe9, #26b6a4);
 }
 .week-desc {
@@ -1545,6 +1546,32 @@ tr:hover { background: #f8f7ff; }
 .mo-page-lead a {
     font-weight: 600;
 }
+
+/* MO — interview calendar (/mo/interview-calendar) */
+.mo-cal-stats {
+    margin-top: 4px;
+}
+.mo-cal-day-list {
+    display: grid;
+    gap: 16px;
+    margin-top: 8px;
+}
+.mo-cal-day-card {
+    margin-bottom: 0;
+}
+.mo-cal-day-title {
+    margin: 0 0 12px;
+    font-size: 1.08rem;
+    color: #083b84;
+    font-weight: 700;
+}
+.mo-cal-table {
+    min-width: 720px;
+}
+.mo-cal-unscheduled {
+    margin-top: 22px;
+}
+
 .mo-post-anchor-nav {
     position: sticky;
     top: 8px;
@@ -1587,6 +1614,12 @@ tr:hover { background: #f8f7ff; }
     box-shadow: 0 2px 12px rgba(8, 59, 132, 0.06);
     padding: 12px 14px;
     margin-bottom: 14px;
+    transition: background-color 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+.main-panel.mo-main .context-card:hover {
+    background: #f5efff;
+    border-color: #c5006b;
+    box-shadow: 0 8px 22px rgba(90, 56, 140, 0.14);
 }
 .main-panel.mo-main .context-card strong {
     font-size: 1rem;
