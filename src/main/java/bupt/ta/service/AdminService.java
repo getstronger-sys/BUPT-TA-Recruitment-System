@@ -3,6 +3,8 @@ package bupt.ta.service;
 import bupt.ta.model.AdminSettings;
 import bupt.ta.model.Application;
 import bupt.ta.model.Job;
+import bupt.ta.model.SiteNotification;
+import bupt.ta.model.TAProfile;
 import bupt.ta.model.User;
 import bupt.ta.storage.DataStorage;
 import bupt.ta.util.JobActivity;
@@ -65,6 +67,98 @@ public class AdminService {
         public int getCount(String status) { return applicationCounts.getOrDefault(status, 0); }
     }
 
+    public static class UserDirectoryReport {
+        private final int totalUsers;
+        private final int totalTas;
+        private final int totalMos;
+        private final int totalAdmins;
+        private final String roleFilter;
+        private final String query;
+        private final List<UserListRow> rows;
+
+        public UserDirectoryReport(int totalUsers, int totalTas, int totalMos, int totalAdmins,
+                                   String roleFilter, String query, List<UserListRow> rows) {
+            this.totalUsers = totalUsers;
+            this.totalTas = totalTas;
+            this.totalMos = totalMos;
+            this.totalAdmins = totalAdmins;
+            this.roleFilter = roleFilter != null ? roleFilter : "ALL";
+            this.query = query != null ? query : "";
+            this.rows = rows != null ? rows : Collections.emptyList();
+        }
+
+        public int getTotalUsers() { return totalUsers; }
+        public int getTotalTas() { return totalTas; }
+        public int getTotalMos() { return totalMos; }
+        public int getTotalAdmins() { return totalAdmins; }
+        public String getRoleFilter() { return roleFilter; }
+        public String getQuery() { return query; }
+        public List<UserListRow> getRows() { return rows; }
+        public int getVisibleCount() { return rows.size(); }
+    }
+
+    public static class UserListRow {
+        private final User user;
+        private final TAProfile profile;
+        private final int selectedCount;
+        private final int pendingCount;
+        private final int interviewCount;
+        private final int waitlistCount;
+        private final int autoClosedCount;
+        private final int unreadNotificationCount;
+        private final int savedJobsCount;
+        private final int postedJobsCount;
+        private final int activeJobsCount;
+        private final int totalApplicationsReceived;
+        private final int totalSelectedForMo;
+
+        public UserListRow(User user, TAProfile profile, int selectedCount, int pendingCount, int interviewCount,
+                           int waitlistCount, int autoClosedCount, int unreadNotificationCount, int savedJobsCount,
+                           int postedJobsCount, int activeJobsCount, int totalApplicationsReceived,
+                           int totalSelectedForMo) {
+            this.user = user;
+            this.profile = profile;
+            this.selectedCount = selectedCount;
+            this.pendingCount = pendingCount;
+            this.interviewCount = interviewCount;
+            this.waitlistCount = waitlistCount;
+            this.autoClosedCount = autoClosedCount;
+            this.unreadNotificationCount = unreadNotificationCount;
+            this.savedJobsCount = savedJobsCount;
+            this.postedJobsCount = postedJobsCount;
+            this.activeJobsCount = activeJobsCount;
+            this.totalApplicationsReceived = totalApplicationsReceived;
+            this.totalSelectedForMo = totalSelectedForMo;
+        }
+
+        public User getUser() { return user; }
+        public TAProfile getProfile() { return profile; }
+        public int getSelectedCount() { return selectedCount; }
+        public int getPendingCount() { return pendingCount; }
+        public int getInterviewCount() { return interviewCount; }
+        public int getWaitlistCount() { return waitlistCount; }
+        public int getAutoClosedCount() { return autoClosedCount; }
+        public int getUnreadNotificationCount() { return unreadNotificationCount; }
+        public int getSavedJobsCount() { return savedJobsCount; }
+        public int getPostedJobsCount() { return postedJobsCount; }
+        public int getActiveJobsCount() { return activeJobsCount; }
+        public int getTotalApplicationsReceived() { return totalApplicationsReceived; }
+        public int getTotalSelectedForMo() { return totalSelectedForMo; }
+        public String getDisplayName() { return resolveUserName(user, user != null ? user.getId() : "-"); }
+        public String getEmail() {
+            if (profile != null && !isBlank(profile.getEmail())) {
+                return profile.getEmail();
+            }
+            return user != null ? user.getEmail() : "";
+        }
+        public String getStudentId() {
+            if (profile != null && !isBlank(profile.getStudentId())) {
+                return profile.getStudentId();
+            }
+            return user != null ? user.getStudentId() : "";
+        }
+    }
+
     public static class WorkloadRow {
         private final String applicantId;
         private final String applicantName;
@@ -119,15 +213,18 @@ public class AdminService {
 
     public static class InterviewNoticeAlert {
         private final String applicationId;
+        private final String applicantId;
         private final String applicantName;
         private final String jobTitle;
         private final String moduleCode;
         private final boolean missingTime;
         private final boolean missingLocation;
 
-        public InterviewNoticeAlert(String applicationId, String applicantName, String jobTitle, String moduleCode,
+        public InterviewNoticeAlert(String applicationId, String applicantId, String applicantName,
+                                    String jobTitle, String moduleCode,
                                     boolean missingTime, boolean missingLocation) {
             this.applicationId = applicationId;
+            this.applicantId = applicantId;
             this.applicantName = applicantName;
             this.jobTitle = jobTitle;
             this.moduleCode = moduleCode;
@@ -136,6 +233,7 @@ public class AdminService {
         }
 
         public String getApplicationId() { return applicationId; }
+        public String getApplicantId() { return applicantId; }
         public String getApplicantName() { return applicantName; }
         public String getJobTitle() { return jobTitle; }
         public String getModuleCode() { return moduleCode; }
@@ -145,15 +243,17 @@ public class AdminService {
 
     public static class ApplicationAlert {
         private final String applicationId;
+        private final String applicantId;
         private final String applicantName;
         private final String jobTitle;
         private final String moduleCode;
         private final String status;
         private final String issue;
 
-        public ApplicationAlert(String applicationId, String applicantName, String jobTitle,
+        public ApplicationAlert(String applicationId, String applicantId, String applicantName, String jobTitle,
                                 String moduleCode, String status, String issue) {
             this.applicationId = applicationId;
+            this.applicantId = applicantId;
             this.applicantName = applicantName;
             this.jobTitle = jobTitle;
             this.moduleCode = moduleCode;
@@ -162,6 +262,7 @@ public class AdminService {
         }
 
         public String getApplicationId() { return applicationId; }
+        public String getApplicantId() { return applicantId; }
         public String getApplicantName() { return applicantName; }
         public String getJobTitle() { return jobTitle; }
         public String getModuleCode() { return moduleCode; }
@@ -221,6 +322,432 @@ public class AdminService {
         }
     }
 
+    public static class AdminApplicationRow {
+        private final Application application;
+        private final Job job;
+
+        public AdminApplicationRow(Application application, Job job) {
+            this.application = application;
+            this.job = job;
+        }
+
+        public Application getApplication() { return application; }
+        public Job getJob() { return job; }
+    }
+
+    public static class TADetailReport {
+        private final User user;
+        private final TAProfile profile;
+        private final List<AdminApplicationRow> applicationRows;
+        private final List<Job> savedJobs;
+        private final List<SiteNotification> notifications;
+        private final int selectedCount;
+        private final int pendingCount;
+        private final int interviewCount;
+        private final int waitlistCount;
+        private final int rejectedCount;
+        private final int autoClosedCount;
+        private final int withdrawnCount;
+
+        public TADetailReport(User user, TAProfile profile, List<AdminApplicationRow> applicationRows,
+                              List<Job> savedJobs, List<SiteNotification> notifications,
+                              int selectedCount, int pendingCount, int interviewCount, int waitlistCount,
+                              int rejectedCount, int autoClosedCount, int withdrawnCount) {
+            this.user = user;
+            this.profile = profile;
+            this.applicationRows = applicationRows != null ? applicationRows : Collections.emptyList();
+            this.savedJobs = savedJobs != null ? savedJobs : Collections.emptyList();
+            this.notifications = notifications != null ? notifications : Collections.emptyList();
+            this.selectedCount = selectedCount;
+            this.pendingCount = pendingCount;
+            this.interviewCount = interviewCount;
+            this.waitlistCount = waitlistCount;
+            this.rejectedCount = rejectedCount;
+            this.autoClosedCount = autoClosedCount;
+            this.withdrawnCount = withdrawnCount;
+        }
+
+        public User getUser() { return user; }
+        public TAProfile getProfile() { return profile; }
+        public List<AdminApplicationRow> getApplicationRows() { return applicationRows; }
+        public List<Job> getSavedJobs() { return savedJobs; }
+        public List<SiteNotification> getNotifications() { return notifications; }
+        public int getSelectedCount() { return selectedCount; }
+        public int getPendingCount() { return pendingCount; }
+        public int getInterviewCount() { return interviewCount; }
+        public int getWaitlistCount() { return waitlistCount; }
+        public int getRejectedCount() { return rejectedCount; }
+        public int getAutoClosedCount() { return autoClosedCount; }
+        public int getWithdrawnCount() { return withdrawnCount; }
+        public int getTotalApplications() { return applicationRows.size(); }
+        public int getSavedJobsCount() { return savedJobs.size(); }
+        public int getNotificationCount() { return notifications.size(); }
+        public long getUnreadNotificationCount() { return notifications.stream().filter(n -> !n.isRead()).count(); }
+        public long getReadNotificationCount() { return notifications.stream().filter(SiteNotification::isRead).count(); }
+    }
+
+    public static class MOJobDetailRow {
+        private final Job job;
+        private final int totalApplications;
+        private final int pendingCount;
+        private final int interviewCount;
+        private final int waitlistCount;
+        private final int selectedCount;
+        private final int rejectedCount;
+        private final int withdrawnCount;
+        private final int autoClosedCount;
+        private final boolean atOrOverCapacity;
+        private final boolean overCapacity;
+        private final boolean inactiveWithActiveApplications;
+
+        public MOJobDetailRow(Job job, int totalApplications, int pendingCount, int interviewCount, int waitlistCount,
+                              int selectedCount, int rejectedCount, int withdrawnCount, int autoClosedCount,
+                              boolean atOrOverCapacity, boolean overCapacity, boolean inactiveWithActiveApplications) {
+            this.job = job;
+            this.totalApplications = totalApplications;
+            this.pendingCount = pendingCount;
+            this.interviewCount = interviewCount;
+            this.waitlistCount = waitlistCount;
+            this.selectedCount = selectedCount;
+            this.rejectedCount = rejectedCount;
+            this.withdrawnCount = withdrawnCount;
+            this.autoClosedCount = autoClosedCount;
+            this.atOrOverCapacity = atOrOverCapacity;
+            this.overCapacity = overCapacity;
+            this.inactiveWithActiveApplications = inactiveWithActiveApplications;
+        }
+
+        public Job getJob() { return job; }
+        public int getTotalApplications() { return totalApplications; }
+        public int getPendingCount() { return pendingCount; }
+        public int getInterviewCount() { return interviewCount; }
+        public int getWaitlistCount() { return waitlistCount; }
+        public int getSelectedCount() { return selectedCount; }
+        public int getRejectedCount() { return rejectedCount; }
+        public int getWithdrawnCount() { return withdrawnCount; }
+        public int getAutoClosedCount() { return autoClosedCount; }
+        public boolean isAtOrOverCapacity() { return atOrOverCapacity; }
+        public boolean isOverCapacity() { return overCapacity; }
+        public boolean isInactiveWithActiveApplications() { return inactiveWithActiveApplications; }
+    }
+
+    public static class MODetailReport {
+        private final User user;
+        private final List<MOJobDetailRow> jobRows;
+        private final List<AdminApplicationRow> applicationRows;
+        private final int totalJobs;
+        private final int activeJobs;
+        private final int inactiveJobs;
+        private final int totalApplications;
+        private final int distinctApplicants;
+        private final int pendingCount;
+        private final int interviewCount;
+        private final int waitlistCount;
+        private final int selectedCount;
+        private final int rejectedCount;
+        private final int withdrawnCount;
+        private final int autoClosedCount;
+
+        public MODetailReport(User user, List<MOJobDetailRow> jobRows, List<AdminApplicationRow> applicationRows,
+                              int totalJobs, int activeJobs, int inactiveJobs, int totalApplications,
+                              int distinctApplicants, int pendingCount, int interviewCount, int waitlistCount,
+                              int selectedCount, int rejectedCount, int withdrawnCount, int autoClosedCount) {
+            this.user = user;
+            this.jobRows = jobRows != null ? jobRows : Collections.emptyList();
+            this.applicationRows = applicationRows != null ? applicationRows : Collections.emptyList();
+            this.totalJobs = totalJobs;
+            this.activeJobs = activeJobs;
+            this.inactiveJobs = inactiveJobs;
+            this.totalApplications = totalApplications;
+            this.distinctApplicants = distinctApplicants;
+            this.pendingCount = pendingCount;
+            this.interviewCount = interviewCount;
+            this.waitlistCount = waitlistCount;
+            this.selectedCount = selectedCount;
+            this.rejectedCount = rejectedCount;
+            this.withdrawnCount = withdrawnCount;
+            this.autoClosedCount = autoClosedCount;
+        }
+
+        public User getUser() { return user; }
+        public List<MOJobDetailRow> getJobRows() { return jobRows; }
+        public List<AdminApplicationRow> getApplicationRows() { return applicationRows; }
+        public int getTotalJobs() { return totalJobs; }
+        public int getActiveJobs() { return activeJobs; }
+        public int getInactiveJobs() { return inactiveJobs; }
+        public int getTotalApplications() { return totalApplications; }
+        public int getDistinctApplicants() { return distinctApplicants; }
+        public int getPendingCount() { return pendingCount; }
+        public int getInterviewCount() { return interviewCount; }
+        public int getWaitlistCount() { return waitlistCount; }
+        public int getSelectedCount() { return selectedCount; }
+        public int getRejectedCount() { return rejectedCount; }
+        public int getWithdrawnCount() { return withdrawnCount; }
+        public int getAutoClosedCount() { return autoClosedCount; }
+        public long getCapacityRiskCount() { return jobRows.stream().filter(MOJobDetailRow::isAtOrOverCapacity).count(); }
+        public long getInactiveActiveRiskCount() { return jobRows.stream().filter(MOJobDetailRow::isInactiveWithActiveApplications).count(); }
+    }
+
+    public UserDirectoryReport buildUserDirectoryReport(DataStorage storage, String roleFilter, String query) throws IOException {
+        List<User> users = storage.loadUsers();
+        List<TAProfile> profiles = storage.loadProfiles();
+        List<Application> apps = storage.loadApplications();
+        List<Job> jobs = storage.loadJobs();
+        List<SiteNotification> notifications = storage.loadSiteNotifications();
+
+        Map<String, TAProfile> profileByUser = profiles.stream()
+                .collect(Collectors.toMap(TAProfile::getUserId, p -> p, (a, b) -> a));
+        Map<String, List<Application>> appsByApplicant = apps.stream()
+                .collect(Collectors.groupingBy(Application::getApplicantId));
+        Map<String, List<Job>> jobsByMo = jobs.stream()
+                .collect(Collectors.groupingBy(Job::getPostedBy));
+        Map<String, List<Application>> appsByJob = apps.stream()
+                .collect(Collectors.groupingBy(Application::getJobId));
+        Map<String, Long> unreadByUser = notifications.stream()
+                .filter(n -> !n.isRead())
+                .collect(Collectors.groupingBy(SiteNotification::getRecipientUserId, Collectors.counting()));
+
+        String normalizedRole = normalizeRoleFilter(roleFilter);
+        String cleanQuery = normalizeQuery(query);
+
+        List<UserListRow> rows = new ArrayList<>();
+        for (User user : users) {
+            if (!"ALL".equals(normalizedRole) && !normalizedRole.equalsIgnoreCase(user.getRole())) {
+                continue;
+            }
+            TAProfile profile = profileByUser.get(user.getId());
+            if (!matchesUserQuery(user, profile, cleanQuery)) {
+                continue;
+            }
+
+            int selected = 0;
+            int pending = 0;
+            int interview = 0;
+            int waitlist = 0;
+            int autoClosed = 0;
+            int postedJobsCount = 0;
+            int activeJobsCount = 0;
+            int totalApplicationsReceived = 0;
+            int totalSelectedForMo = 0;
+            int savedJobsCount = profile != null ? profile.getSavedJobIds().size() : 0;
+            int unreadNotificationCount = unreadByUser.getOrDefault(user.getId(), 0L).intValue();
+
+            if ("TA".equalsIgnoreCase(user.getRole())) {
+                List<Application> ownedApps = appsByApplicant.getOrDefault(user.getId(), Collections.emptyList());
+                for (Application app : ownedApps) {
+                    String status = normalizeStatus(app.getStatus());
+                    if ("SELECTED".equals(status)) selected++;
+                    else if ("PENDING".equals(status)) pending++;
+                    else if ("INTERVIEW".equals(status)) interview++;
+                    else if ("WAITLIST".equals(status)) waitlist++;
+                    else if (STATUS_AUTO_CLOSED.equals(status)) autoClosed++;
+                }
+            } else if ("MO".equalsIgnoreCase(user.getRole())) {
+                List<Job> moJobs = jobsByMo.getOrDefault(user.getId(), Collections.emptyList());
+                postedJobsCount = moJobs.size();
+                activeJobsCount = (int) moJobs.stream().filter(JobActivity::isActive).count();
+                for (Job job : moJobs) {
+                    List<Application> jobApps = appsByJob.getOrDefault(job.getId(), Collections.emptyList());
+                    totalApplicationsReceived += jobApps.size();
+                    totalSelectedForMo += (int) jobApps.stream().filter(a -> "SELECTED".equals(normalizeStatus(a.getStatus()))).count();
+                }
+            }
+
+            rows.add(new UserListRow(
+                    user,
+                    profile,
+                    selected,
+                    pending,
+                    interview,
+                    waitlist,
+                    autoClosed,
+                    unreadNotificationCount,
+                    savedJobsCount,
+                    postedJobsCount,
+                    activeJobsCount,
+                    totalApplicationsReceived,
+                    totalSelectedForMo
+            ));
+        }
+
+        rows.sort(Comparator
+                .comparing((UserListRow row) -> roleSortOrder(row.getUser() != null ? row.getUser().getRole() : ""))
+                .thenComparing(UserListRow::getDisplayName, String.CASE_INSENSITIVE_ORDER));
+
+        int totalTas = (int) users.stream().filter(u -> "TA".equalsIgnoreCase(u.getRole())).count();
+        int totalMos = (int) users.stream().filter(u -> "MO".equalsIgnoreCase(u.getRole())).count();
+        int totalAdmins = (int) users.stream().filter(u -> "ADMIN".equalsIgnoreCase(u.getRole())).count();
+        return new UserDirectoryReport(users.size(), totalTas, totalMos, totalAdmins, normalizedRole, cleanQuery, rows);
+    }
+
+    public TADetailReport buildTADetailReport(DataStorage storage, String userId) throws IOException {
+        User user = storage.findUserById(userId);
+        if (user == null || !"TA".equalsIgnoreCase(user.getRole())) {
+            return null;
+        }
+
+        TAProfile profile = storage.getProfileByUserId(userId);
+        if (profile == null) {
+            profile = new TAProfile(userId);
+        }
+
+        List<Job> jobs = storage.loadJobs();
+        Map<String, Job> jobMap = jobs.stream().collect(Collectors.toMap(Job::getId, j -> j, (a, b) -> a));
+        List<Application> apps = storage.getApplicationsByApplicantId(userId);
+        apps.sort(Comparator.comparing(Application::getAppliedAt, Comparator.nullsLast(String::compareTo)).reversed());
+
+        List<AdminApplicationRow> applicationRows = new ArrayList<>();
+        int selected = 0;
+        int pending = 0;
+        int interview = 0;
+        int waitlist = 0;
+        int rejected = 0;
+        int autoClosed = 0;
+        int withdrawn = 0;
+        for (Application app : apps) {
+            applicationRows.add(new AdminApplicationRow(app, jobMap.get(app.getJobId())));
+            String status = normalizeStatus(app.getStatus());
+            if ("SELECTED".equals(status)) selected++;
+            else if ("PENDING".equals(status)) pending++;
+            else if ("INTERVIEW".equals(status)) interview++;
+            else if ("WAITLIST".equals(status)) waitlist++;
+            else if ("REJECTED".equals(status)) rejected++;
+            else if (STATUS_AUTO_CLOSED.equals(status)) autoClosed++;
+            else if ("WITHDRAWN".equals(status)) withdrawn++;
+        }
+
+        List<Job> savedJobs = new ArrayList<>();
+        for (String jobId : profile.getSavedJobIds()) {
+            Job job = jobMap.get(jobId);
+            if (job != null) {
+                savedJobs.add(job);
+            }
+        }
+        savedJobs.sort(Comparator.comparing(Job::getTitle, Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)));
+
+        List<SiteNotification> notifications = storage.getSiteNotificationsForUser(userId);
+
+        return new TADetailReport(user, profile, applicationRows, savedJobs, notifications,
+                selected, pending, interview, waitlist, rejected, autoClosed, withdrawn);
+    }
+
+    public MODetailReport buildMODetailReport(DataStorage storage, String userId) throws IOException {
+        User user = storage.findUserById(userId);
+        if (user == null || !"MO".equalsIgnoreCase(user.getRole())) {
+            return null;
+        }
+
+        List<Job> allJobs = storage.loadJobs();
+        List<Application> allApps = storage.loadApplications();
+        List<Job> moJobs = allJobs.stream()
+                .filter(j -> userId.equals(j.getPostedBy()))
+                .sorted(Comparator.comparing(Job::getCreatedAt, Comparator.nullsLast(String::compareTo)).reversed())
+                .collect(Collectors.toList());
+        Map<String, List<Application>> appsByJob = allApps.stream()
+                .collect(Collectors.groupingBy(Application::getJobId));
+
+        List<MOJobDetailRow> jobRows = new ArrayList<>();
+        List<AdminApplicationRow> applicationRows = new ArrayList<>();
+        int totalApplications = 0;
+        int pending = 0;
+        int interview = 0;
+        int waitlist = 0;
+        int selected = 0;
+        int rejected = 0;
+        int withdrawn = 0;
+        int autoClosed = 0;
+
+        for (Job job : moJobs) {
+            List<Application> jobApps = new ArrayList<>(appsByJob.getOrDefault(job.getId(), Collections.emptyList()));
+            jobApps.sort(Comparator.comparing(Application::getAppliedAt, Comparator.nullsLast(String::compareTo)).reversed());
+            totalApplications += jobApps.size();
+
+            int jobPending = 0;
+            int jobInterview = 0;
+            int jobWaitlist = 0;
+            int jobSelected = 0;
+            int jobRejected = 0;
+            int jobWithdrawn = 0;
+            int jobAutoClosed = 0;
+            boolean inactiveWithActive = false;
+            for (Application app : jobApps) {
+                applicationRows.add(new AdminApplicationRow(app, job));
+                String status = normalizeStatus(app.getStatus());
+                if ("PENDING".equals(status)) {
+                    jobPending++;
+                    pending++;
+                } else if ("INTERVIEW".equals(status)) {
+                    jobInterview++;
+                    interview++;
+                } else if ("WAITLIST".equals(status)) {
+                    jobWaitlist++;
+                    waitlist++;
+                } else if ("SELECTED".equals(status)) {
+                    jobSelected++;
+                    selected++;
+                } else if ("REJECTED".equals(status)) {
+                    jobRejected++;
+                    rejected++;
+                } else if ("WITHDRAWN".equals(status)) {
+                    jobWithdrawn++;
+                    withdrawn++;
+                } else if (STATUS_AUTO_CLOSED.equals(status)) {
+                    jobAutoClosed++;
+                    autoClosed++;
+                }
+                if (JobActivity.isInactive(job) && ("PENDING".equals(status) || "INTERVIEW".equals(status))) {
+                    inactiveWithActive = true;
+                }
+            }
+
+            boolean atOrOverCapacity = job.getMaxApplicants() > 0 && jobSelected >= job.getMaxApplicants();
+            boolean overCapacity = job.getMaxApplicants() > 0 && jobSelected > job.getMaxApplicants();
+            jobRows.add(new MOJobDetailRow(
+                    job,
+                    jobApps.size(),
+                    jobPending,
+                    jobInterview,
+                    jobWaitlist,
+                    jobSelected,
+                    jobRejected,
+                    jobWithdrawn,
+                    jobAutoClosed,
+                    atOrOverCapacity,
+                    overCapacity,
+                    inactiveWithActive
+            ));
+        }
+
+        applicationRows.sort((left, right) -> {
+            String l = left.getApplication() != null ? left.getApplication().getAppliedAt() : null;
+            String r = right.getApplication() != null ? right.getApplication().getAppliedAt() : null;
+            return Comparator.nullsLast(String::compareTo).reversed().compare(l, r);
+        });
+
+        int distinctApplicants = (int) applicationRows.stream()
+                .map(row -> row.getApplication().getApplicantId())
+                .distinct()
+                .count();
+
+        return new MODetailReport(
+                user,
+                jobRows,
+                applicationRows,
+                moJobs.size(),
+                (int) moJobs.stream().filter(JobActivity::isActive).count(),
+                (int) moJobs.stream().filter(JobActivity::isInactive).count(),
+                totalApplications,
+                distinctApplicants,
+                pending,
+                interview,
+                waitlist,
+                selected,
+                rejected,
+                withdrawn,
+                autoClosed
+        );
+    }
+
     public DashboardSummary buildDashboardSummary(DataStorage storage, AdminSettings settings) throws IOException {
         List<User> users = storage.loadUsers();
         List<Job> jobs = storage.loadJobs();
@@ -235,6 +762,7 @@ public class AdminService {
         Map<String, Integer> applicationCounts = new LinkedHashMap<>();
         applicationCounts.put("PENDING", 0);
         applicationCounts.put("INTERVIEW", 0);
+        applicationCounts.put("WAITLIST", 0);
         applicationCounts.put("SELECTED", 0);
         applicationCounts.put("REJECTED", 0);
         applicationCounts.put(STATUS_AUTO_CLOSED, 0);
@@ -434,6 +962,7 @@ public class AdminService {
                 if (missingTime || missingLocation) {
                     interviewNoticeAlerts.add(new InterviewNoticeAlert(
                             app.getId(),
+                            app.getApplicantId(),
                             applicantName,
                             job != null ? job.getTitle() : app.getJobId(),
                             job != null ? job.getModuleCode() : "-",
@@ -446,6 +975,7 @@ public class AdminService {
             if (job == null) {
                 missingJobAlerts.add(new ApplicationAlert(
                         app.getId(),
+                        app.getApplicantId(),
                         applicantName,
                         app.getJobId(),
                         "-",
@@ -458,6 +988,7 @@ public class AdminService {
             if (("PENDING".equals(app.getStatus()) || "INTERVIEW".equals(app.getStatus())) && JobActivity.isInactive(job)) {
                 inactiveJobAlerts.add(new ApplicationAlert(
                         app.getId(),
+                        app.getApplicantId(),
                         applicantName,
                         job.getTitle(),
                         job.getModuleCode(),
@@ -510,6 +1041,55 @@ public class AdminService {
 
     private static boolean isBlank(String value) {
         return value == null || value.trim().isEmpty();
+    }
+
+    private static String normalizeRoleFilter(String roleFilter) {
+        if (isBlank(roleFilter)) {
+            return "ALL";
+        }
+        String normalized = roleFilter.trim().toUpperCase();
+        if ("TA".equals(normalized) || "MO".equals(normalized) || "ADMIN".equals(normalized)) {
+            return normalized;
+        }
+        return "ALL";
+    }
+
+    private static String normalizeQuery(String query) {
+        return query == null ? "" : query.trim();
+    }
+
+    private static boolean matchesUserQuery(User user, TAProfile profile, String query) {
+        if (isBlank(query)) {
+            return true;
+        }
+        String needle = query.trim().toLowerCase();
+        return containsIgnoreCase(user != null ? user.getUsername() : null, needle)
+                || containsIgnoreCase(user != null ? user.getRealName() : null, needle)
+                || containsIgnoreCase(user != null ? user.getEmail() : null, needle)
+                || containsIgnoreCase(user != null ? user.getStudentId() : null, needle)
+                || containsIgnoreCase(user != null ? user.getId() : null, needle)
+                || containsIgnoreCase(user != null ? user.getRole() : null, needle)
+                || containsIgnoreCase(profile != null ? profile.getEmail() : null, needle)
+                || containsIgnoreCase(profile != null ? profile.getStudentId() : null, needle)
+                || containsIgnoreCase(profile != null ? profile.getProgramme() : null, needle);
+    }
+
+    private static boolean containsIgnoreCase(String value, String normalizedNeedle) {
+        return value != null && value.toLowerCase().contains(normalizedNeedle);
+    }
+
+    private static int roleSortOrder(String role) {
+        String normalized = role == null ? "" : role.trim().toUpperCase();
+        if ("TA".equals(normalized)) {
+            return 0;
+        }
+        if ("MO".equals(normalized)) {
+            return 1;
+        }
+        if ("ADMIN".equals(normalized)) {
+            return 2;
+        }
+        return 3;
     }
 
     private static String appendAutoCloseNote(String existing, int limit) {

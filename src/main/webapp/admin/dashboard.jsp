@@ -40,11 +40,13 @@
                 <div class="icon-dot active">D</div>
                 <div class="icon-dot">W</div>
                 <div class="icon-dot">M</div>
+                <div class="icon-dot">U</div>
             </div>
             <aside class="side-nav">
                 <a class="active" href="${pageContext.request.contextPath}/admin/dashboard">Summary</a>
                 <a href="${pageContext.request.contextPath}/admin/workload">Workload</a>
                 <a href="${pageContext.request.contextPath}/admin/monitoring">Monitoring</a>
+                <a href="${pageContext.request.contextPath}/admin/users">Users</a>
             </aside>
         </div>
         <main class="main-panel admin-main">
@@ -106,6 +108,7 @@
                     <div class="admin-chip-grid">
                         <span class="admin-chip">Pending: <strong><%= summary.getCount("PENDING") %></strong></span>
                         <span class="admin-chip">Interview: <strong><%= summary.getCount("INTERVIEW") %></strong></span>
+                        <span class="admin-chip">Waitlist: <strong><%= summary.getCount("WAITLIST") %></strong></span>
                         <span class="admin-chip">Selected: <strong><%= summary.getCount("SELECTED") %></strong></span>
                         <span class="admin-chip">Rejected: <strong><%= summary.getCount("REJECTED") %></strong></span>
                         <span class="admin-chip">Auto-closed: <strong><%= summary.getCount(AdminService.STATUS_AUTO_CLOSED) %></strong></span>
@@ -118,6 +121,7 @@
                     <p><strong>TAs at or over workload limit:</strong> <%= summary.getTasAtOrOverLimit() %></p>
                     <p><strong>Jobs at capacity:</strong> <%= summary.getJobsAtCapacity() %></p>
                     <p><strong>Current monitoring issues:</strong> <%= monitoring.getTotalIssues() %></p>
+                    <p><strong>User directory:</strong> TA <%= summary.getTotalTas() %> | MO <%= summary.getTotalMos() %> | Admin <%= summary.getTotalAdmins() %></p>
                     <p><a href="${pageContext.request.contextPath}/admin/monitoring" class="btn btn-primary">Open monitoring</a></p>
                 </section>
             </div>
@@ -142,6 +146,7 @@
                 <p class="widget-line">Limit alerts: <%= monitoring.getLimitAlerts().size() %></p>
                 <p class="widget-line">Interview notice issues: <%= monitoring.getInterviewNoticeAlerts().size() %></p>
                 <p class="widget-line">Capacity issues: <%= monitoring.getCapacityAlerts().size() %></p>
+                <p class="widget-line"><a href="${pageContext.request.contextPath}/admin/users">Open user directory</a></p>
             </div>
             <div class="widget-card">
                 <div class="widget-title">Rule Reminder</div>

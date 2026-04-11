@@ -1,0 +1,283 @@
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ include file="/WEB-INF/jspf/html-esc.jspf" %>
+<%@ page import="bupt.ta.model.Application" %>
+<%@ page import="bupt.ta.model.Job" %>
+<%@ page import="bupt.ta.model.SiteNotification" %>
+<%@ page import="bupt.ta.model.TAProfile" %>
+<%@ page import="bupt.ta.model.User" %>
+<%@ page import="bupt.ta.service.AdminService" %>
+<%
+    AdminService.TADetailReport report = (AdminService.TADetailReport) request.getAttribute("report");
+    if (report == null) {
+        response.sendRedirect(request.getContextPath() + "/admin/users?error=invalid_ta");
+        return;
+    }
+    User user = report.getUser();
+    TAProfile profile = report.getProfile();
+    String displayName = user.getRealName() != null && !user.getRealName().trim().isEmpty() ? user.getRealName().trim()
+            : (user.getUsername() != null && !user.getUsername().trim().isEmpty() ? user.getUsername().trim() : user.getId());
+%>
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <%@ include file="/WEB-INF/jspf/viewport.jspf" %>
+    <title><%= escHtml(displayName) %> - Admin TA Detail</title>
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css">
+</head>
+<body>
+<div class="container">
+    <div class="nav top-nav">
+        <span class="brand">BUPT Teaching Assistant Recruitment System</span>
+        <span class="user"><%= session.getAttribute("realName") %> | <a href="${pageContext.request.contextPath}/logout">Logout</a></span>
+    </div>
+    <div class="page-layout">
+        <div class="left-nav-wrap">
+            <div class="icon-rail">
+                <div class="icon-dot">D</div>
+                <div class="icon-dot">W</div>
+                <div class="icon-dot">M</div>
+                <div class="icon-dot active">U</div>
+            </div>
+            <aside class="side-nav">
+                <a href="${pageContext.request.contextPath}/admin/dashboard">Summary</a>
+                <a href="${pageContext.request.contextPath}/admin/workload">Workload</a>
+                <a href="${pageContext.request.contextPath}/admin/monitoring">Monitoring</a>
+                <a class="active" href="${pageContext.request.contextPath}/admin/users">Users</a>
+            </aside>
+        </div>
+        <main class="main-panel admin-main">
+            <p class="breadcrumb-line"><a href="${pageContext.request.contextPath}/admin/users">&larr; Back to user directory</a></p>
+            <h1>TA Detail: <%= escHtml(displayName) %></h1>
+            <p class="ta-page-lead">Read-only traceability view for one TA account, including profile data, saved jobs, application history, interview records, and site notifications.</p>
+            <div class="context-card">
+                <strong>Read-only admin detail</strong>
+                <p>Use this page to verify what the TA submitted and how the system responded over time. IDs, timestamps, status changes, and notifications are shown for auditing.</p>
+            </div>
+
+            <div class="stats-row admin-stat-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">A</div>
+                    <div>
+                        <div class="stat-title">Applications</div>
+                        <div class="stat-value"><%= report.getTotalApplications() %></div>
+                        <div class="stat-meta">Pending <%= report.getPendingCount() %> | Interview <%= report.getInterviewCount() %> | Selected <%= report.getSelectedCount() %></div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">W</div>
+                    <div>
+                        <div class="stat-title">Decision outcomes</div>
+                        <div class="stat-value"><%= report.getSelectedCount() + report.getRejectedCount() + report.getAutoClosedCount() + report.getWithdrawnCount() %></div>
+                        <div class="stat-meta">Waitlist <%= report.getWaitlistCount() %> | Rejected <%= report.getRejectedCount() %> | Auto-closed <%= report.getAutoClosedCount() %></div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">S</div>
+                    <div>
+                        <div class="stat-title">Saved jobs</div>
+                        <div class="stat-value"><%= report.getSavedJobsCount() %></div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">N</div>
+                    <div>
+                        <div class="stat-title">Notifications</div>
+                        <div class="stat-value"><%= report.getNotificationCount() %></div>
+                        <div class="stat-meta">Unread <%= report.getUnreadNotificationCount() %> | Read <%= report.getReadNotificationCount() %></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="detail-grid admin-detail-grid">
+                <section class="detail-card">
+                    <h3>Account record</h3>
+                    <dl class="admin-kv-list">
+                        <dt>User ID</dt><dd><code><%= escHtml(user.getId()) %></code></dd>
+                        <dt>Role</dt><dd>TA</dd>
+                        <dt>Username</dt><dd><%= escHtml(user.getUsername() != null ? user.getUsername() : "-") %></dd>
+                        <dt>Real name</dt><dd><%= escHtml(user.getRealName() != null && !user.getRealName().isEmpty() ? user.getRealName() : "-") %></dd>
+                        <dt>Email</dt><dd><%= escHtml(profile.getEmail() != null && !profile.getEmail().isEmpty() ? profile.getEmail() : (user.getEmail() != null ? user.getEmail() : "-")) %></dd>
+                        <dt>Student ID</dt><dd><%= escHtml(profile.getStudentId() != null && !profile.getStudentId().isEmpty() ? profile.getStudentId() : (user.getStudentId() != null ? user.getStudentId() : "-")) %></dd>
+                        <dt>Phone</dt><dd><%= escHtml(profile.getPhone() != null && !profile.getPhone().isEmpty() ? profile.getPhone() : "-") %></dd>
+                    </dl>
+                </section>
+
+                <section class="detail-card">
+                    <h3>Academic profile</h3>
+                    <dl class="admin-kv-list">
+                        <dt>Degree</dt><dd><%= escHtml(profile.getDegree() != null && !profile.getDegree().isEmpty() ? profile.getDegree() : "-") %></dd>
+                        <dt>Programme</dt><dd><%= escHtml(profile.getProgramme() != null && !profile.getProgramme().isEmpty() ? profile.getProgramme() : "-") %></dd>
+                        <dt>Year of study</dt><dd><%= escHtml(profile.getYearOfStudy() != null && !profile.getYearOfStudy().isEmpty() ? profile.getYearOfStudy() : "-") %></dd>
+                        <dt>Availability</dt><dd class="pre-wrap"><%= escHtml(profile.getAvailability() != null && !profile.getAvailability().isEmpty() ? profile.getAvailability() : "-") %></dd>
+                        <dt>Skills</dt><dd><%= profile.getSkills() != null && !profile.getSkills().isEmpty() ? escHtml(String.join(", ", profile.getSkills())) : "-" %></dd>
+                        <dt>CV</dt>
+                        <dd>
+                            <% if (profile.getCvFilePath() != null && !profile.getCvFilePath().trim().isEmpty()) { %>
+                            <a href="${pageContext.request.contextPath}/view-cv?userId=<%= user.getId() %>" target="_blank" rel="noopener">View CV</a>
+                            <span class="muted-inline"> | </span>
+                            <a href="${pageContext.request.contextPath}/view-cv?userId=<%= user.getId() %>&amp;download=1">Download</a>
+                            <% } else { %>
+                            Not uploaded
+                            <% } %>
+                        </dd>
+                    </dl>
+                </section>
+            </div>
+
+            <section class="detail-card">
+                <h3>Profile narrative</h3>
+                <div class="admin-text-block">
+                    <strong>TA experience</strong>
+                    <p class="pre-wrap"><%= escHtml(profile.getTaExperience() != null && !profile.getTaExperience().isEmpty() ? profile.getTaExperience() : "Not provided.") %></p>
+                </div>
+                <div class="admin-text-block">
+                    <strong>Introduction</strong>
+                    <p class="pre-wrap"><%= escHtml(profile.getIntroduction() != null && !profile.getIntroduction().isEmpty() ? profile.getIntroduction() : "Not provided.") %></p>
+                </div>
+            </section>
+
+            <section class="detail-card">
+                <h3>Saved jobs</h3>
+                <% if (report.getSavedJobs().isEmpty()) { %>
+                <p class="section-empty section-empty--card">This TA has no saved jobs.</p>
+                <% } else { %>
+                <div class="table-scroll-wrap">
+                    <table class="admin-table admin-table--compact">
+                        <thead>
+                        <tr>
+                            <th>Job</th>
+                            <th>Module</th>
+                            <th>Status</th>
+                            <th>Deadline</th>
+                            <th>Posted by</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <% for (Job job : report.getSavedJobs()) { %>
+                        <tr>
+                            <td><strong><%= escHtml(job.getTitle() != null ? job.getTitle() : job.getId()) %></strong><div class="admin-row-subtext">Job ID: <code><%= escHtml(job.getId()) %></code></div></td>
+                            <td><%= escHtml(job.getModuleCode() != null ? job.getModuleCode() : "-") %></td>
+                            <td><span class="status-pill <%= "OPEN".equalsIgnoreCase(job.getStatus()) ? "status-pill-pending" : "status-pill-rejected" %>"><%= escHtml(job.getStatus() != null ? job.getStatus() : "-") %></span></td>
+                            <td><%= escHtml(job.getDeadline() != null && !job.getDeadline().isEmpty() ? job.getDeadline() : "-") %></td>
+                            <td><%= escHtml(job.getPostedByName() != null && !job.getPostedByName().isEmpty() ? job.getPostedByName() : job.getPostedBy()) %></td>
+                        </tr>
+                        <% } %>
+                        </tbody>
+                    </table>
+                </div>
+                <% } %>
+            </section>
+
+            <section class="detail-card">
+                <h3>Application history</h3>
+                <% if (report.getApplicationRows().isEmpty()) { %>
+                <p class="section-empty section-empty--card">No applications recorded for this TA.</p>
+                <% } else { %>
+                <p class="table-scroll-wrap-hint">Tip: application IDs, timestamps, and notes stay visible here for traceability.</p>
+                <div class="table-scroll-wrap">
+                    <table class="admin-table">
+                        <thead>
+                        <tr>
+                            <th>Application</th>
+                            <th>Job</th>
+                            <th>Applied</th>
+                            <th>Preferred role</th>
+                            <th>Status</th>
+                            <th>Interview record</th>
+                            <th>Notes</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <% for (AdminService.AdminApplicationRow row : report.getApplicationRows()) {
+                               Application app = row.getApplication();
+                               Job job = row.getJob();
+                               String status = app.getStatus() != null ? app.getStatus().toUpperCase() : "UNKNOWN";
+                               String statusClass = "status-pill-pending";
+                               if ("SELECTED".equals(status)) statusClass = "status-pill-selected";
+                               else if ("REJECTED".equals(status) || "WITHDRAWN".equals(status) || AdminService.STATUS_AUTO_CLOSED.equals(status)) statusClass = "status-pill-rejected";
+                               else if ("INTERVIEW".equals(status)) statusClass = "status-pill-interview";
+                        %>
+                        <tr>
+                            <td>
+                                <code><%= escHtml(app.getId()) %></code>
+                                <div class="admin-row-subtext">Applicant ID: <code><%= escHtml(app.getApplicantId()) %></code></div>
+                            </td>
+                            <td>
+                                <strong><%= escHtml(job != null && job.getTitle() != null ? job.getTitle() : app.getJobId()) %></strong>
+                                <div class="admin-row-subtext"><%= escHtml(job != null && job.getModuleCode() != null ? job.getModuleCode() : "-") %></div>
+                            </td>
+                            <td><%= escHtml(app.getAppliedAt() != null && !app.getAppliedAt().isEmpty() ? app.getAppliedAt() : "-") %></td>
+                            <td><%= escHtml(app.getPreferredRole() != null && !app.getPreferredRole().isEmpty() ? app.getPreferredRole() : "-") %></td>
+                            <td><span class="status-pill <%= statusClass %>"><%= escHtml(status) %></span></td>
+                            <td>
+                                <div class="admin-summary-stack">
+                                    <span>Time: <%= escHtml(app.getInterviewTime() != null && !app.getInterviewTime().isEmpty() ? app.getInterviewTime() : "-") %></span>
+                                    <span>Location: <%= escHtml(app.getInterviewLocation() != null && !app.getInterviewLocation().isEmpty() ? app.getInterviewLocation() : "-") %></span>
+                                    <span>Assessment: <%= escHtml(app.getInterviewAssessment() != null && !app.getInterviewAssessment().isEmpty() ? app.getInterviewAssessment() : "-") %></span>
+                                </div>
+                            </td>
+                            <td class="pre-wrap"><%= escHtml(app.getNotes() != null && !app.getNotes().isEmpty() ? app.getNotes() : "-") %></td>
+                        </tr>
+                        <% } %>
+                        </tbody>
+                    </table>
+                </div>
+                <% } %>
+            </section>
+
+            <section class="detail-card">
+                <h3>Site notifications</h3>
+                <% if (report.getNotifications().isEmpty()) { %>
+                <p class="section-empty section-empty--card">No site notifications have been sent to this TA.</p>
+                <% } else { %>
+                <div class="table-scroll-wrap">
+                    <table class="admin-table">
+                        <thead>
+                        <tr>
+                            <th>Created</th>
+                            <th>Notification</th>
+                            <th>Status</th>
+                            <th>Kind</th>
+                            <th>Title</th>
+                            <th>Body</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <% for (SiteNotification note : report.getNotifications()) { %>
+                        <tr>
+                            <td><%= escHtml(note.getCreatedAt() != null && !note.getCreatedAt().isEmpty() ? note.getCreatedAt() : "-") %></td>
+                            <td>
+                                <code><%= escHtml(note.getId()) %></code>
+                                <div class="admin-row-subtext">Application <%= escHtml(note.getApplicationId() != null && !note.getApplicationId().isEmpty() ? note.getApplicationId() : "-") %></div>
+                            </td>
+                            <td><span class="admin-read-state <%= note.isRead() ? "admin-read-state-read" : "admin-read-state-unread" %>"><%= note.isRead() ? "Read" : "Unread" %></span></td>
+                            <td><%= escHtml(note.getKind() != null && !note.getKind().isEmpty() ? note.getKind() : "-") %></td>
+                            <td><%= escHtml(note.getTitle() != null && !note.getTitle().isEmpty() ? note.getTitle() : "-") %></td>
+                            <td class="pre-wrap"><%= escHtml(note.getBody() != null && !note.getBody().isEmpty() ? note.getBody() : "-") %></td>
+                        </tr>
+                        <% } %>
+                        </tbody>
+                    </table>
+                </div>
+                <% } %>
+            </section>
+        </main>
+        <aside class="right-sidebar">
+            <div class="widget-card">
+                <div class="widget-title">TA Snapshot</div>
+                <p class="widget-line">Selected: <%= report.getSelectedCount() %></p>
+                <p class="widget-line">Pending: <%= report.getPendingCount() %> | Interview: <%= report.getInterviewCount() %></p>
+                <p class="widget-line">Waitlist: <%= report.getWaitlistCount() %> | Withdrawn: <%= report.getWithdrawnCount() %></p>
+            </div>
+            <div class="widget-card">
+                <div class="widget-title">Quick Links</div>
+                <p class="widget-line"><a href="${pageContext.request.contextPath}/admin/users">Back to user directory</a></p>
+                <p class="widget-line"><a href="${pageContext.request.contextPath}/admin/workload">Review workload</a></p>
+                <p class="widget-line"><a href="${pageContext.request.contextPath}/admin/monitoring">Open monitoring</a></p>
+            </div>
+        </aside>
+    </div>
+</div>
+</body>
+</html>

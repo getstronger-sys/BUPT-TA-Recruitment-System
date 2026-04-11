@@ -36,11 +36,13 @@
                 <div class="icon-dot">D</div>
                 <div class="icon-dot">W</div>
                 <div class="icon-dot active">M</div>
+                <div class="icon-dot">U</div>
             </div>
             <aside class="side-nav">
                 <a href="${pageContext.request.contextPath}/admin/dashboard">Summary</a>
                 <a href="${pageContext.request.contextPath}/admin/workload">Workload</a>
                 <a class="active" href="${pageContext.request.contextPath}/admin/monitoring">Monitoring</a>
+                <a href="${pageContext.request.contextPath}/admin/users">Users</a>
             </aside>
         </div>
         <main class="main-panel admin-main">
@@ -102,7 +104,7 @@
                         <tbody>
                         <% for (AdminService.LimitAlert row : monitoring.getLimitAlerts()) { %>
                         <tr>
-                            <td><%= escHtml(row.getApplicantName()) %></td>
+                            <td><a href="${pageContext.request.contextPath}/admin/ta-detail?userId=<%= row.getApplicantId() %>" class="admin-inline-link"><%= escHtml(row.getApplicantName()) %></a></td>
                             <td><%= escHtml(row.getApplicantId()) %></td>
                             <td><strong><%= row.getSelectedCount() %></strong></td>
                             <td><%= row.getPendingCount() %></td>
@@ -135,7 +137,7 @@
                         <% for (AdminService.InterviewNoticeAlert row : monitoring.getInterviewNoticeAlerts()) { %>
                         <tr>
                             <td><%= escHtml(row.getApplicationId()) %></td>
-                            <td><%= escHtml(row.getApplicantName()) %></td>
+                            <td><a href="${pageContext.request.contextPath}/admin/ta-detail?userId=<%= row.getApplicantId() %>" class="admin-inline-link"><%= escHtml(row.getApplicantName()) %></a></td>
                             <td><%= escHtml(row.getJobTitle()) %></td>
                             <td><%= escHtml(row.getModuleCode()) %></td>
                             <td>
@@ -172,7 +174,7 @@
                         <% for (AdminService.ApplicationAlert row : monitoring.getInactiveJobAlerts()) { %>
                         <tr>
                             <td><%= escHtml(row.getApplicationId()) %></td>
-                            <td><%= escHtml(row.getApplicantName()) %></td>
+                            <td><a href="${pageContext.request.contextPath}/admin/ta-detail?userId=<%= row.getApplicantId() %>" class="admin-inline-link"><%= escHtml(row.getApplicantName()) %></a></td>
                             <td><%= escHtml(row.getJobTitle()) %> (<%= escHtml(row.getModuleCode()) %>)</td>
                             <td><%= escHtml(row.getStatus()) %></td>
                             <td><%= escHtml(row.getIssue()) %></td>
@@ -205,7 +207,7 @@
                         <% for (AdminService.ApplicationAlert row : monitoring.getMissingJobAlerts()) { %>
                         <tr>
                             <td><%= escHtml(row.getApplicationId()) %></td>
-                            <td><%= escHtml(row.getApplicantName()) %></td>
+                            <td><a href="${pageContext.request.contextPath}/admin/ta-detail?userId=<%= row.getApplicantId() %>" class="admin-inline-link"><%= escHtml(row.getApplicantName()) %></a></td>
                             <td><%= escHtml(row.getJobTitle()) %></td>
                             <td><%= escHtml(row.getStatus()) %></td>
                             <td><%= escHtml(row.getIssue()) %></td>
@@ -253,6 +255,7 @@
                 <div class="widget-title">Admin Actions</div>
                 <p class="widget-line"><a href="${pageContext.request.contextPath}/admin/dashboard">Adjust workload settings</a></p>
                 <p class="widget-line"><a href="${pageContext.request.contextPath}/admin/workload">Review TA distribution</a></p>
+                <p class="widget-line"><a href="${pageContext.request.contextPath}/admin/users">Open user directory</a></p>
             </div>
         </aside>
     </div>
