@@ -75,7 +75,7 @@
             <h1>My Applications</h1>
             <div class="context-card">
                 <strong>How it works</strong>
-                <p>Pending &rarr; Interview (see time and location posted by the module organiser) &rarr; Selected or rejected. Notices are in-app only (no email).</p>
+                <p>Pending &rarr; Interview (see time and location posted by the module organiser) &rarr; Selected or rejected. Interview notices stay in-app, and email reminders can be enabled by system configuration.</p>
             </div>
             <% if ("1".equals(request.getParameter("success"))) { %><p class="success">Application submitted successfully!</p><% } %>
             <% if ("1".equals(request.getParameter("withdrawn"))) { %><p class="success">Application withdrawn.</p><% } %>
@@ -161,8 +161,10 @@
                                     <p class="pre-wrap"><%= escHtml(assessN) %></p>
                                 </div>
                                 <% } %>
+                                <p><a href="${pageContext.request.contextPath}/ta/interview-calendar?applicationId=<%= a.getId() %>">Download .ics calendar</a></p>
                             </div>
                         </template>
+                        <div><a class="mini-link" href="${pageContext.request.contextPath}/ta/interview-calendar?applicationId=<%= a.getId() %>">Download .ics</a></div>
                         <% } else if ("INTERVIEW".equals(a.getStatus())) { %>
                         <span class="muted-inline">Awaiting organiser</span>
                         <% } else { %>

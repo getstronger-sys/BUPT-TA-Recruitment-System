@@ -2,10 +2,16 @@
 <%@ include file="/WEB-INF/jspf/html-esc.jspf" %>
 <%@ page import="bupt.ta.model.AdminSettings" %>
 <%@ page import="bupt.ta.service.AdminService" %>
+<%@ page import="bupt.ta.service.NotificationReminderService" %>
 <%
     AdminSettings settings = (AdminSettings) request.getAttribute("adminSettings");
     if (settings == null) settings = new AdminSettings();
     AdminService.MonitoringReport monitoring = (AdminService.MonitoringReport) request.getAttribute("monitoring");
+    NotificationReminderService.ReminderPreview reminderPreview =
+            (NotificationReminderService.ReminderPreview) request.getAttribute("reminderPreview");
+    if (reminderPreview == null) {
+        reminderPreview = new NotificationReminderService.ReminderPreview(false, 0, 0, 0);
+    }
     if (monitoring == null) {
         monitoring = new AdminService.MonitoringReport(
                 java.util.Collections.emptyList(),
@@ -52,6 +58,27 @@
                 <strong>Current workload rule</strong>
                 <p>Limit: <%= settings.hasWorkloadLimit() ? settings.getMaxSelectedJobsPerTa() : 0 %> selected jobs per TA. Auto-close pending: <strong><%= settings.isAutoClosePendingWhenLimitReached() ? "ON" : "OFF" %></strong>.</p>
             </div>
+            <% if ("1".equals(request.getParameter("remindDone"))) { %>
+            <% if ("1".equals(request.getParameter("remindConfigured"))) { %>
+            <p class="success">Unread reminder emails processed. Attempted: <strong><%= escHtml(request.getParameter("remindAttempted")) %></strong>, sent: <strong><%= escHtml(request.getParameter("remindSent")) %></strong>, skipped: <strong><%= escHtml(request.getParameter("remindSkipped")) %></strong>.</p>
+            <% } else { %>
+            <p class="error">Unread reminders were not sent because SMTP email is not configured yet.</p>
+            <% } %>
+            <% } %>
+
+            <section class="detail-card">
+                <h3>Unread message reminders</h3>
+                <p class="muted-inline">Batch email reminders for users who still have unread in-app recruitment updates.</p>
+                <p><strong>Users with unread messages:</strong> <%= reminderPreview.getUsersWithUnread() %> | <strong>Unread messages:</strong> <%= reminderPreview.getUnreadMessages() %> | <strong>Users with an email ready to remind:</strong> <%= reminderPreview.getRemindableUsers() %></p>
+                <p><strong>Email channel:</strong> <%= reminderPreview.isEmailConfigured() ? "Configured" : "Not configured" %></p>
+                <form action="${pageContext.request.contextPath}/admin/monitoring" method="post" class="inline-form">
+                    <input type="hidden" name="action" value="sendUnreadReminders">
+                    <button type="submit" class="btn btn-primary" <%= reminderPreview.getUsersWithUnread() == 0 ? "disabled" : "" %>>Send unread message reminders</button>
+                </form>
+                <% if (!reminderPreview.isEmailConfigured()) { %>
+                <p class="muted-inline">Configure SMTP via `TA_MAIL_HOST`, `TA_MAIL_PORT`, `TA_MAIL_USERNAME`, `TA_MAIL_PASSWORD`, and `TA_MAIL_FROM` to enable delivery.</p>
+                <% } %>
+            </section>
 
             <div class="stats-row admin-stat-grid">
                 <div class="stat-card">
