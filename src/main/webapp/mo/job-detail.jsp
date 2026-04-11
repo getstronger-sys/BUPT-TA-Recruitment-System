@@ -28,7 +28,6 @@
     String pay = job.getPayment() != null && !job.getPayment().isEmpty() ? escHtml(job.getPayment()) : "&mdash;";
     String deadline = job.getDeadline() != null && !job.getDeadline().isEmpty() ? escHtml(job.getDeadline()) : "&mdash;";
     String examTimeline = job.getExamTimeline() != null && !job.getExamTimeline().isEmpty() ? escHtml(job.getExamTimeline()) : "&mdash;";
-    String taPlan = job.getTaAllocationPlan() != null && !job.getTaAllocationPlan().isEmpty() ? escHtml(job.getTaAllocationPlan()) : "&mdash;";
     String interviewSchedule = job.getInterviewSchedule() != null && !job.getInterviewSchedule().isEmpty() ? escHtml(job.getInterviewSchedule()) : "&mdash;";
     String interviewLocation = job.getInterviewLocation() != null && !job.getInterviewLocation().isEmpty() ? escHtml(job.getInterviewLocation()) : "&mdash;";
     int plannedRecruits = job.getTaSlots() > 0 ? job.getTaSlots() : 1;
@@ -51,6 +50,9 @@
             wk += 3;
         }
     }
+%>
+<%@ include file="/WEB-INF/jspf/job-ta-plan-chunks.jspf" %>
+<%
     String respText = job.getResponsibilities() != null && !job.getResponsibilities().isEmpty() ? escHtml(job.getResponsibilities()) : "&mdash;";
     String desc = job.getDescription() != null && !job.getDescription().isEmpty() ? escHtml(job.getDescription()) : "&mdash;";
     String safeTitle = escHtml(job.getTitle() != null ? job.getTitle() : "");
@@ -184,9 +186,56 @@
                     </div>
                     <% } %>
                 </dd>
-                <dt>Multi-TA allocation plan</dt><dd class="pre-wrap"><%= taPlan %></dd>
-                <dt>Interview schedule (published)</dt><dd class="pre-wrap"><%= interviewSchedule %></dd>
-                <dt>Interview location (published)</dt><dd class="pre-wrap"><%= interviewLocation %></dd>
+                <dt class="job-detail-dt job-detail-dt--rich job-detail-dt--plan"><span class="job-detail-dt-inner"><span class="job-detail-dt-ico" aria-hidden="true">&#128203;</span>Multi-TA allocation plan</span></dt>
+                <dd class="job-detail-dd job-detail-dd--rich">
+                    <% if (taPlanChunks.isEmpty()) { %>
+                    <span class="job-detail-empty">&mdash;</span>
+                    <% } else if (taPlanChunks.size() == 1 && taPlanChunks.get(0)[0] == null) { %>
+                    <div class="job-rich-text pre-wrap"><%= taPlanChunks.get(0)[1] %></div>
+                    <% } else { %>
+                    <div class="ta-plan-grid">
+                        <% for (String[] row : taPlanChunks) { %>
+                        <article class="ta-plan-card">
+                            <% if (row[0] != null) { %><span class="ta-plan-badge"><%= row[0] %></span><% } %>
+                            <p class="ta-plan-text"><%= row[1] %></p>
+                        </article>
+                        <% } %>
+                    </div>
+                    <% } %>
+                </dd>
+                <dt class="job-detail-dt job-detail-dt--rich job-detail-dt--schedule"><span class="job-detail-dt-inner"><span class="job-detail-dt-ico" aria-hidden="true">&#128197;</span>Interview schedule (published)</span></dt>
+                <dd class="job-detail-dd job-detail-dd--rich">
+                    <% if (job.getInterviewSchedule() == null || job.getInterviewSchedule().trim().isEmpty()) { %>
+                    <span class="job-detail-empty">&mdash;</span>
+                    <% } else { %>
+                    <div class="interview-info-card interview-info-card--schedule">
+                        <div class="interview-info-card-head">
+                            <span class="arr-icon arr-icon-interview" aria-hidden="true">CAL</span>
+                            <div class="interview-info-card-body">
+                                <span class="interview-info-label">When</span>
+                                <p class="interview-info-value"><%= interviewSchedule %></p>
+                            </div>
+                        </div>
+                        <p class="interview-info-note">Applicants see this on the TA job page. Ask them to arrive early and bring ID if needed.</p>
+                    </div>
+                    <% } %>
+                </dd>
+                <dt class="job-detail-dt job-detail-dt--rich job-detail-dt--location"><span class="job-detail-dt-inner"><span class="job-detail-dt-ico" aria-hidden="true">&#128205;</span>Interview location (published)</span></dt>
+                <dd class="job-detail-dd job-detail-dd--rich">
+                    <% if (job.getInterviewLocation() == null || job.getInterviewLocation().trim().isEmpty()) { %>
+                    <span class="job-detail-empty">&mdash;</span>
+                    <% } else { %>
+                    <div class="interview-info-card interview-info-card--location">
+                        <div class="interview-info-card-head">
+                            <span class="arr-icon arr-icon-location" aria-hidden="true">LOC</span>
+                            <div class="interview-info-card-body">
+                                <span class="interview-info-label">Where</span>
+                                <p class="interview-info-value pre-wrap"><%= interviewLocation %></p>
+                            </div>
+                        </div>
+                    </div>
+                    <% } %>
+                </dd>
                 <dt>Application deadline</dt><dd><%= deadline %></dd>
                 <dt>Open status</dt><dd><%= isOpen ? "Open for applications" : "Closed" %></dd>
             </dl>

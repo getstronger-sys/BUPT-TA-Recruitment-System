@@ -106,5 +106,6 @@
         </aside>
     </div>
 </div>
+<%@ include file="/WEB-INF/jspf/login-celebration.jspf" %>
 </body>
 </html>

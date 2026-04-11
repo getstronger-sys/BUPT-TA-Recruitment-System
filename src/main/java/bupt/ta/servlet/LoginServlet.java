@@ -29,6 +29,7 @@ public class LoginServlet extends HttpServlet {
                 session.setAttribute("username", user.getUsername());
                 session.setAttribute("role", user.getRole());
                 session.setAttribute("realName", user.getRealName());
+                session.setAttribute("justLoggedIn", Boolean.TRUE);
 
                 String redirect = req.getContextPath() + "/dashboard.jsp";
                 resp.sendRedirect(redirect);

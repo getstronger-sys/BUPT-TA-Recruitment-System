@@ -1,0 +1,17 @@
+<%-- Requires: Job job, escHtml(), Pattern, Matcher, ArrayList, List --%>
+<%
+    String taPlanRawForChunks = job.getTaAllocationPlan() != null ? job.getTaAllocationPlan().trim() : "";
+    List<String[]> taPlanChunks = new ArrayList<>();
+    if (!taPlanRawForChunks.isEmpty()) {
+        for (String chunk : taPlanRawForChunks.split("(?=TA-\\d+\\s*:)", -1)) {
+            String c = chunk.trim();
+            if (c.isEmpty()) continue;
+            Matcher lm = Pattern.compile("^(TA-\\d+)\\s*:\\s*(.*)$", Pattern.CASE_INSENSITIVE | Pattern.DOTALL).matcher(c);
+            if (lm.matches()) {
+                taPlanChunks.add(new String[]{lm.group(1).toUpperCase(), escHtml(lm.group(2).trim())});
+            } else {
+                taPlanChunks.add(new String[]{null, escHtml(c)});
+            }
+        }
+    }
+%>
