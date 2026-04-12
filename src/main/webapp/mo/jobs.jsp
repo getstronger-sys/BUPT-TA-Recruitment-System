@@ -29,6 +29,7 @@
    boolean moPastJobsPage = Boolean.TRUE.equals(request.getAttribute("moPastJobsPage"));
    boolean moReadOnly = moPastJobsPage;
    String moCtx = request.getContextPath();
+   request.setAttribute("moNavActive", moPastJobsPage ? "past" : "jobs");
 %>
 <!DOCTYPE html>
 <html>
@@ -51,11 +52,7 @@
                 <div class="icon-dot">P</div>
                 <div class="icon-dot">D</div>
             </div>
-            <aside class="side-nav">
-                <a class="<%= moPastJobsPage ? "" : "active" %>" href="<%= moCtx %>/mo/jobs">My Jobs</a>
-                <a href="<%= moCtx %>/mo/post-job">Post Job</a>
-                <a class="<%= moPastJobsPage ? "active" : "" %>" href="<%= moCtx %>/mo/past-jobs">Past postings</a>
-            </aside>
+            <%@ include file="/WEB-INF/jspf/mo-side-nav.jspf" %>
         </div>
         <main class="main-panel mo-main">
             <% if ("1".equals(request.getParameter("success"))) { %><p class="success">Job posted successfully!</p><% } %>
@@ -189,7 +186,7 @@
                                 <div class="week-timeline-row">
                                     <div class="week-line">
                                         <span class="week-label">W<%= weekNum %></span>
-                                        <span class="week-progress"><span class="week-progress-fill" style="width:<%= progress %>%"></span></span>
+                                        <span class="week-progress"><span class="week-progress-fill" style="--week-p: <%= progress %>;"></span></span>
                                     </div>
                                     <div class="week-desc"><%= escHtml(item[1] != null && !item[1].isEmpty() ? item[1] : "Milestone") %></div>
                                 </div>
@@ -535,9 +532,6 @@
                         </div>
                     </article>
                     <% } %>
-                    <% if (!moReadOnly) { %><p class="batch-toolbar">
-                        <button type="submit" class="btn btn-success" form="<%= batchNoticeFormId %>">Send/update in-app interview notice</button>
-                    </p><% } %>
                     <% } else { %><p class="muted-inline section-empty">No interviewees for this posting.</p><% } %>
                     <% } else if ("waitlist".equals(moView)) { %>
                     <% if (!waitlistRecs.isEmpty()) { %>

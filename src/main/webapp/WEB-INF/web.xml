@@ -190,6 +190,15 @@
     </servlet-mapping>
 
     <servlet>
+        <servlet-name>MOInterviewCalendarServlet</servlet-name>
+        <servlet-class>bupt.ta.servlet.MOInterviewCalendarServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>MOInterviewCalendarServlet</servlet-name>
+        <url-pattern>/mo/interview-calendar</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
         <servlet-name>MOJobDetailServlet</servlet-name>
         <servlet-class>bupt.ta.servlet.MOJobDetailServlet</servlet-class>
     </servlet>

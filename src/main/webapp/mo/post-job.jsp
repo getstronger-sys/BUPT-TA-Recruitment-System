@@ -26,6 +26,7 @@
    int waDefaultPlannedTaCount = waRows.stream().mapToInt(WorkArrangementItem::getTaCount).sum();
    if (waDefaultPlannedTaCount < 1) waDefaultPlannedTaCount = 1;
    String fvPlannedTaCount = fv(request, "fvPlannedTaCount", "");
+   request.setAttribute("moNavActive", "post");
 %>
 <!DOCTYPE html>
 <html>
@@ -48,11 +49,7 @@
                 <div class="icon-dot active">P</div>
                 <div class="icon-dot">D</div>
             </div>
-            <aside class="side-nav">
-                <a href="${pageContext.request.contextPath}/mo/jobs">My Jobs</a>
-                <a class="active" href="${pageContext.request.contextPath}/mo/post-job">Post Job</a>
-                <a href="${pageContext.request.contextPath}/mo/past-jobs">Past postings</a>
-            </aside>
+            <%@ include file="/WEB-INF/jspf/mo-side-nav.jspf" %>
         </div>
         <main class="main-panel mo-main">
     <h1>Post a New Job</h1>
