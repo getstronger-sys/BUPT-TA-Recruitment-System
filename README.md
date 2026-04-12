@@ -106,6 +106,21 @@ If needed, you can override the storage location with `-Dta.data.dir=<path>` or 
 - `applications.json` - Job applications
 - `uploads/` - Uploaded CV files
 
+## Optional Email Notifications
+
+The system can send email notifications and unread-message reminders if SMTP is configured.
+
+- `TA_MAIL_HOST` - SMTP host
+- `TA_MAIL_PORT` - SMTP port (default `587`)
+- `TA_MAIL_USERNAME` - SMTP username
+- `TA_MAIL_PASSWORD` - SMTP password
+- `TA_MAIL_FROM` - sender address
+- `TA_MAIL_ENABLED` - optional `true` / `false` switch for email delivery (default `true`)
+- `TA_MAIL_AUTH` - `true` / `false` (defaults to `true` when a username is set)
+- `TA_MAIL_STARTTLS` - `true` / `false` (default `true`)
+- `TA_MAIL_SSL` - `true` / `false` (default `false`)
+- `TA_MAIL_APP_BASE_URL` - optional absolute base URL used in email links, e.g. `http://localhost:8080/ta-recruitment`
+
 ## User Manual
 
 ### TA Workflow

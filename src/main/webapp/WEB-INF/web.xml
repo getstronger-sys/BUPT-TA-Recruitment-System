@@ -144,6 +144,15 @@
     </servlet-mapping>
 
     <servlet>
+        <servlet-name>TAInterviewCalendarServlet</servlet-name>
+        <servlet-class>bupt.ta.servlet.TAInterviewCalendarServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>TAInterviewCalendarServlet</servlet-name>
+        <url-pattern>/ta/interview-calendar</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
         <servlet-name>WithdrawApplicationServlet</servlet-name>
         <servlet-class>bupt.ta.servlet.WithdrawApplicationServlet</servlet-class>
     </servlet>

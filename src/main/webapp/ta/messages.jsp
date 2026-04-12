@@ -154,7 +154,12 @@
                     </form>
                 </div>
                 <% } %>
-                <p class="ta-message-detail-foot muted-inline">Application status: <a href="<%= ctx %>/ta/applications">My Applications</a>.</p>
+                <p class="ta-message-detail-foot muted-inline">Application status: <a href="<%= ctx %>/ta/applications">My Applications</a>.
+                    <% if (detail.getApplicationId() != null && !detail.getApplicationId().isEmpty()
+                            && StudentNotificationService.KIND_INTERVIEW_DETAILS.equals(detail.getKind())) { %>
+                    <span class="muted-inline"> | </span><a href="<%= ctx %>/ta/interview-calendar?applicationId=<%= escHtml(detail.getApplicationId()) %>">Download interview .ics</a>
+                    <% } %>
+                </p>
             </article>
 <% } else {
     List<SiteNotification> notifications = (List<SiteNotification>) request.getAttribute("notifications");
