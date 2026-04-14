@@ -9,7 +9,6 @@ import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.HexFormat;
 
 /**
  * Email OTP (one-time password) generation + verification.
@@ -163,7 +162,7 @@ public class EmailOtpService {
     private String randomHex(int bytes) {
         byte[] buf = new byte[Math.max(8, bytes)];
         random.nextBytes(buf);
-        return HexFormat.of().formatHex(buf);
+        return toHex(buf);
     }
 
     private String hash(String salt, String code) {
@@ -171,11 +170,25 @@ public class EmailOtpService {
             MessageDigest md = MessageDigest.getInstance("SHA-256");
             md.update((salt != null ? salt : "").getBytes(java.nio.charset.StandardCharsets.UTF_8));
             md.update((code != null ? code : "").getBytes(java.nio.charset.StandardCharsets.UTF_8));
-            return HexFormat.of().formatHex(md.digest());
+            return toHex(md.digest());
         } catch (Exception e) {
             // Should never happen on JDK.
             return "";
         }
+    }
+
+    private static String toHex(byte[] bytes) {
+        if (bytes == null || bytes.length == 0) {
+            return "";
+        }
+        char[] out = new char[bytes.length * 2];
+        final char[] HEX = "0123456789abcdef".toCharArray();
+        for (int i = 0; i < bytes.length; i++) {
+            int v = bytes[i] & 0xFF;
+            out[i * 2] = HEX[v >>> 4];
+            out[i * 2 + 1] = HEX[v & 0x0F];
+        }
+        return new String(out);
     }
 
     private boolean constantTimeEquals(String a, String b) {
