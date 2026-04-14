@@ -98,6 +98,9 @@
             <% if (request.getParameter("registered") != null) { %>
             <p class="success">Registration successful. Please sign in.</p>
             <% } %>
+            <% if ("1".equals(request.getParameter("reset"))) { %>
+            <p class="success">Password updated. Please sign in.</p>
+            <% } %>
             <% if (request.getParameter("error") != null) { %>
             <p class="error">Please sign in to continue.</p>
             <% } %>
@@ -112,14 +115,14 @@
                 <input id="login-password" type="password" name="password" required autocomplete="current-password" placeholder="Enter your password">
                 <div class="auth-form-options">
                     <label class="auth-remember"><input type="checkbox" name="remember" value="1"> Remember me</label>
-                    <a class="auth-forgot" href="#" title="Contact your module organiser or system administrator">Forgot password?</a>
+                    <a class="auth-forgot" href="${pageContext.request.contextPath}/forgot-password">Forgot password?</a>
                 </div>
                 <button type="submit">Sign In</button>
             </form>
 
             <div class="auth-card-footer auth-card-footer--stacked">
                 <p class="auth-helper">New to the system?</p>
-                <a href="${pageContext.request.contextPath}/register.jsp">Create an Account</a>
+                <a href="${pageContext.request.contextPath}/register">Create an Account</a>
             </div>
         </section>
     </div>
@@ -127,8 +130,6 @@
 </div>
 <script>
 document.addEventListener("DOMContentLoaded", function () {
-    var forgot = document.querySelector(".auth-forgot");
-    if (forgot) forgot.addEventListener("click", function (e) { e.preventDefault(); });
 
     var messages = {
         valueMissing: "Please fill out this field.",
