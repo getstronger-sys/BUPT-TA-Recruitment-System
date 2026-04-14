@@ -101,7 +101,8 @@ public class NotificationReminderService {
             String displayName = resolveDisplayName(user, userId);
             String subject = "[TA Recruitment] You have unread updates";
             String body = buildReminderBody(displayName, notes, adminSettings);
-            EmailNotificationService.SendResult result = emailNotificationService.sendPlainText(email, subject, body, adminSettings);
+            String html = buildReminderHtml(displayName, notes, adminSettings);
+            EmailNotificationService.SendResult result = emailNotificationService.sendHtml(email, subject, body, html, adminSettings);
             if (result.isSuccess()) {
                 emailed++;
             } else {
@@ -157,6 +158,39 @@ public class NotificationReminderService {
         }
         body.append("\nPlease sign in and open Messages / My Applications to review them.");
         return emailNotificationService.maybeAppendPortalLink(body.toString(), "/ta/messages", adminSettings);
+    }
+
+    private String buildReminderHtml(String displayName, List<SiteNotification> notes, AdminSettings adminSettings) {
+        StringBuilder bodyText = new StringBuilder();
+        bodyText.append("Hello ").append(displayName).append(",\n\n");
+        bodyText.append("You have ").append(notes.size()).append(" unread recruitment update");
+        if (notes.size() != 1) {
+            bodyText.append('s');
+        }
+        bodyText.append(" in the TA Recruitment System.\n");
+        bodyText.append("Here are the latest items:\n");
+        int limit = Math.min(notes.size(), 5);
+        for (int i = 0; i < limit; i++) {
+            SiteNotification note = notes.get(i);
+            bodyText.append("- ").append(safe(note.getTitle()));
+            if (!isBlank(note.getCreatedAt())) {
+                bodyText.append(" (").append(note.getCreatedAt().replace('T', ' ')).append(")");
+            }
+            bodyText.append('\n');
+        }
+        if (notes.size() > limit) {
+            bodyText.append("- and ").append(notes.size() - limit).append(" more unread updates\n");
+        }
+        bodyText.append("\nPlease sign in and open Messages / My Applications to review them.");
+
+        String portalUrl = emailNotificationService.resolvePortalUrl("/ta/messages", adminSettings);
+        return emailNotificationService.renderHtmlTemplate(
+                "Unread updates",
+                displayName,
+                bodyText.toString(),
+                portalUrl != null ? "View messages" : null,
+                portalUrl
+        );
     }
 
     private static String resolveDisplayName(User user, String fallback) {

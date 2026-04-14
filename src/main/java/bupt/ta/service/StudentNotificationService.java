@@ -266,7 +266,20 @@ public class StudentNotificationService {
                 LOGGER.info("Skip email notification because recipient email is missing for userId=" + userId);
                 return;
             }
-            EmailNotificationService.SendResult result = EMAIL_SERVICE.sendPlainText(recipientEmail, subject, body, adminSettings);
+            User u = storage.findUserById(userId);
+            String displayName = u != null && u.getRealName() != null && !u.getRealName().trim().isEmpty()
+                    ? u.getRealName().trim()
+                    : (u != null && u.getUsername() != null && !u.getUsername().trim().isEmpty()
+                        ? u.getUsername().trim()
+                        : userId);
+            String portalUrl = EMAIL_SERVICE.resolvePortalUrl("/ta/applications", adminSettings);
+            String html = EMAIL_SERVICE.renderHtmlTemplate(
+                    "Recruitment update",
+                    displayName,
+                    body,
+                    portalUrl != null ? "Open portal" : null,
+                    portalUrl);
+            EmailNotificationService.SendResult result = EMAIL_SERVICE.sendHtml(recipientEmail, subject, body, html, adminSettings);
             if (result.isSuccess()) {
                 LOGGER.info("Email notification sent to " + recipientEmail + " for userId=" + userId
                         + " subject=" + subject);

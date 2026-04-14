@@ -10,6 +10,8 @@ import javax.mail.Session;
 import javax.mail.Transport;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
+import javax.mail.internet.MimeBodyPart;
+import javax.mail.internet.MimeMultipart;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -19,7 +21,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Properties;
 
 /**
- * Sends plain-text emails using SMTP settings from system properties or environment variables.
+ * Sends emails using SMTP settings from admin settings, system properties or environment variables.
  * Disabled by default until host/from are configured.
  */
 public class EmailNotificationService {
@@ -198,6 +200,62 @@ public class EmailNotificationService {
         }
     }
 
+    public SendResult sendHtml(String to, String subject, String plainBody, String htmlBody, AdminSettings adminSettings) {
+        if (isBlank(to)) {
+            return new SendResult(false, "Missing recipient email.");
+        }
+
+        EmailSettings settings = loadSettings(adminSettings);
+        if (!settings.isConfigured()) {
+            return new SendResult(false, "SMTP is not configured.");
+        }
+
+        Properties props = new Properties();
+        props.put("mail.smtp.host", settings.getHost());
+        props.put("mail.smtp.port", String.valueOf(settings.getPort()));
+        props.put("mail.smtp.auth", String.valueOf(settings.isAuth()));
+        props.put("mail.smtp.starttls.enable", String.valueOf(settings.isStartTls()));
+        if (settings.isSsl()) {
+            props.put("mail.smtp.ssl.enable", "true");
+        }
+
+        Authenticator authenticator = null;
+        if (settings.isAuth()) {
+            final String username = settings.getUsername();
+            final String password = settings.getPassword();
+            authenticator = new Authenticator() {
+                @Override
+                protected PasswordAuthentication getPasswordAuthentication() {
+                    return new PasswordAuthentication(username, password);
+                }
+            };
+        }
+
+        try {
+            Session session = Session.getInstance(props, authenticator);
+            MimeMessage message = new MimeMessage(session);
+            message.setFrom(new InternetAddress(settings.getFrom()));
+            message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(to, false));
+            message.setSubject(subject != null ? subject : "", StandardCharsets.UTF_8.name());
+
+            MimeMultipart alternative = new MimeMultipart("alternative");
+
+            MimeBodyPart textPart = new MimeBodyPart();
+            textPart.setText(plainBody != null ? plainBody : "", StandardCharsets.UTF_8.name());
+            alternative.addBodyPart(textPart);
+
+            MimeBodyPart htmlPart = new MimeBodyPart();
+            htmlPart.setContent(htmlBody != null ? htmlBody : "", "text/html; charset=UTF-8");
+            alternative.addBodyPart(htmlPart);
+
+            message.setContent(alternative);
+            Transport.send(message);
+            return new SendResult(true, "sent");
+        } catch (MessagingException e) {
+            return new SendResult(false, e.getMessage());
+        }
+    }
+
     public String maybeAppendPortalLink(String body, String relativePath) {
         return maybeAppendPortalLink(body, relativePath, null);
     }
@@ -214,8 +272,120 @@ public class EmailNotificationService {
         return body + "\n\nPortal: " + base + path;
     }
 
+    public String resolvePortalUrl(String relativePath, AdminSettings adminSettings) {
+        EmailSettings settings = loadSettings(adminSettings);
+        if (!settings.isConfigured() || isBlank(settings.getAppBaseUrl()) || isBlank(relativePath)) {
+            return null;
+        }
+        String base = settings.getAppBaseUrl().endsWith("/")
+                ? settings.getAppBaseUrl().substring(0, settings.getAppBaseUrl().length() - 1)
+                : settings.getAppBaseUrl();
+        String path = relativePath.startsWith("/") ? relativePath : "/" + relativePath;
+        return base + path;
+    }
+
+    public String renderHtmlTemplate(String title, String bodyText, String actionText, String actionUrl) {
+        return renderHtmlTemplate(title, null, bodyText, actionText, actionUrl);
+    }
+
+    public String renderHtmlTemplate(String title, String displayName, String bodyText, String actionText, String actionUrl) {
+        String safeTitle = escHtml(title != null ? title : "");
+        String safeBody = formatBodyText(bodyText != null ? bodyText : "");
+
+        String button = "";
+        if (!isBlank(actionText) && !isBlank(actionUrl)) {
+            button =
+                    "<div style=\"margin-top:18px\">" +
+                    "<a href=\"" + escAttr(actionUrl) + "\" " +
+                    "style=\"display:inline-block;background:#2575fc;color:#ffffff;text-decoration:none;padding:11px 18px;border-radius:12px;font-weight:800;box-shadow:0 10px 22px rgba(37,117,252,0.25)\">" +
+                    escHtml(actionText) +
+                    "</a>" +
+                    "</div>";
+        }
+
+        String who = "";
+        if (!isBlank(displayName)) {
+            who = "<div style=\"margin-top:12px;font-size:14px;color:#2a2f45\">" +
+                    "<span style=\"font-weight:900;color:#c5006b\">To:</span> " +
+                    "<span style=\"font-weight:900;color:#123b7a\">" + escHtml(displayName.trim()) + "</span>" +
+                    "</div>";
+        }
+
+        // Inline CSS for maximum email-client compatibility.
+        return "<!doctype html>" +
+                "<html><head><meta charset=\"utf-8\"></head>" +
+                "<body style=\"margin:0;background:#eef3f9;color:#1f2f46;font-family:Segoe UI,Tahoma,Geneva,Verdana,sans-serif\">" +
+                "<div style=\"max-width:640px;margin:0 auto;padding:22px 14px\">" +
+                "<div style=\"background:#083b84;color:#fff;border-radius:16px;padding:16px 18px;box-shadow:0 14px 30px rgba(8,59,132,0.18);position:relative;overflow:hidden\">" +
+                "<div style=\"position:absolute;top:0;left:0;width:10px;height:100%;background:#c5006b\"></div>" +
+                "<div style=\"font-size:13px;letter-spacing:0.35px;opacity:0.92;font-weight:800;padding-left:12px\">BUPT TA Recruitment System</div>" +
+                "<div style=\"font-size:20px;font-weight:900;margin-top:8px;line-height:1.2;padding-left:12px\">" + safeTitle + "</div>" +
+                "</div>" +
+                "<div style=\"background:#ffffff;border:1px solid #d6e2f0;border-radius:16px;padding:18px 18px;margin-top:14px\">" +
+                who +
+                "<div style=\"font-size:15px;line-height:1.7;color:#1f2f46;margin-top:10px\">" + safeBody + "</div>" +
+                button +
+                "</div>" +
+                "<div style=\"font-size:12px;line-height:1.6;color:#5a6f8c;margin-top:12px;padding:0 4px\">" +
+                "This is an automated message. Please sign in to the portal for the latest updates." +
+                "</div>" +
+                "</div></body></html>";
+    }
+
     private static String adminSetting(String value) {
         return isBlank(value) ? null : value;
+    }
+
+    private static String nl2br(String s) {
+        return s.replace("\r\n", "\n").replace("\n", "<br/>");
+    }
+
+    private static String formatBodyText(String raw) {
+        // Escape first, then add minimal rich formatting.
+        String escaped = escHtml(raw == null ? "" : raw);
+        String withBreaks = nl2br(escaped);
+
+        // Highlight common label lines like "Time: xxx" or "Location: yyy"
+        String[] labels = new String[] {
+                "Time:", "Location:", "Assessment / notes:", "Assessment:", "Notes:", "Module:", "Status:"
+        };
+        for (String label : labels) {
+            withBreaks = withBreaks.replace(label,
+                    "<span style=\"font-weight:900;color:#c5006b\">" + label + "</span>");
+        }
+
+        // Emphasize bullet starts "- " as a colored dot.
+        withBreaks = withBreaks.replace("<br/>- ", "<br/><span style=\"color:#2575fc;font-weight:900\">•</span> ");
+        if (withBreaks.startsWith("- ")) {
+            withBreaks = "<span style=\"color:#2575fc;font-weight:900\">•</span> " + withBreaks.substring(2);
+        }
+
+        // Slightly emphasize the word "Congratulations" if present.
+        withBreaks = withBreaks.replace("Congratulations",
+                "<span style=\"font-weight:900;color:#123b7a\">Congratulations</span>");
+
+        return withBreaks;
+    }
+
+    private static String escAttr(String s) {
+        return escHtml(s).replace("\"", "&quot;");
+    }
+
+    private static String escHtml(String s) {
+        if (s == null) return "";
+        StringBuilder out = new StringBuilder(s.length() + 16);
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            switch (c) {
+                case '&': out.append("&amp;"); break;
+                case '<': out.append("&lt;"); break;
+                case '>': out.append("&gt;"); break;
+                case '"': out.append("&quot;"); break;
+                case '\'': out.append("&#39;"); break;
+                default: out.append(c);
+            }
+        }
+        return out.toString();
     }
 
     private static int parseInt(String raw, int defaultValue) {
