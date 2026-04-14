@@ -25,6 +25,7 @@ public class DataStorage {
     private static final String APPLICATIONS_FILE = "applications.json";
     private static final String SETTINGS_FILE = "settings.json";
     private static final String SITE_NOTIFICATIONS_FILE = "site-notifications.json";
+    private static final String EMAIL_OTP_FILE = "email-otp.json";
 
     private final Path basePath;
     private final Gson gson;
@@ -495,7 +496,6 @@ public class DataStorage {
         return users.stream().filter(u -> u.getId().equals(id)).findFirst().orElse(null);
     }
 
-    @SuppressWarnings("unchecked")
     public List<User> loadUsers() throws IOException {
         List<User> list = load(USERS_FILE, new TypeToken<ArrayList<User>>(){}.getType());
         return list != null ? list : new ArrayList<>();
@@ -518,7 +518,6 @@ public class DataStorage {
     }
 
     // ---- TA Profiles ----
-    @SuppressWarnings("unchecked")
     public List<TAProfile> loadProfiles() throws IOException {
         List<TAProfile> list = load(PROFILES_FILE, new TypeToken<ArrayList<TAProfile>>(){}.getType());
         return list != null ? list : new ArrayList<>();
@@ -580,7 +579,6 @@ public class DataStorage {
     }
 
     // ---- Jobs ----
-    @SuppressWarnings("unchecked")
     public List<Job> loadJobs() throws IOException {
         List<Job> list = load(JOBS_FILE, new TypeToken<ArrayList<Job>>(){}.getType());
         return list != null ? list : new ArrayList<>();
@@ -609,7 +607,6 @@ public class DataStorage {
     }
 
     // ---- Applications ----
-    @SuppressWarnings("unchecked")
     public List<Application> loadApplications() throws IOException {
         List<Application> list = load(APPLICATIONS_FILE, new TypeToken<ArrayList<Application>>(){}.getType());
         return list != null ? list : new ArrayList<>();
@@ -667,7 +664,6 @@ public class DataStorage {
     }
 
     // ---- Site notifications ----
-    @SuppressWarnings("unchecked")
     public List<SiteNotification> loadSiteNotifications() throws IOException {
         List<SiteNotification> list = load(SITE_NOTIFICATIONS_FILE, new TypeToken<ArrayList<SiteNotification>>(){}.getType());
         return list != null ? list : new ArrayList<>();
@@ -767,6 +763,48 @@ public class DataStorage {
             save(SITE_NOTIFICATIONS_FILE, all);
         }
         return changed;
+    }
+
+    // ---- Email OTP ----
+    public List<EmailOtpRecord> loadEmailOtpRecords() throws IOException {
+        List<EmailOtpRecord> list = load(EMAIL_OTP_FILE, new TypeToken<ArrayList<EmailOtpRecord>>(){}.getType());
+        return list != null ? list : new ArrayList<>();
+    }
+
+    public void saveEmailOtpRecord(EmailOtpRecord record) throws IOException {
+        if (record == null || record.getId() == null) {
+            return;
+        }
+        List<EmailOtpRecord> all = loadEmailOtpRecords();
+        all.removeIf(r -> Objects.equals(r.getId(), record.getId()));
+        all.add(record);
+        save(EMAIL_OTP_FILE, all);
+    }
+
+    public EmailOtpRecord addEmailOtpRecord(EmailOtpRecord record) throws IOException {
+        if (record == null) {
+            return null;
+        }
+        List<EmailOtpRecord> all = loadEmailOtpRecords();
+        String newId = "E" + String.format("%06d", all.size() + 1);
+        record.setId(newId);
+        all.add(record);
+        save(EMAIL_OTP_FILE, all);
+        return record;
+    }
+
+    public EmailOtpRecord findLatestEmailOtp(String email, String purpose) throws IOException {
+        if (email == null || email.trim().isEmpty()) {
+            return null;
+        }
+        String e = email.trim();
+        String p = purpose != null ? purpose.trim() : "";
+        return loadEmailOtpRecords().stream()
+                .filter(r -> equalsIgnoreCaseTrimmed(r.getEmail(), e)
+                        && (p.isEmpty() || equalsIgnoreCaseTrimmed(r.getPurpose(), p)))
+                .sorted(Comparator.comparing(EmailOtpRecord::getCreatedAt, Comparator.nullsLast(String::compareTo)).reversed())
+                .findFirst()
+                .orElse(null);
     }
 
     public int markSiteNotificationsUnreadForUser(String userId, Collection<String> notificationIds) throws IOException {
