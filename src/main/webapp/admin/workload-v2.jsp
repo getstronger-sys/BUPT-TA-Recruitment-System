@@ -8,6 +8,8 @@
     if (workloadRows == null) workloadRows = java.util.Collections.emptyList();
     Double avgWorkload = (Double) request.getAttribute("avgWorkload");
     if (avgWorkload == null) avgWorkload = 0.0;
+    Double avgEstimatedHours = (Double) request.getAttribute("avgEstimatedHours");
+    if (avgEstimatedHours == null) avgEstimatedHours = 0.0;
     AdminSettings settings = (AdminSettings) request.getAttribute("adminSettings");
     if (settings == null) settings = new AdminSettings();
 %>
@@ -45,7 +47,14 @@
             <p class="ta-page-lead">Review selected and pending load distribution across TAs to keep recruitment decisions balanced and policy-compliant.</p>
             <div class="context-card">
                 <strong>Workload rule</strong>
-                <p>Average selected jobs per TA: <strong><%= String.format("%.1f", avgWorkload) %></strong>. Hard limit: <strong><%= settings.hasWorkloadLimit() ? settings.getMaxSelectedJobsPerTa() : 0 %></strong>. Auto-close pending: <strong><%= settings.isAutoClosePendingWhenLimitReached() ? "ON" : "OFF" %></strong>.</p>
+                <p>Average selected jobs per TA: <strong><%= String.format("%.1f", avgWorkload) %></strong>.
+                    Average estimated hours (structured arrangements): <strong><%= String.format("%.1f", avgEstimatedHours) %> h</strong>.
+                    <% if (settings.usesHourWorkloadLimit()) { %>
+                    Hour cap: <strong><%= String.format("%.1f", settings.getMaxWorkloadHoursPerTa()) %> h</strong>.
+                    <% } else { %>
+                    Job cap: <strong><%= settings.hasWorkloadLimit() ? settings.getMaxSelectedJobsPerTa() : 0 %></strong>.
+                    <% } %>
+                    Auto-close pending: <strong><%= settings.isAutoClosePendingWhenLimitReached() ? "ON" : "OFF" %></strong>.</p>
             </div>
             <p><a href="${pageContext.request.contextPath}/admin/export-workload" class="btn btn-primary">Export to CSV</a></p>
 
@@ -57,6 +66,7 @@
                         <th>TA Name</th>
                         <th>User ID</th>
                         <th>Selected</th>
+                        <th>Est. hours</th>
                         <th>Pending</th>
                         <th>Average flag</th>
                         <th>Limit flag</th>
@@ -69,6 +79,7 @@
                         <td><a href="${pageContext.request.contextPath}/admin/ta-detail?userId=<%= row.getApplicantId() %>" class="admin-inline-link"><%= escHtml(row.getApplicantName()) %></a></td>
                         <td><%= escHtml(row.getApplicantId()) %></td>
                         <td><strong><%= row.getSelectedCount() %></strong></td>
+                        <td><%= String.format("%.1f", row.getEstimatedSelectedHours()) %></td>
                         <td><%= row.getPendingCount() %></td>
                         <td>
                             <% if (row.isAboveAverage()) { %>
@@ -80,12 +91,20 @@
                         <td>
                             <% if (!settings.hasWorkloadLimit()) { %>
                             <span class="muted-inline">No limit</span>
+                            <% } else if (settings.usesHourWorkloadLimit()) { %>
+                                <% if (row.isAboveLimit()) { %>
+                                <span class="balance-warn">Over hour cap</span>
+                                <% } else if (row.isAtOrOverLimit()) { %>
+                                <span class="balance-warn">At hour cap</span>
+                                <% } else { %>
+                                <span class="balance-ok">Within hour cap</span>
+                                <% } %>
                             <% } else if (row.isAboveLimit()) { %>
-                            <span class="balance-warn">Over limit</span>
+                            <span class="balance-warn">Over job cap</span>
                             <% } else if (row.isAtOrOverLimit()) { %>
-                            <span class="balance-warn">At limit</span>
+                            <span class="balance-warn">At job cap</span>
                             <% } else { %>
-                            <span class="balance-ok">Within limit</span>
+                            <span class="balance-ok">Within job cap</span>
                             <% } %>
                         </td>
                         <td><%= row.getSelectedJobTitles().isEmpty() ? "-" : escHtml(String.join(", ", row.getSelectedJobTitles())) %></td>
@@ -93,7 +112,7 @@
                     <% } %>
                     <% if (workloadRows.isEmpty()) { %>
                     <tr>
-                        <td colspan="7">No TA has been selected for any job yet.</td>
+                        <td colspan="8">No TA has been selected for any job yet.</td>
                     </tr>
                     <% } %>
                     </tbody>
@@ -103,8 +122,8 @@
         <aside class="right-sidebar">
             <div class="widget-card">
                 <div class="widget-title">Interpretation</div>
-                <p class="widget-line">"At limit" means the TA reached the configured cap exactly.</p>
-                <p class="widget-line">"Over limit" means selected jobs already exceed the configured cap.</p>
+                <p class="widget-line">Est. hours come from each job’s work arrangements (per-TA average), same as MO planning.</p>
+                <p class="widget-line">With hour cap on, limit flags compare total estimated hours to the admin hour ceiling.</p>
                 <p class="widget-line"><a href="${pageContext.request.contextPath}/admin/users">Open user directory</a></p>
             </div>
         </aside>

@@ -887,6 +887,20 @@ tr:hover { background: #f8f7ff; }
 .ai-missing-cell { font-size: 0.9em; color: #5a5688; max-width: 260px; line-height: 1.45; }
 .balance-badge { font-size: 1.2em; }
 
+.llm-insight-card {
+    border-left: 4px solid #5a3d8a;
+    margin-bottom: 14px;
+}
+.llm-insight-body {
+    margin: 8px 0 0;
+    line-height: 1.55;
+    color: #2a3550;
+}
+.llm-insight-disclaimer {
+    font-size: 0.82em;
+    margin-top: 8px;
+}
+
 .progress-wrap {
     width: 120px;
     height: 10px;

@@ -77,6 +77,9 @@
             <% if ("invalid_role".equals(request.getParameter("error"))) { %>
             <p class="error">Please choose a valid TA role for this job before submitting.</p>
             <% } %>
+            <% if ("workload_hours_cap".equals(request.getParameter("error"))) { %>
+            <p class="error">You cannot apply: your already selected posts plus this job’s estimated workload would exceed the system’s hourly cap. Withdraw from a role or contact an administrator.</p>
+            <% } %>
             <div class="context-card">
                 <strong>What happens next</strong>
                 <p>Your application will be sent to the module organiser. They will review your <strong>current saved profile and CV</strong> (not a frozen copy). You can update them anytime before a decision.</p>

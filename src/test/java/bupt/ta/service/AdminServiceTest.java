@@ -3,6 +3,7 @@ package bupt.ta.service;
 import bupt.ta.model.AdminSettings;
 import bupt.ta.model.Application;
 import bupt.ta.model.Job;
+import bupt.ta.model.WorkArrangementItem;
 import bupt.ta.model.SiteNotification;
 import bupt.ta.model.TAProfile;
 import bupt.ta.model.User;
@@ -10,6 +11,7 @@ import bupt.ta.storage.DataStorage;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -33,11 +35,13 @@ public class AdminServiceTest {
             assertTrue(settings.isAutoClosePendingWhenLimitReached());
 
             settings.setMaxSelectedJobsPerTa(3);
+            settings.setMaxWorkloadHoursPerTa(40.0);
             settings.setAutoClosePendingWhenLimitReached(false);
             storage.saveAdminSettings(settings);
 
             AdminSettings reloaded = storage.loadAdminSettings();
             assertEquals(3, reloaded.getMaxSelectedJobsPerTa());
+            assertEquals(40.0, reloaded.getMaxWorkloadHoursPerTa(), 1e-9);
             assertFalse(reloaded.isAutoClosePendingWhenLimitReached());
         } finally {
             deleteRecursive(tmp);
@@ -75,9 +79,41 @@ public class AdminServiceTest {
 
             assertNotNull(pendingReloaded);
             assertEquals(AdminService.STATUS_AUTO_CLOSED, pendingReloaded.getStatus());
-            assertTrue(pendingReloaded.getNotes().contains("workload limit"));
+            assertTrue(pendingReloaded.getNotes().contains("workload"));
             assertNotNull(interviewReloaded);
             assertEquals("INTERVIEW", interviewReloaded.getStatus());
+        } finally {
+            deleteRecursive(tmp);
+        }
+    }
+
+    @Test
+    public void testAutoClosePendingWhenHourCapReached() throws Exception {
+        Path tmp = Files.createTempDirectory("ta-admin-test");
+        try {
+            DataStorage storage = new DataStorage(tmp.toString());
+            User applicant = createUser(storage, "ta-hour-cap", "Hour Cap TA");
+
+            Job heavy = createJobWithEstimatedHours(storage, "Heavy module", "EBU8001", 5, 45.0);
+            Job other = createJobWithEstimatedHours(storage, "Other module", "EBU8002", 5, 10.0);
+
+            Application selected = createApplication(storage, heavy.getId(), applicant.getId(), applicant.getRealName(), "SELECTED");
+            Application pending = createApplication(storage, other.getId(), applicant.getId(), applicant.getRealName(), "PENDING");
+
+            AdminSettings settings = new AdminSettings();
+            settings.setMaxWorkloadHoursPerTa(40.0);
+            settings.setMaxSelectedJobsPerTa(0);
+            settings.setAutoClosePendingWhenLimitReached(true);
+
+            int closed = adminService.enforceWorkloadLimitForApplicant(storage, applicant.getId(), selected.getId(), settings);
+            assertEquals(1, closed);
+
+            Application pendingReloaded = storage.loadApplications().stream()
+                    .filter(a -> a.getId().equals(pending.getId()))
+                    .findFirst().orElse(null);
+            assertNotNull(pendingReloaded);
+            assertEquals(AdminService.STATUS_AUTO_CLOSED, pendingReloaded.getStatus());
+            assertTrue(pendingReloaded.getNotes().contains("workload"));
         } finally {
             deleteRecursive(tmp);
         }
@@ -305,6 +341,17 @@ public class AdminServiceTest {
         job.setPostedByName(postedByName);
         job.setMaxApplicants(maxApplicants);
         return storage.addJob(job);
+    }
+
+    /** One arrangement row so {@link bupt.ta.util.JobWorkloadEstimator} yields {@code estHoursPerTa} for one recruited TA. */
+    private static Job createJobWithEstimatedHours(DataStorage storage, String title, String moduleCode,
+                                                   int maxApplicants, double estHoursPerTa) throws IOException {
+        Job job = createJob(storage, title, moduleCode, maxApplicants);
+        job.setTaSlots(1);
+        job.setWorkArrangements(Collections.singletonList(
+                new WorkArrangementItem("Estimated load", estHoursPerTa + " hours", 1, 1, null)));
+        storage.saveJob(job);
+        return job;
     }
 
     private static Application createApplication(DataStorage storage, String jobId, String applicantId,

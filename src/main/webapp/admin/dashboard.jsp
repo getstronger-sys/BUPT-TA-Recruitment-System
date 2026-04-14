@@ -96,8 +96,12 @@
                     <div class="stat-icon">L</div>
                     <div>
                         <div class="stat-title">Workload Rule</div>
-                        <div class="stat-value"><%= settings.hasWorkloadLimit() ? settings.getMaxSelectedJobsPerTa() : 0 %></div>
-                        <div class="stat-meta"><%= settings.hasWorkloadLimit() ? "TA limit active" : "No hard limit" %> | Auto-close <%= settings.isAutoClosePendingWhenLimitReached() ? "ON" : "OFF" %></div>
+                        <div class="stat-value"><%= settings.usesHourWorkloadLimit()
+                                ? String.format("%.0f h", settings.getMaxWorkloadHoursPerTa())
+                                : (settings.hasWorkloadLimit() ? String.valueOf(settings.getMaxSelectedJobsPerTa()) : "0") %></div>
+                        <div class="stat-meta"><%= settings.usesHourWorkloadLimit()
+                                ? "Hour cap (structured workload)"
+                                : settings.hasWorkloadLimit() ? "Job-count cap" : "No hard limit" %> | Auto-close <%= settings.isAutoClosePendingWhenLimitReached() ? "ON" : "OFF" %></div>
                     </div>
                 </div>
             </div>
@@ -128,9 +132,12 @@
 
             <section class="detail-card admin-settings-card">
                 <h3>Workload limit settings</h3>
-                <p>Set a hard cap for selected jobs per TA. When auto-close is on, once a TA reaches that cap, their other <strong>pending</strong> applications are automatically closed.</p>
+                <p><strong>Hour cap (recommended):</strong> set a maximum total of <em>estimated hours per selected TA</em> from each job’s structured work arrangements (same basis as MO workload planning). When auto-close is on, once a TA’s selected posts reach that hour total, their other <strong>pending</strong> applications are closed. New applications are also blocked if current selected hours plus this job’s estimate would exceed the cap.</p>
+                <p><strong>Job-count cap (legacy):</strong> used only when the hour cap is set to 0 — limits how many distinct selected posts a TA may hold.</p>
                 <form action="${pageContext.request.contextPath}/admin/dashboard" method="post" class="form form--admin-settings">
-                    <label for="admin-limit">Maximum selected jobs per TA</label>
+                    <label for="admin-hour-cap">Maximum workload hours per TA (0 = use job-count rule below)</label>
+                    <input id="admin-hour-cap" type="number" min="0" step="0.5" name="maxWorkloadHoursPerTa" value="<%= settings.getMaxWorkloadHoursPerTa() > 0 ? settings.getMaxWorkloadHoursPerTa() : "" %>" placeholder="e.g. 40">
+                    <label for="admin-limit">Maximum selected jobs per TA (only when hour cap is 0)</label>
                     <input id="admin-limit" type="number" min="0" name="maxSelectedJobsPerTa" value="<%= settings.getMaxSelectedJobsPerTa() %>">
                     <label class="checkbox-line" for="admin-auto-close">
                         <input id="admin-auto-close" type="checkbox" name="autoClosePendingWhenLimitReached" <%= settings.isAutoClosePendingWhenLimitReached() ? "checked" : "" %>>
@@ -150,7 +157,7 @@
             </div>
             <div class="widget-card">
                 <div class="widget-title">Rule Reminder</div>
-                <p class="widget-line">Setting the limit to 0 disables the hard cap.</p>
+                <p class="widget-line">Hour cap 0 with job cap 0 disables both caps.</p>
                 <p class="widget-line">Auto-close only affects pending applications, not interview-stage records.</p>
             </div>
         </aside>

@@ -1,16 +1,23 @@
 package bupt.ta.servlet;
 
+import bupt.ta.model.AdminSettings;
 import bupt.ta.model.Application;
 import bupt.ta.model.Job;
 import bupt.ta.model.User;
+import bupt.ta.service.AdminService;
 import bupt.ta.service.StudentNotificationService;
 import bupt.ta.storage.DataStorage;
+import bupt.ta.util.JobWorkloadEstimator;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.*;
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 
 public class ApplyJobServlet extends HttpServlet {
+
+    private final AdminService adminService = new AdminService();
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
@@ -57,6 +64,18 @@ public class ApplyJobServlet extends HttpServlet {
         if (storage.hasApplied(jobId, applicantId)) {
             resp.sendRedirect(req.getContextPath() + "/ta/jobs?error=already_applied");
             return;
+        }
+
+        AdminSettings adminSettings = storage.loadAdminSettings();
+        if (adminSettings.usesHourWorkloadLimit()) {
+            double cap = adminSettings.getMaxWorkloadHoursPerTa();
+            double already = adminService.sumSelectedWorkloadHours(storage, applicantId);
+            double add = JobWorkloadEstimator.estimatedHoursPerSelectedTa(job);
+            if (already + add > cap + 1e-9) {
+                String q = URLEncoder.encode(jobId, StandardCharsets.UTF_8);
+                resp.sendRedirect(req.getContextPath() + "/ta/apply-confirm?jobId=" + q + "&error=workload_hours_cap");
+                return;
+            }
         }
 
         Application app = new Application();

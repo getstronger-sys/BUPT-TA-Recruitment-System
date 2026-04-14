@@ -24,10 +24,14 @@ public class AdminWorkloadServlet extends HttpServlet {
         double avgWorkload = workloadRows.isEmpty()
                 ? 0
                 : workloadRows.stream().mapToInt(AdminService.WorkloadRow::getSelectedCount).average().orElse(0);
+        double avgEstimatedHours = workloadRows.isEmpty()
+                ? 0
+                : workloadRows.stream().mapToDouble(AdminService.WorkloadRow::getEstimatedSelectedHours).average().orElse(0);
 
         req.setAttribute("adminSettings", settings);
         req.setAttribute("workloadRows", workloadRows);
         req.setAttribute("avgWorkload", avgWorkload);
+        req.setAttribute("avgEstimatedHours", avgEstimatedHours);
         req.getRequestDispatcher("/admin/workload-v2.jsp").forward(req, resp);
     }
 }

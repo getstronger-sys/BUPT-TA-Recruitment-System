@@ -34,15 +34,29 @@ public class AdminDashboardServlet extends HttpServlet {
         AdminSettings settings = storage.loadAdminSettings();
 
         String limitRaw = req.getParameter("maxSelectedJobsPerTa");
+        String hoursRaw = req.getParameter("maxWorkloadHoursPerTa");
         int limit = settings.getMaxSelectedJobsPerTa();
+        double hourCap = settings.getMaxWorkloadHoursPerTa();
         String error = null;
         try {
             limit = limitRaw != null && !limitRaw.trim().isEmpty() ? Integer.parseInt(limitRaw.trim()) : 0;
             if (limit < 0) {
-                error = "Workload limit cannot be negative.";
+                error = "Maximum selected jobs per TA cannot be negative.";
             }
         } catch (NumberFormatException e) {
-            error = "Workload limit must be a valid number.";
+            error = "Maximum selected jobs per TA must be a valid integer.";
+        }
+        try {
+            if (error == null) {
+                hourCap = hoursRaw != null && !hoursRaw.trim().isEmpty()
+                        ? Double.parseDouble(hoursRaw.trim())
+                        : 0.0;
+                if (hourCap < 0 || Double.isNaN(hourCap) || Double.isInfinite(hourCap)) {
+                    error = "Maximum workload hours must be zero or a positive number.";
+                }
+            }
+        } catch (NumberFormatException e) {
+            error = "Maximum workload hours must be a valid number.";
         }
 
         if (error != null) {
@@ -55,6 +69,7 @@ public class AdminDashboardServlet extends HttpServlet {
         }
 
         settings.setMaxSelectedJobsPerTa(limit);
+        settings.setMaxWorkloadHoursPerTa(hourCap);
         settings.setAutoClosePendingWhenLimitReached(req.getParameter("autoClosePendingWhenLimitReached") != null);
         storage.saveAdminSettings(settings);
 

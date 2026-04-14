@@ -132,6 +132,11 @@ public class DataStorage {
             j1.setTaAllocationPlan("3 TAs: TA-1 handles labs and office hours; TA-2 covers coursework marking; TA-3 supports Piazza/forum and final exam script checks.");
             j1.setInterviewSchedule("2026-04-18 14:00-17:00, 15 minutes per candidate.");
             j1.setInterviewLocation("EECS Building Room 402 / Teams backup link.");
+            j1.setWorkArrangements(Arrays.asList(
+                    new WorkArrangementItem("Weekly lab support", "2 hours", 12, 1, "Wed 14:00-16:00"),
+                    new WorkArrangementItem("Coursework marking", "3 hours", 8, 1, null),
+                    new WorkArrangementItem("Office hours & forum", "1 hour", 10, 1, null)
+            ));
 
             Job j2 = new Job();
             j2.setId("J0002");
