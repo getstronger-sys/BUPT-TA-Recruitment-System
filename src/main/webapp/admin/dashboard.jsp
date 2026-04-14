@@ -46,6 +46,7 @@
                 <a class="active" href="${pageContext.request.contextPath}/admin/dashboard">Summary</a>
                 <a href="${pageContext.request.contextPath}/admin/workload">Workload</a>
                 <a href="${pageContext.request.contextPath}/admin/monitoring">Monitoring</a>
+                <a href="${pageContext.request.contextPath}/admin/email">Email</a>
                 <a href="${pageContext.request.contextPath}/admin/users">Users</a>
             </aside>
         </div>

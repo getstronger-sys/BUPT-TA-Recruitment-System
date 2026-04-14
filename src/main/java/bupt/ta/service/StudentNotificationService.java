@@ -1,5 +1,6 @@
 package bupt.ta.service;
 
+import bupt.ta.model.AdminSettings;
 import bupt.ta.model.Application;
 import bupt.ta.model.Job;
 import bupt.ta.model.SiteNotification;
@@ -52,9 +53,11 @@ public class StudentNotificationService {
                 + "You will receive in-app updates when the module organiser reviews your application.");
         n.setRead(false);
         storage.addSiteNotification(n);
+        AdminSettings adminSettings = storage.loadAdminSettings();
         sendNotificationEmail(storage, app.getApplicantId(),
                 "[TA Recruitment] Application received",
-                EMAIL_SERVICE.maybeAppendPortalLink(n.getBody(), "/ta/applications"));
+                EMAIL_SERVICE.maybeAppendPortalLink(n.getBody(), "/ta/applications", adminSettings),
+                adminSettings);
     }
 
     public static void notifyInterviewInvite(DataStorage storage, Application app, Job job) throws IOException {
@@ -72,9 +75,11 @@ public class StudentNotificationService {
                 + "the organiser may post time and location in-app.");
         n.setRead(false);
         storage.addSiteNotification(n);
+        AdminSettings adminSettings = storage.loadAdminSettings();
         sendNotificationEmail(storage, app.getApplicantId(),
                 "[TA Recruitment] Interview stage update",
-                EMAIL_SERVICE.maybeAppendPortalLink(n.getBody(), "/ta/applications"));
+                EMAIL_SERVICE.maybeAppendPortalLink(n.getBody(), "/ta/applications", adminSettings),
+                adminSettings);
     }
 
     public static void notifyWaitlist(DataStorage storage, Application app, Job job) throws IOException {
@@ -91,9 +96,11 @@ public class StudentNotificationService {
                 + " is now on the waitlist. You will be notified if the status changes.");
         n.setRead(false);
         storage.addSiteNotification(n);
+        AdminSettings adminSettings = storage.loadAdminSettings();
         sendNotificationEmail(storage, app.getApplicantId(),
                 "[TA Recruitment] Waitlist update",
-                EMAIL_SERVICE.maybeAppendPortalLink(n.getBody(), "/ta/applications"));
+                EMAIL_SERVICE.maybeAppendPortalLink(n.getBody(), "/ta/applications", adminSettings),
+                adminSettings);
     }
 
     public static void notifySelected(DataStorage storage, Application app, Job job) throws IOException {
@@ -109,9 +116,11 @@ public class StudentNotificationService {
         n.setBody("Congratulations — you were selected for " + jobLabel(job, app.getJobId()) + ".");
         n.setRead(false);
         storage.addSiteNotification(n);
+        AdminSettings adminSettings = storage.loadAdminSettings();
         sendNotificationEmail(storage, app.getApplicantId(),
                 "[TA Recruitment] Application successful",
-                EMAIL_SERVICE.maybeAppendPortalLink("Congratulations - you were selected for " + jobLabel(job, app.getJobId()) + ".", "/ta/applications"));
+                EMAIL_SERVICE.maybeAppendPortalLink("Congratulations - you were selected for " + jobLabel(job, app.getJobId()) + ".", "/ta/applications", adminSettings),
+                adminSettings);
     }
 
     public static void notifyRejected(DataStorage storage, Application app, Job job, String moNotes) throws IOException {
@@ -133,9 +142,11 @@ public class StudentNotificationService {
         n.setBody(body.toString());
         n.setRead(false);
         storage.addSiteNotification(n);
+        AdminSettings adminSettings = storage.loadAdminSettings();
         sendNotificationEmail(storage, app.getApplicantId(),
                 "[TA Recruitment] Application update",
-                EMAIL_SERVICE.maybeAppendPortalLink(n.getBody(), "/ta/applications"));
+                EMAIL_SERVICE.maybeAppendPortalLink(n.getBody(), "/ta/applications", adminSettings),
+                adminSettings);
     }
 
     public static void notifyInterviewDetails(DataStorage storage, Application app, Job job) throws IOException {
@@ -161,11 +172,14 @@ public class StudentNotificationService {
         n.setBody(body.toString());
         n.setRead(false);
         storage.addSiteNotification(n);
+        AdminSettings adminSettings = storage.loadAdminSettings();
         sendNotificationEmail(storage, app.getApplicantId(),
                 "[TA Recruitment] Interview information",
                 EMAIL_SERVICE.maybeAppendPortalLink(
                         n.getBody() + "\n\nYou can also download an interview calendar file from My Applications.",
-                        "/ta/applications"));
+                        "/ta/applications",
+                        adminSettings),
+                adminSettings);
     }
 
     public static void notifyAutoClosed(DataStorage storage, Application app, Job job, String note) throws IOException {
@@ -183,9 +197,11 @@ public class StudentNotificationService {
                 + " was closed automatically because you reached the maximum number of selected positions." + extra);
         n.setRead(false);
         storage.addSiteNotification(n);
+        AdminSettings adminSettings = storage.loadAdminSettings();
         sendNotificationEmail(storage, app.getApplicantId(),
                 "[TA Recruitment] Application closed automatically",
-                EMAIL_SERVICE.maybeAppendPortalLink(n.getBody(), "/ta/applications"));
+                EMAIL_SERVICE.maybeAppendPortalLink(n.getBody(), "/ta/applications", adminSettings),
+                adminSettings);
     }
 
     public static void notifyWithdrawn(DataStorage storage, Application app, Job job) throws IOException {
@@ -201,9 +217,11 @@ public class StudentNotificationService {
         n.setBody("You withdrew your application for " + jobLabel(job, app.getJobId()) + ".");
         n.setRead(false);
         storage.addSiteNotification(n);
+        AdminSettings adminSettings = storage.loadAdminSettings();
         sendNotificationEmail(storage, app.getApplicantId(),
                 "[TA Recruitment] Application withdrawn",
-                EMAIL_SERVICE.maybeAppendPortalLink(n.getBody(), "/ta/applications"));
+                EMAIL_SERVICE.maybeAppendPortalLink(n.getBody(), "/ta/applications", adminSettings),
+                adminSettings);
     }
 
     public static void notifyAutoPromotedFromWaitlist(DataStorage storage, Application app, Job job) throws IOException {
@@ -220,22 +238,35 @@ public class StudentNotificationService {
                 + " from the waitlist after a vacancy opened.");
         n.setRead(false);
         storage.addSiteNotification(n);
+        AdminSettings adminSettings = storage.loadAdminSettings();
         sendNotificationEmail(storage, app.getApplicantId(),
                 "[TA Recruitment] Promoted from waitlist",
-                EMAIL_SERVICE.maybeAppendPortalLink(n.getBody(), "/ta/applications"));
+                EMAIL_SERVICE.maybeAppendPortalLink(n.getBody(), "/ta/applications", adminSettings),
+                adminSettings);
     }
 
-    private static void sendNotificationEmail(DataStorage storage, String userId, String subject, String body) {
+    private static void sendNotificationEmail(DataStorage storage, String userId, String subject, String body, AdminSettings adminSettings) {
         if (storage == null || userId == null || userId.trim().isEmpty()) {
             return;
         }
         try {
+            // When email channel is disabled / not configured, do nothing (no send attempt, no warnings).
+            if (adminSettings != null) {
+                if (!EMAIL_SERVICE.isConfigured(adminSettings)) {
+                    return;
+                }
+            } else {
+                if (!EMAIL_SERVICE.isConfigured()) {
+                    return;
+                }
+            }
+
             String recipientEmail = resolveRecipientEmail(storage, userId);
             if (recipientEmail == null || recipientEmail.trim().isEmpty()) {
                 LOGGER.info("Skip email notification because recipient email is missing for userId=" + userId);
                 return;
             }
-            EmailNotificationService.SendResult result = EMAIL_SERVICE.sendPlainText(recipientEmail, subject, body);
+            EmailNotificationService.SendResult result = EMAIL_SERVICE.sendPlainText(recipientEmail, subject, body, adminSettings);
             if (result.isSuccess()) {
                 LOGGER.info("Email notification sent to " + recipientEmail + " for userId=" + userId
                         + " subject=" + subject);

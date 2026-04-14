@@ -1,5 +1,7 @@
 package bupt.ta.service;
 
+import bupt.ta.model.AdminSettings;
+
 import javax.mail.Authenticator;
 import javax.mail.Message;
 import javax.mail.MessagingException;
@@ -80,44 +82,58 @@ public class EmailNotificationService {
     }
 
     public EmailSettings loadSettings() {
+        return loadSettings(null);
+    }
+
+    public EmailSettings loadSettings(AdminSettings adminSettings) {
         Properties localProperties = loadLocalProperties();
         String host = firstNonBlank(
+                adminSetting(adminSettings != null ? adminSettings.getMailHost() : null),
                 property(localProperties, "ta.mail.host"),
                 System.getProperty("ta.mail.host"),
                 System.getenv("TA_MAIL_HOST"));
         int port = parseInt(firstNonBlank(
+                adminSetting(adminSettings != null ? String.valueOf(adminSettings.getMailPort()) : null),
                 property(localProperties, "ta.mail.port"),
                 System.getProperty("ta.mail.port"),
                 System.getenv("TA_MAIL_PORT")), 587);
         String username = firstNonBlank(
+                adminSetting(adminSettings != null ? adminSettings.getMailUsername() : null),
                 property(localProperties, "ta.mail.username"),
                 System.getProperty("ta.mail.username"),
                 System.getenv("TA_MAIL_USERNAME"));
         String password = firstNonBlank(
+                adminSetting(adminSettings != null ? adminSettings.getMailPassword() : null),
                 property(localProperties, "ta.mail.password"),
                 System.getProperty("ta.mail.password"),
                 System.getenv("TA_MAIL_PASSWORD"));
         String from = firstNonBlank(
+                adminSetting(adminSettings != null ? adminSettings.getMailFrom() : null),
                 property(localProperties, "ta.mail.from"),
                 System.getProperty("ta.mail.from"),
                 System.getenv("TA_MAIL_FROM"));
         boolean enabled = parseBoolean(firstNonBlank(
+                adminSetting(adminSettings != null ? String.valueOf(adminSettings.isMailEnabled()) : null),
                 property(localProperties, "ta.mail.enabled"),
                 System.getProperty("ta.mail.enabled"),
                 System.getenv("TA_MAIL_ENABLED")), true);
         boolean auth = parseBoolean(firstNonBlank(
+                adminSetting(adminSettings != null ? String.valueOf(adminSettings.isMailAuth()) : null),
                 property(localProperties, "ta.mail.auth"),
                 System.getProperty("ta.mail.auth"),
                 System.getenv("TA_MAIL_AUTH")), !isBlank(username));
         boolean startTls = parseBoolean(firstNonBlank(
+                adminSetting(adminSettings != null ? String.valueOf(adminSettings.isMailStartTls()) : null),
                 property(localProperties, "ta.mail.starttls"),
                 System.getProperty("ta.mail.starttls"),
                 System.getenv("TA_MAIL_STARTTLS")), true);
         boolean ssl = parseBoolean(firstNonBlank(
+                adminSetting(adminSettings != null ? String.valueOf(adminSettings.isMailSsl()) : null),
                 property(localProperties, "ta.mail.ssl"),
                 System.getProperty("ta.mail.ssl"),
                 System.getenv("TA_MAIL_SSL")), false);
         String appBaseUrl = trimToNull(firstNonBlank(
+                adminSetting(adminSettings != null ? adminSettings.getMailAppBaseUrl() : null),
                 property(localProperties, "ta.mail.appBaseUrl"),
                 System.getProperty("ta.mail.appBaseUrl"),
                 System.getenv("TA_MAIL_APP_BASE_URL")));
@@ -129,12 +145,20 @@ public class EmailNotificationService {
         return loadSettings().isConfigured();
     }
 
+    public boolean isConfigured(AdminSettings adminSettings) {
+        return loadSettings(adminSettings).isConfigured();
+    }
+
     public SendResult sendPlainText(String to, String subject, String body) {
+        return sendPlainText(to, subject, body, null);
+    }
+
+    public SendResult sendPlainText(String to, String subject, String body, AdminSettings adminSettings) {
         if (isBlank(to)) {
             return new SendResult(false, "Missing recipient email.");
         }
 
-        EmailSettings settings = loadSettings();
+        EmailSettings settings = loadSettings(adminSettings);
         if (!settings.isConfigured()) {
             return new SendResult(false, "SMTP is not configured.");
         }
@@ -175,7 +199,11 @@ public class EmailNotificationService {
     }
 
     public String maybeAppendPortalLink(String body, String relativePath) {
-        EmailSettings settings = loadSettings();
+        return maybeAppendPortalLink(body, relativePath, null);
+    }
+
+    public String maybeAppendPortalLink(String body, String relativePath, AdminSettings adminSettings) {
+        EmailSettings settings = loadSettings(adminSettings);
         if (!settings.isConfigured() || isBlank(settings.getAppBaseUrl()) || isBlank(relativePath)) {
             return body;
         }
@@ -184,6 +212,10 @@ public class EmailNotificationService {
                 : settings.getAppBaseUrl();
         String path = relativePath.startsWith("/") ? relativePath : "/" + relativePath;
         return body + "\n\nPortal: " + base + path;
+    }
+
+    private static String adminSetting(String value) {
+        return isBlank(value) ? null : value;
     }
 
     private static int parseInt(String raw, int defaultValue) {

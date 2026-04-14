@@ -1,5 +1,6 @@
 package bupt.ta.service;
 
+import bupt.ta.model.AdminSettings;
 import bupt.ta.model.SiteNotification;
 import bupt.ta.model.TAProfile;
 import bupt.ta.model.User;
@@ -59,6 +60,7 @@ public class NotificationReminderService {
     private final EmailNotificationService emailNotificationService = new EmailNotificationService();
 
     public ReminderPreview buildPreview(DataStorage storage) throws IOException {
+        AdminSettings adminSettings = storage.loadAdminSettings();
         List<SiteNotification> unread = loadUnreadNotifications(storage);
         Map<String, List<SiteNotification>> grouped = groupByRecipient(unread);
         int remindableUsers = 0;
@@ -68,7 +70,7 @@ public class NotificationReminderService {
             }
         }
         return new ReminderPreview(
-                emailNotificationService.isConfigured(),
+                emailNotificationService.isConfigured(adminSettings),
                 grouped.size(),
                 unread.size(),
                 remindableUsers
@@ -76,9 +78,10 @@ public class NotificationReminderService {
     }
 
     public ReminderResult sendUnreadReminders(DataStorage storage) throws IOException {
+        AdminSettings adminSettings = storage.loadAdminSettings();
         List<SiteNotification> unread = loadUnreadNotifications(storage);
         Map<String, List<SiteNotification>> grouped = groupByRecipient(unread);
-        if (!emailNotificationService.isConfigured()) {
+        if (!emailNotificationService.isConfigured(adminSettings)) {
             return new ReminderResult(false, grouped.size(), 0, grouped.size());
         }
 
@@ -97,8 +100,8 @@ public class NotificationReminderService {
             User user = storage.findUserById(userId);
             String displayName = resolveDisplayName(user, userId);
             String subject = "[TA Recruitment] You have unread updates";
-            String body = buildReminderBody(displayName, notes);
-            EmailNotificationService.SendResult result = emailNotificationService.sendPlainText(email, subject, body);
+            String body = buildReminderBody(displayName, notes, adminSettings);
+            EmailNotificationService.SendResult result = emailNotificationService.sendPlainText(email, subject, body, adminSettings);
             if (result.isSuccess()) {
                 emailed++;
             } else {
@@ -131,7 +134,7 @@ public class NotificationReminderService {
         return user != null && !isBlank(user.getEmail()) ? user.getEmail().trim() : null;
     }
 
-    private String buildReminderBody(String displayName, List<SiteNotification> notes) {
+    private String buildReminderBody(String displayName, List<SiteNotification> notes, AdminSettings adminSettings) {
         StringBuilder body = new StringBuilder();
         body.append("Hello ").append(displayName).append(",\n\n");
         body.append("You have ").append(notes.size()).append(" unread recruitment update");
@@ -153,7 +156,7 @@ public class NotificationReminderService {
             body.append("- and ").append(notes.size() - limit).append(" more unread updates\n");
         }
         body.append("\nPlease sign in and open Messages / My Applications to review them.");
-        return emailNotificationService.maybeAppendPortalLink(body.toString(), "/ta/messages");
+        return emailNotificationService.maybeAppendPortalLink(body.toString(), "/ta/messages", adminSettings);
     }
 
     private static String resolveDisplayName(User user, String fallback) {

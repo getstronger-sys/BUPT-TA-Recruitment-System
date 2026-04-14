@@ -281,6 +281,15 @@
     </servlet-mapping>
 
     <servlet>
+        <servlet-name>AdminEmailSettingsServlet</servlet-name>
+        <servlet-class>bupt.ta.servlet.AdminEmailSettingsServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>AdminEmailSettingsServlet</servlet-name>
+        <url-pattern>/admin/email</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
         <servlet-name>AdminWorkloadServlet</servlet-name>
         <servlet-class>bupt.ta.servlet.AdminWorkloadServlet</servlet-class>
     </servlet>
