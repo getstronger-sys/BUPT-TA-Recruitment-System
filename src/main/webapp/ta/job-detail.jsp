@@ -14,6 +14,7 @@
     request.setAttribute("taNavActive", "jobs");
     Job job = (Job) request.getAttribute("job");
     AIMatchService.MatchResult match = (AIMatchService.MatchResult) request.getAttribute("match");
+    String llmMatchInsight = (String) request.getAttribute("llmMatchInsight");
     if (job == null) {
         response.sendRedirect(request.getContextPath() + "/ta/jobs?error=job_not_found");
         return;
@@ -91,6 +92,13 @@
             <p class="ai-hint"><span class="match-badge" title="<%= escHtml(match.explanation) %>">Your match: <%= (int) match.score %>%</span>
                 <% if (match.matched != null && !match.matched.isEmpty()) { %> · Matched: <%= escHtml(String.join(", ", match.matched)) %><% } %>
             </p>
+            <% } %>
+            <% if (llmMatchInsight != null && !llmMatchInsight.trim().isEmpty()) { %>
+            <div class="llm-insight-card context-card">
+                <strong>AI match insight (DeepSeek)</strong>
+                <p class="pre-wrap llm-insight-body"><%= escHtml(llmMatchInsight) %></p>
+                <p class="muted-inline llm-insight-disclaimer">Rule-based score above is unchanged; this text is an additional narrative. Verify facts before decisions.</p>
+            </div>
             <% } %>
 
             <% if (job.getWorkArrangements() != null && !job.getWorkArrangements().isEmpty()) { %>

@@ -14,6 +14,7 @@
     Integer pendingObj = (Integer) request.getAttribute("pendingCount");
     Integer otherObj = (Integer) request.getAttribute("otherCount");
     Integer interviewObj = (Integer) request.getAttribute("interviewCount");
+    String llmApplicantInsight = (String) request.getAttribute("llmApplicantInsight");
     int selected = selectedObj != null ? selectedObj : 0;
     int pending = pendingObj != null ? pendingObj : 0;
     int interview = interviewObj != null ? interviewObj : 0;
@@ -63,6 +64,13 @@
         <strong>Review Tip</strong>
         <p>Check skills fit, availability and previous application status together for a balanced selection.</p>
     </div>
+    <% if (llmApplicantInsight != null && !llmApplicantInsight.trim().isEmpty()) { %>
+    <div class="llm-insight-card context-card">
+        <strong>AI applicant insight (DeepSeek)</strong>
+        <p class="pre-wrap llm-insight-body"><%= escHtml(llmApplicantInsight) %></p>
+        <p class="muted-inline llm-insight-disclaimer">Narrative only; verify against profile and interview.</p>
+    </div>
+    <% } %>
     <% } %>
     <% if (!hidePersonal) { %>
     <div class="detail-grid">

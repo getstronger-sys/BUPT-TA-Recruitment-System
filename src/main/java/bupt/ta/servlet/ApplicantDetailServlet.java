@@ -1,5 +1,7 @@
 package bupt.ta.servlet;
 
+import bupt.ta.ai.AIMatchService;
+import bupt.ta.llm.LlmMatchInsightService;
 import bupt.ta.model.Application;
 import bupt.ta.model.Job;
 import bupt.ta.model.TAProfile;
@@ -15,6 +17,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class ApplicantDetailServlet extends HttpServlet {
+
+    private final AIMatchService aiService = new AIMatchService();
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
@@ -57,6 +61,20 @@ public class ApplicantDetailServlet extends HttpServlet {
 
         TAProfile profile = storage.getProfileByUserId(applicantId);
         User user = storage.findUserById(applicantId);
+
+        Job insightJob = null;
+        for (Application a : relatedApps) {
+            Job j = jobMap.get(a.getJobId());
+            if (j != null) {
+                insightJob = j;
+                break;
+            }
+        }
+        if (insightJob != null && profile != null) {
+            AIMatchService.MatchResult match = aiService.matchSkills(profile, insightJob);
+            String moInsight = new LlmMatchInsightService().buildInsight(profile, insightJob, match);
+            req.setAttribute("llmApplicantInsight", moInsight);
+        }
 
         boolean hidePersonalInfo = relatedApps.stream().allMatch(a -> "WITHDRAWN".equals(a.getStatus()));
         req.setAttribute("hideApplicantPersonalInfo", hidePersonalInfo);

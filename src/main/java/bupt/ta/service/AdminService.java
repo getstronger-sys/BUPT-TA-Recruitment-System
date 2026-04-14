@@ -8,8 +8,10 @@ import bupt.ta.model.TAProfile;
 import bupt.ta.model.User;
 import bupt.ta.storage.DataStorage;
 import bupt.ta.util.JobActivity;
+import bupt.ta.util.JobWorkloadEstimator;
 
 import java.io.IOException;
+import java.util.Locale;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -25,7 +27,7 @@ import java.util.stream.Collectors;
 public class AdminService {
 
     public static final String STATUS_AUTO_CLOSED = "AUTO_CLOSED";
-    private static final String AUTO_CLOSE_NOTE_PREFIX = "[System] Closed automatically because the applicant reached the workload limit of ";
+    private static final String AUTO_CLOSE_NOTE_PREFIX = "[System] Closed automatically — workload cap reached (";
 
     public static class DashboardSummary {
         private final int totalJobs;
@@ -164,18 +166,21 @@ public class AdminService {
         private final String applicantName;
         private final int selectedCount;
         private final int pendingCount;
+        private final double estimatedSelectedHours;
         private final boolean aboveAverage;
         private final boolean atOrOverLimit;
         private final boolean aboveLimit;
         private final List<String> selectedJobTitles;
 
         public WorkloadRow(String applicantId, String applicantName, int selectedCount, int pendingCount,
+                           double estimatedSelectedHours,
                            boolean aboveAverage, boolean atOrOverLimit, boolean aboveLimit,
                            List<String> selectedJobTitles) {
             this.applicantId = applicantId;
             this.applicantName = applicantName;
             this.selectedCount = selectedCount;
             this.pendingCount = pendingCount;
+            this.estimatedSelectedHours = estimatedSelectedHours;
             this.aboveAverage = aboveAverage;
             this.atOrOverLimit = atOrOverLimit;
             this.aboveLimit = aboveLimit;
@@ -186,6 +191,7 @@ public class AdminService {
         public String getApplicantName() { return applicantName; }
         public int getSelectedCount() { return selectedCount; }
         public int getPendingCount() { return pendingCount; }
+        public double getEstimatedSelectedHours() { return estimatedSelectedHours; }
         public boolean isAboveAverage() { return aboveAverage; }
         public boolean isAtOrOverLimit() { return atOrOverLimit; }
         public boolean isAboveLimit() { return aboveLimit; }
@@ -197,18 +203,22 @@ public class AdminService {
         private final String applicantName;
         private final int selectedCount;
         private final int pendingCount;
+        /** Human-readable load vs cap, e.g. "3 jobs / cap 2" or "58.0 h / cap 40.0 h". */
+        private final String loadVsCap;
 
-        public LimitAlert(String applicantId, String applicantName, int selectedCount, int pendingCount) {
+        public LimitAlert(String applicantId, String applicantName, int selectedCount, int pendingCount, String loadVsCap) {
             this.applicantId = applicantId;
             this.applicantName = applicantName;
             this.selectedCount = selectedCount;
             this.pendingCount = pendingCount;
+            this.loadVsCap = loadVsCap != null ? loadVsCap : "";
         }
 
         public String getApplicantId() { return applicantId; }
         public String getApplicantName() { return applicantName; }
         public int getSelectedCount() { return selectedCount; }
         public int getPendingCount() { return pendingCount; }
+        public String getLoadVsCap() { return loadVsCap; }
     }
 
     public static class InterviewNoticeAlert {
@@ -775,10 +785,26 @@ public class AdminService {
         Map<String, Long> selectedByApplicant = apps.stream()
                 .filter(a -> "SELECTED".equals(a.getStatus()))
                 .collect(Collectors.groupingBy(Application::getApplicantId, Collectors.counting()));
+        Map<String, Job> jobMapForHours = jobs.stream().collect(Collectors.toMap(Job::getId, j -> j, (a, b) -> a));
+        Map<String, Double> selectedHoursByApplicant = new HashMap<>();
+        for (Application a : apps) {
+            if (!"SELECTED".equals(a.getStatus())) {
+                continue;
+            }
+            Job j = jobMapForHours.get(a.getJobId());
+            selectedHoursByApplicant.merge(a.getApplicantId(), JobWorkloadEstimator.estimatedHoursPerSelectedTa(j), Double::sum);
+        }
         int tasAtOrOverLimit = 0;
         if (settings != null && settings.hasWorkloadLimit()) {
-            int limit = settings.getMaxSelectedJobsPerTa();
-            tasAtOrOverLimit = (int) selectedByApplicant.values().stream().filter(v -> v >= limit).count();
+            if (settings.usesHourWorkloadLimit()) {
+                double cap = settings.getMaxWorkloadHoursPerTa();
+                tasAtOrOverLimit = (int) selectedHoursByApplicant.values().stream()
+                        .filter(h -> h >= cap - 1e-9)
+                        .count();
+            } else {
+                int limit = settings.getMaxSelectedJobsPerTa();
+                tasAtOrOverLimit = (int) selectedByApplicant.values().stream().filter(v -> v >= limit).count();
+            }
         }
 
         Map<String, Long> selectedByJob = apps.stream()
@@ -816,11 +842,13 @@ public class AdminService {
         Map<String, Integer> selectedByApplicant = new HashMap<>();
         Map<String, Integer> pendingByApplicant = new HashMap<>();
         Map<String, List<String>> selectedTitles = new HashMap<>();
+        Map<String, Double> selectedHoursByApplicant = new HashMap<>();
         for (Application app : apps) {
             String applicantId = app.getApplicantId();
             if ("SELECTED".equals(app.getStatus())) {
                 selectedByApplicant.merge(applicantId, 1, Integer::sum);
                 Job job = jobMap.get(app.getJobId());
+                selectedHoursByApplicant.merge(applicantId, JobWorkloadEstimator.estimatedHoursPerSelectedTa(job), Double::sum);
                 selectedTitles.computeIfAbsent(applicantId, key -> new ArrayList<>())
                         .add(job != null ? job.getTitle() : app.getJobId());
             } else if ("PENDING".equals(app.getStatus())) {
@@ -831,23 +859,40 @@ public class AdminService {
         double avgSelected = selectedByApplicant.isEmpty()
                 ? 0
                 : selectedByApplicant.values().stream().mapToInt(Integer::intValue).average().orElse(0);
+        double avgHours = selectedHoursByApplicant.isEmpty()
+                ? 0
+                : selectedHoursByApplicant.values().stream().mapToDouble(Double::doubleValue).average().orElse(0);
 
+        boolean hourMode = settings != null && settings.usesHourWorkloadLimit();
         List<WorkloadRow> rows = new ArrayList<>();
         for (Map.Entry<String, Integer> entry : selectedByApplicant.entrySet()) {
             String applicantId = entry.getKey();
             int selectedCount = entry.getValue();
             int pendingCount = pendingByApplicant.getOrDefault(applicantId, 0);
+            double estHours = selectedHoursByApplicant.getOrDefault(applicantId, 0.0);
             User user = userMap.get(applicantId);
-            boolean atOrOverLimit = settings != null && settings.hasWorkloadLimit()
-                    && selectedCount >= settings.getMaxSelectedJobsPerTa();
-            boolean aboveLimit = settings != null && settings.hasWorkloadLimit()
-                    && selectedCount > settings.getMaxSelectedJobsPerTa();
+            boolean atOrOverLimit;
+            boolean aboveLimit;
+            if (hourMode) {
+                double cap = settings.getMaxWorkloadHoursPerTa();
+                atOrOverLimit = estHours >= cap - 1e-9;
+                aboveLimit = estHours > cap + 1e-9;
+            } else if (settings != null && settings.getMaxSelectedJobsPerTa() > 0) {
+                int cap = settings.getMaxSelectedJobsPerTa();
+                atOrOverLimit = selectedCount >= cap;
+                aboveLimit = selectedCount > cap;
+            } else {
+                atOrOverLimit = false;
+                aboveLimit = false;
+            }
+            boolean aboveAverage = hourMode ? estHours > avgHours + 1e-9 : selectedCount > avgSelected;
             rows.add(new WorkloadRow(
                     applicantId,
                     resolveUserName(user, applicantId),
                     selectedCount,
                     pendingCount,
-                    selectedCount > avgSelected,
+                    estHours,
+                    aboveAverage,
                     atOrOverLimit,
                     aboveLimit,
                     selectedTitles.getOrDefault(applicantId, Collections.emptyList())
@@ -857,9 +902,30 @@ public class AdminService {
         rows.sort(Comparator
                 .comparing(WorkloadRow::isAboveLimit).reversed()
                 .thenComparing(WorkloadRow::isAtOrOverLimit).reversed()
+                .thenComparing(WorkloadRow::getEstimatedSelectedHours, Comparator.reverseOrder())
                 .thenComparing(WorkloadRow::getSelectedCount, Comparator.reverseOrder())
                 .thenComparing(WorkloadRow::getApplicantName, String.CASE_INSENSITIVE_ORDER));
         return rows;
+    }
+
+    /**
+     * Sums estimated hours ({@link JobWorkloadEstimator}) for each SELECTED application for this applicant.
+     */
+    public double sumSelectedWorkloadHours(DataStorage storage, String applicantId) throws IOException {
+        if (applicantId == null || applicantId.trim().isEmpty()) {
+            return 0.0;
+        }
+        List<Application> apps = storage.loadApplications();
+        List<Job> jobs = storage.loadJobs();
+        Map<String, Job> jobMap = jobs.stream().collect(Collectors.toMap(Job::getId, j -> j, (a, b) -> a));
+        double sum = 0.0;
+        for (Application a : apps) {
+            if (!applicantId.equals(a.getApplicantId()) || !"SELECTED".equals(a.getStatus())) {
+                continue;
+            }
+            sum += JobWorkloadEstimator.estimatedHoursPerSelectedTa(jobMap.get(a.getJobId()));
+        }
+        return sum;
     }
 
     public int enforceWorkloadLimitForApplicant(DataStorage storage, String applicantId, String keepApplicationId,
@@ -871,15 +937,28 @@ public class AdminService {
             return 0;
         }
 
-        List<Application> apps = storage.loadApplications();
-        long selectedCount = apps.stream()
-                .filter(a -> applicantId.equals(a.getApplicantId()))
-                .filter(a -> "SELECTED".equals(a.getStatus()))
-                .count();
-        if (selectedCount < settings.getMaxSelectedJobsPerTa()) {
-            return 0;
+        boolean useHours = settings.usesHourWorkloadLimit();
+        if (useHours) {
+            double cap = settings.getMaxWorkloadHoursPerTa();
+            double totalH = sumSelectedWorkloadHours(storage, applicantId);
+            if (totalH < cap - 1e-9) {
+                return 0;
+            }
+        } else {
+            if (settings.getMaxSelectedJobsPerTa() <= 0) {
+                return 0;
+            }
+            List<Application> appsCheck = storage.loadApplications();
+            long selectedCount = appsCheck.stream()
+                    .filter(a -> applicantId.equals(a.getApplicantId()))
+                    .filter(a -> "SELECTED".equals(a.getStatus()))
+                    .count();
+            if (selectedCount < settings.getMaxSelectedJobsPerTa()) {
+                return 0;
+            }
         }
 
+        List<Application> apps = storage.loadApplications();
         int closed = 0;
         for (Application app : apps) {
             if (!applicantId.equals(app.getApplicantId())) {
@@ -892,7 +971,15 @@ public class AdminService {
                 continue;
             }
             app.setStatus(STATUS_AUTO_CLOSED);
-            app.setNotes(appendAutoCloseNote(app.getNotes(), settings.getMaxSelectedJobsPerTa()));
+            String detail;
+            if (useHours) {
+                double totalH = sumSelectedWorkloadHours(storage, applicantId);
+                detail = String.format(Locale.US, "estimated %.1f h on selected posts, cap %.1f h)",
+                        totalH, settings.getMaxWorkloadHoursPerTa());
+            } else {
+                detail = String.format(Locale.US, "max %d selected posts)", settings.getMaxSelectedJobsPerTa());
+            }
+            app.setNotes(appendAutoCloseNote(app.getNotes(), detail));
             storage.saveApplication(app);
             Job closedJob = storage.getJobById(app.getJobId());
             StudentNotificationService.notifyAutoClosed(storage, app, closedJob, app.getNotes());
@@ -933,15 +1020,37 @@ public class AdminService {
             Map<String, Long> pendingByApplicant = apps.stream()
                     .filter(a -> "PENDING".equals(a.getStatus()))
                     .collect(Collectors.groupingBy(Application::getApplicantId, Collectors.counting()));
+            Map<String, Double> selectedHoursByApplicant = new HashMap<>();
+            for (Application a : apps) {
+                if (!"SELECTED".equals(a.getStatus())) {
+                    continue;
+                }
+                Job j = jobMap.get(a.getJobId());
+                selectedHoursByApplicant.merge(a.getApplicantId(), JobWorkloadEstimator.estimatedHoursPerSelectedTa(j), Double::sum);
+            }
+            boolean hourMode = settings.usesHourWorkloadLimit();
             for (Map.Entry<String, Long> entry : selectedByApplicant.entrySet()) {
                 long pendingCount = pendingByApplicant.getOrDefault(entry.getKey(), 0L);
-                if (entry.getValue() >= settings.getMaxSelectedJobsPerTa() && pendingCount > 0) {
+                boolean conflict;
+                String loadVsCap;
+                if (hourMode) {
+                    double h = selectedHoursByApplicant.getOrDefault(entry.getKey(), 0.0);
+                    double cap = settings.getMaxWorkloadHoursPerTa();
+                    conflict = pendingCount > 0 && h >= cap - 1e-9;
+                    loadVsCap = String.format(Locale.US, "%.1f h / cap %.1f h", h, cap);
+                } else {
+                    int cap = settings.getMaxSelectedJobsPerTa();
+                    conflict = pendingCount > 0 && entry.getValue() >= cap;
+                    loadVsCap = entry.getValue() + " jobs / cap " + cap;
+                }
+                if (conflict) {
                     User user = userMap.get(entry.getKey());
                     limitAlerts.add(new LimitAlert(
                             entry.getKey(),
                             resolveUserName(user, entry.getKey()),
                             entry.getValue().intValue(),
-                            (int) pendingCount
+                            (int) pendingCount,
+                            loadVsCap
                     ));
                 }
             }
@@ -1092,8 +1201,8 @@ public class AdminService {
         return 3;
     }
 
-    private static String appendAutoCloseNote(String existing, int limit) {
-        String autoNote = AUTO_CLOSE_NOTE_PREFIX + limit + ".";
+    private static String appendAutoCloseNote(String existing, String detailInsideParens) {
+        String autoNote = AUTO_CLOSE_NOTE_PREFIX + detailInsideParens;
         if (isBlank(existing)) {
             return autoNote;
         }

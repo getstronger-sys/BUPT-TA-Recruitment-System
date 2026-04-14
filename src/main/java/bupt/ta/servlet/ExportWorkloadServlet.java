@@ -24,7 +24,7 @@ public class ExportWorkloadServlet extends HttpServlet {
         resp.setHeader("Content-Disposition", "attachment; filename=\"ta_workload.csv\"");
         PrintWriter out = resp.getWriter();
         out.write("\uFEFF");
-        out.println("TA Name,User ID,# Selected Jobs,# Pending Jobs,Limit Status,Job Titles");
+        out.println("TA Name,User ID,# Selected Jobs,Est. Hours,# Pending Jobs,Limit Status,Job Titles");
         for (AdminService.WorkloadRow row : rows) {
             String csvName = "\"" + safeCsv(row.getApplicantName()) + "\"";
             String csvTitles = "\"" + safeCsv(String.join("; ", row.getSelectedJobTitles())) + "\"";
@@ -32,6 +32,7 @@ public class ExportWorkloadServlet extends HttpServlet {
                     : row.isAtOrOverLimit() ? "AT_LIMIT"
                     : "WITHIN_LIMIT";
             out.println(csvName + ",\"" + safeCsv(row.getApplicantId()) + "\"," + row.getSelectedCount()
+                    + "," + String.format(java.util.Locale.US, "%.2f", row.getEstimatedSelectedHours())
                     + "," + row.getPendingCount() + ",\"" + limitStatus + "\"," + csvTitles);
         }
         out.flush();

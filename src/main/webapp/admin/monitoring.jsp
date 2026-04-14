@@ -124,6 +124,7 @@
                         <tr>
                             <th>Applicant</th>
                             <th>User ID</th>
+                            <th>Load vs cap</th>
                             <th>Selected jobs</th>
                             <th>Pending jobs</th>
                         </tr>
@@ -133,6 +134,7 @@
                         <tr>
                             <td><a href="${pageContext.request.contextPath}/admin/ta-detail?userId=<%= row.getApplicantId() %>" class="admin-inline-link"><%= escHtml(row.getApplicantName()) %></a></td>
                             <td><%= escHtml(row.getApplicantId()) %></td>
+                            <td><%= escHtml(row.getLoadVsCap()) %></td>
                             <td><strong><%= row.getSelectedCount() %></strong></td>
                             <td><%= row.getPendingCount() %></td>
                         </tr>

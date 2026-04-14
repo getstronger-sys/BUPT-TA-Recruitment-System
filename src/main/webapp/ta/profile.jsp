@@ -46,7 +46,13 @@
                 <p>Profiles with complete academic details, experience, skills, availability and CV are easier for MO to review and shortlist. The <strong>Email</strong> field below is shown to module organisers when you apply (along with your Student ID and phone).</p>
             </div>
             <% if ("1".equals(request.getParameter("success"))) { %><p class="success">Profile saved.</p><% } %>
-            <% if ("cv_success".equals(request.getParameter("cv_success")) || "1".equals(request.getParameter("cv_success"))) { %><p class="success">CV uploaded successfully.</p><% } %>
+            <% if ("cv_success".equals(request.getParameter("cv_success")) || "1".equals(request.getParameter("cv_success"))) { %>
+            <p class="success">CV uploaded successfully.
+            <% if ("1".equals(request.getParameter("ai_fill"))) { %>
+             <strong>AI pre-filled empty profile fields</strong> from your document—please review and save.
+            <% } %>
+            </p>
+            <% } %>
             <% if ("no_file".equals(request.getParameter("error"))) { %><p class="error">Please select a file to upload.</p><% } %>
             <% if ("invalid_type".equals(request.getParameter("error"))) { %><p class="error">Invalid file type. Use PDF, DOC, DOCX or TXT.</p><% } %>
             <% if (request.getAttribute("errorMessage") != null) { %><p class="error"><%= escHtml((String) request.getAttribute("errorMessage")) %></p><% } %>
