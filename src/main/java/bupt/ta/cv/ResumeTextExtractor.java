@@ -10,35 +10,48 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Locale;
 
 /**
  * Extracts plain text from uploaded CV files for LLM processing.
- * Supports .txt, .pdf, .docx. Legacy .doc is not supported here.
+ * Supports .txt, .pdf, .docx. Legacy .doc is intentionally excluded here.
  */
 public final class ResumeTextExtractor {
 
     private static final int MAX_CHARS = 12_000;
+    private static final String TXT = ".txt";
+    private static final String PDF = ".pdf";
+    private static final String DOCX = ".docx";
 
     private ResumeTextExtractor() {
+    }
+
+    public static boolean supportsExtension(String extension) {
+        String normalized = normalizeExtension(extension);
+        return TXT.equals(normalized) || PDF.equals(normalized) || DOCX.equals(normalized);
+    }
+
+    public static String supportedExtensionsDisplay() {
+        return "PDF, DOCX or TXT";
     }
 
     public static String extract(Path absoluteFile, String extensionLowercase) throws IOException {
         if (absoluteFile == null || !Files.isRegularFile(absoluteFile)) {
             return "";
         }
-        String ext = extensionLowercase != null ? extensionLowercase.toLowerCase() : "";
+        String ext = normalizeExtension(extensionLowercase);
         String raw;
         switch (ext) {
-            case ".txt":
+            case TXT:
                 raw = Files.readString(absoluteFile, StandardCharsets.UTF_8);
                 break;
-            case ".pdf":
+            case PDF:
                 try (PDDocument doc = PDDocument.load(absoluteFile.toFile())) {
                     PDFTextStripper stripper = new PDFTextStripper();
                     raw = stripper.getText(doc);
                 }
                 break;
-            case ".docx":
+            case DOCX:
                 try (FileInputStream fis = new FileInputStream(absoluteFile.toFile());
                      XWPFDocument doc = new XWPFDocument(fis)) {
                     StringBuilder sb = new StringBuilder();
@@ -52,6 +65,10 @@ public final class ResumeTextExtractor {
                 return "";
         }
         return limit(raw);
+    }
+
+    private static String normalizeExtension(String extension) {
+        return extension == null ? "" : extension.trim().toLowerCase(Locale.ROOT);
     }
 
     private static String limit(String s) {

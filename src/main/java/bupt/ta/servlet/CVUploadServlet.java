@@ -11,7 +11,10 @@ import javax.servlet.annotation.MultipartConfig;
 import javax.servlet.http.*;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
+import java.util.Locale;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -19,6 +22,11 @@ import java.util.logging.Logger;
 public class CVUploadServlet extends HttpServlet {
 
     private static final Logger LOG = Logger.getLogger(CVUploadServlet.class.getName());
+    private static final String AI_STATUS_FILLED = "filled";
+    private static final String AI_STATUS_NO_TEXT = "no_text";
+    private static final String AI_STATUS_DISABLED = "disabled";
+    private static final String AI_STATUS_NO_CHANGES = "no_changes";
+    private static final String AI_STATUS_FAILED = "failed";
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
@@ -35,8 +43,8 @@ public class CVUploadServlet extends HttpServlet {
             resp.sendRedirect(req.getContextPath() + "/ta/profile?error=no_file");
             return;
         }
-        String ext = fileName.contains(".") ? fileName.substring(fileName.lastIndexOf('.')) : "";
-        if (!ext.matches("(?i)\\.(pdf|doc|docx|txt)")) {
+        String ext = extractExtension(fileName);
+        if (!ResumeTextExtractor.supportsExtension(ext)) {
             resp.sendRedirect(req.getContextPath() + "/ta/profile?error=invalid_type");
             return;
         }
@@ -60,23 +68,41 @@ public class CVUploadServlet extends HttpServlet {
         profile.setCvFilePath(relativePath);
 
         boolean aiFilled = false;
+        String aiStatus = AI_STATUS_FAILED;
         try {
             String plain = ResumeTextExtractor.extract(targetFile, ext);
-            DeepSeekClient ds = new DeepSeekClient();
-            if (ds.isConfigured() && plain != null && !plain.trim().isEmpty()) {
-                LlmProfileExtractionService extractor = new LlmProfileExtractionService(ds);
-                aiFilled = extractor.extractAndMergeProfile(profile, plain);
+            if (plain == null || plain.trim().isEmpty()) {
+                aiStatus = AI_STATUS_NO_TEXT;
+            } else {
+                DeepSeekClient ds = new DeepSeekClient();
+                if (!ds.isConfigured()) {
+                    aiStatus = AI_STATUS_DISABLED;
+                } else {
+                    LlmProfileExtractionService extractor = new LlmProfileExtractionService(ds);
+                    aiFilled = extractor.extractAndMergeProfile(profile, plain);
+                    aiStatus = aiFilled ? AI_STATUS_FILLED : AI_STATUS_NO_CHANGES;
+                }
             }
         } catch (Exception ex) {
+            aiStatus = AI_STATUS_FAILED;
             LOG.log(Level.WARNING, "CV text extraction or DeepSeek profile merge failed", ex);
         }
 
         storage.saveProfile(profile);
 
-        String redirect = req.getContextPath() + "/ta/profile?cv_success=1";
+        String redirect = req.getContextPath() + "/ta/profile?cv_success=1"
+                + "&ai_status=" + URLEncoder.encode(aiStatus, StandardCharsets.UTF_8.name());
         if (aiFilled) {
             redirect += "&ai_fill=1";
         }
         resp.sendRedirect(redirect);
+    }
+
+    private static String extractExtension(String fileName) {
+        if (fileName == null) {
+            return "";
+        }
+        int lastDot = fileName.lastIndexOf('.');
+        return lastDot >= 0 ? fileName.substring(lastDot).toLowerCase(Locale.ROOT) : "";
     }
 }
