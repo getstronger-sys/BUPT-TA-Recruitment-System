@@ -90,55 +90,55 @@ public class EmailNotificationService {
     public EmailSettings loadSettings(AdminSettings adminSettings) {
         Properties localProperties = loadLocalProperties();
         String host = firstNonBlank(
-                adminSetting(adminSettings != null ? adminSettings.getMailHost() : null),
-                property(localProperties, "ta.mail.host"),
                 System.getProperty("ta.mail.host"),
-                System.getenv("TA_MAIL_HOST"));
+                System.getenv("TA_MAIL_HOST"),
+                adminSetting(adminSettings != null ? adminSettings.getMailHost() : null),
+                property(localProperties, "ta.mail.host"));
         int port = parseInt(firstNonBlank(
-                adminSetting(adminSettings != null ? String.valueOf(adminSettings.getMailPort()) : null),
-                property(localProperties, "ta.mail.port"),
                 System.getProperty("ta.mail.port"),
-                System.getenv("TA_MAIL_PORT")), 587);
+                System.getenv("TA_MAIL_PORT"),
+                adminSetting(adminSettings != null ? String.valueOf(adminSettings.getMailPort()) : null),
+                property(localProperties, "ta.mail.port")), 587);
         String username = firstNonBlank(
-                adminSetting(adminSettings != null ? adminSettings.getMailUsername() : null),
-                property(localProperties, "ta.mail.username"),
                 System.getProperty("ta.mail.username"),
-                System.getenv("TA_MAIL_USERNAME"));
+                System.getenv("TA_MAIL_USERNAME"),
+                adminSetting(adminSettings != null ? adminSettings.getMailUsername() : null),
+                property(localProperties, "ta.mail.username"));
         String password = firstNonBlank(
-                adminSetting(adminSettings != null ? adminSettings.getMailPassword() : null),
-                property(localProperties, "ta.mail.password"),
                 System.getProperty("ta.mail.password"),
-                System.getenv("TA_MAIL_PASSWORD"));
+                System.getenv("TA_MAIL_PASSWORD"),
+                adminSetting(adminSettings != null ? adminSettings.getMailPassword() : null),
+                property(localProperties, "ta.mail.password"));
         String from = firstNonBlank(
-                adminSetting(adminSettings != null ? adminSettings.getMailFrom() : null),
-                property(localProperties, "ta.mail.from"),
                 System.getProperty("ta.mail.from"),
-                System.getenv("TA_MAIL_FROM"));
+                System.getenv("TA_MAIL_FROM"),
+                adminSetting(adminSettings != null ? adminSettings.getMailFrom() : null),
+                property(localProperties, "ta.mail.from"));
         boolean enabled = parseBoolean(firstNonBlank(
-                adminSetting(adminSettings != null ? String.valueOf(adminSettings.isMailEnabled()) : null),
-                property(localProperties, "ta.mail.enabled"),
                 System.getProperty("ta.mail.enabled"),
-                System.getenv("TA_MAIL_ENABLED")), true);
+                System.getenv("TA_MAIL_ENABLED"),
+                adminSetting(adminSettings != null ? String.valueOf(adminSettings.isMailEnabled()) : null),
+                property(localProperties, "ta.mail.enabled")), true);
         boolean auth = parseBoolean(firstNonBlank(
-                adminSetting(adminSettings != null ? String.valueOf(adminSettings.isMailAuth()) : null),
-                property(localProperties, "ta.mail.auth"),
                 System.getProperty("ta.mail.auth"),
-                System.getenv("TA_MAIL_AUTH")), !isBlank(username));
+                System.getenv("TA_MAIL_AUTH"),
+                adminSetting(adminSettings != null ? String.valueOf(adminSettings.isMailAuth()) : null),
+                property(localProperties, "ta.mail.auth")), !isBlank(username));
         boolean startTls = parseBoolean(firstNonBlank(
-                adminSetting(adminSettings != null ? String.valueOf(adminSettings.isMailStartTls()) : null),
-                property(localProperties, "ta.mail.starttls"),
                 System.getProperty("ta.mail.starttls"),
-                System.getenv("TA_MAIL_STARTTLS")), true);
+                System.getenv("TA_MAIL_STARTTLS"),
+                adminSetting(adminSettings != null ? String.valueOf(adminSettings.isMailStartTls()) : null),
+                property(localProperties, "ta.mail.starttls")), true);
         boolean ssl = parseBoolean(firstNonBlank(
-                adminSetting(adminSettings != null ? String.valueOf(adminSettings.isMailSsl()) : null),
-                property(localProperties, "ta.mail.ssl"),
                 System.getProperty("ta.mail.ssl"),
-                System.getenv("TA_MAIL_SSL")), false);
+                System.getenv("TA_MAIL_SSL"),
+                adminSetting(adminSettings != null ? String.valueOf(adminSettings.isMailSsl()) : null),
+                property(localProperties, "ta.mail.ssl")), false);
         String appBaseUrl = trimToNull(firstNonBlank(
-                adminSetting(adminSettings != null ? adminSettings.getMailAppBaseUrl() : null),
-                property(localProperties, "ta.mail.appBaseUrl"),
                 System.getProperty("ta.mail.appBaseUrl"),
-                System.getenv("TA_MAIL_APP_BASE_URL")));
+                System.getenv("TA_MAIL_APP_BASE_URL"),
+                adminSetting(adminSettings != null ? adminSettings.getMailAppBaseUrl() : null),
+                property(localProperties, "ta.mail.appBaseUrl")));
 
         return new EmailSettings(host, port, username, password, from, enabled, auth, startTls, ssl, appBaseUrl);
     }
