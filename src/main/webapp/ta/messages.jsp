@@ -109,7 +109,7 @@
 <div class="container<%= listMode ? " container--ta-messages-list" : "" %>">
     <div class="nav top-nav">
         <span class="brand">BUPT Teaching Assistant Recruitment System</span>
-        <span class="user"><%= session.getAttribute("realName") %> | <a href="<%= ctx %>/logout">Logout</a></span>
+        <div class="user user-inline-actions"><span><%= session.getAttribute("realName") %> |</span><form action="<%= ctx %>/logout" method="post" class="inline-form logout-form"><%@ include file="/WEB-INF/jspf/csrf-hidden.jspf" %><button type="submit" class="logout-button">Logout</button></form></div>
     </div>
     <div class="page-layout">
         <div class="left-nav-wrap">
@@ -145,6 +145,7 @@
                 <% if (!detail.isRead()) { %>
                 <div class="ta-message-detail-actions">
                     <form action="<%= ctx %>/ta/messages" method="post" class="inline-form">
+                        <%@ include file="/WEB-INF/jspf/csrf-hidden.jspf" %>
                         <input type="hidden" name="action" value="markRead">
                         <input type="hidden" name="notificationId" value="<%= detail.getId() %>">
                         <input type="hidden" name="fromPage" value="<%= backPage %>">
@@ -184,6 +185,7 @@
                 </div>
                 <% if (allTotal > 0 && unreadTotal > 0) { %>
                 <form action="<%= ctx %>/ta/messages" method="post" class="ta-messages-markall">
+                    <%@ include file="/WEB-INF/jspf/csrf-hidden.jspf" %>
                     <input type="hidden" name="action" value="markAllRead">
                     <input type="hidden" name="page" value="<%= curPage %>">
                     <input type="hidden" name="box" value="<%= escHtml(listFilter) %>">
@@ -213,6 +215,7 @@
             <% } else { %>
             <div class="ta-messages-list-layout">
             <form action="<%= ctx %>/ta/messages" method="post" class="ta-messages-batch-form" id="ta-messages-batch-form">
+                <%@ include file="/WEB-INF/jspf/csrf-hidden.jspf" %>
                 <input type="hidden" name="page" value="<%= curPage %>">
                 <input type="hidden" name="box" value="<%= escHtml(listFilter) %>">
                 <div class="ta-messages-toolbar">
@@ -282,6 +285,7 @@
                 <p class="widget-line"><a href="<%= ctx %>/ta/messages?page=<%= request.getAttribute("listPageForBack") != null ? (Integer) request.getAttribute("listPageForBack") : 1 %><%= boxQuery(listFilter) %>">Return to list</a></p>
                 <% if (unreadDetail > 0) { %>
                 <form action="<%= ctx %>/ta/messages" method="post" class="ta-messages-markall-widget">
+                    <%@ include file="/WEB-INF/jspf/csrf-hidden.jspf" %>
                     <input type="hidden" name="action" value="markAllRead">
                     <input type="hidden" name="page" value="1">
                     <input type="hidden" name="box" value="all">

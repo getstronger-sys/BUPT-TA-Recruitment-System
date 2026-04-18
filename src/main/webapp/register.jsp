@@ -33,6 +33,7 @@
             %>
 
             <form action="${pageContext.request.contextPath}/register" method="post" class="form form--auth">
+                <%@ include file="/WEB-INF/jspf/csrf-hidden.jspf" %>
                 <label for="reg-username">Username *</label>
                 <input id="reg-username" type="text" name="username" required autocomplete="username" value="<%= escHtml((String) request.getAttribute("username")) %>">
                 <label for="reg-password">Password * (min 4 characters)</label>

@@ -38,6 +38,7 @@
             <% } %>
 
             <form action="${pageContext.request.contextPath}/forgot-password" method="post" class="form form--auth">
+                <%@ include file="/WEB-INF/jspf/csrf-hidden.jspf" %>
                 <label for="fp-username">Username *</label>
                 <input id="fp-username" type="text" name="username" required autocomplete="username" value="<%= escHtml((String) request.getAttribute("username")) %>">
 
