@@ -1,5 +1,6 @@
 target/
-data/
+data/*
+!data/mail.properties.example
 .m2/
 
 # IDE and OS files (optional, safe to ignore)
