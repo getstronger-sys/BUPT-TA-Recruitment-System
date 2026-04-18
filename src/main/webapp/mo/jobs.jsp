@@ -43,7 +43,7 @@
 <div class="container">
     <div class="nav top-nav">
         <span class="brand">BUPT Teaching Assistant Recruitment System</span>
-        <span class="user"><%= session.getAttribute("realName") %> | <a href="${pageContext.request.contextPath}/logout">Logout</a></span>
+        <div class="user user-inline-actions"><span><%= session.getAttribute("realName") %> |</span><form action="${pageContext.request.contextPath}/logout" method="post" class="inline-form logout-form"><%@ include file="/WEB-INF/jspf/csrf-hidden.jspf" %><button type="submit" class="logout-button">Logout</button></form></div>
     </div>
     <div class="page-layout">
         <div class="left-nav-wrap">
@@ -63,6 +63,7 @@
                    String errMsg = err;
                    if ("not_pending".equals(err)) errMsg = "Only pending applications can be moved to interview.";
                    else if ("not_interview".equals(err)) errMsg = "Only interview-stage applications can be selected.";
+                   else if ("capacity_reached".equals(err)) errMsg = "Planned recruit slots are already full for this posting.";
                    else if ("not_applicant".equals(err)) errMsg = "This action is not allowed for the current status.";
                    else if ("batch_empty".equals(err)) errMsg = "Select at least one row.";
                    else if ("invalid_action".equals(err)) errMsg = "Invalid action.";
@@ -272,12 +273,14 @@
                         <a href="<%= moCtx %>/mo/job?jobId=<%= java.net.URLEncoder.encode(j.getId(), "UTF-8") %>" class="btn btn-primary">Full detail</a>
                         <% if ("OPEN".equals(j.getStatus())) { %>
                         <form action="${pageContext.request.contextPath}/mo/close-job" method="post">
+                            <%@ include file="/WEB-INF/jspf/csrf-hidden.jspf" %>
                             <input type="hidden" name="jobId" value="<%= j.getId() %>">
                             <input type="hidden" name="action" value="close">
                             <button type="submit" class="btn btn-danger">Close Job</button>
                         </form>
                         <% } else { %>
                         <form action="${pageContext.request.contextPath}/mo/close-job" method="post">
+                            <%@ include file="/WEB-INF/jspf/csrf-hidden.jspf" %>
                             <input type="hidden" name="jobId" value="<%= j.getId() %>">
                             <input type="hidden" name="action" value="reopen">
                             <button type="submit" class="btn btn-primary">Reopen</button>
@@ -303,6 +306,7 @@
                     <div class="empty-applicants-card">No applications yet.</div>
                     <% } else if ("pending".equals(moView)) { %>
                     <% if (!moReadOnly) { %><form id="<%= batchPendingFormId %>" action="${pageContext.request.contextPath}/mo/batch-applicants" method="post" class="batch-form-hidden">
+                        <%@ include file="/WEB-INF/jspf/csrf-hidden.jspf" %>
                         <input type="hidden" name="action" value="toInterview">
                         <input type="hidden" name="returnJobId" value="<%= j.getId() %>">
                     </form><% } %>
@@ -392,6 +396,7 @@
                             <div class="decision-bar decision-bar-recorded"><p class="muted-inline">Read-only: no actions available for inactive postings.</p></div>
                             <% } else { %><div class="decision-bar">
                                 <form action="${pageContext.request.contextPath}/mo/select-applicant" method="post" class="decision-form decision-form-inline">
+                                    <%@ include file="/WEB-INF/jspf/csrf-hidden.jspf" %>
                                     <input type="hidden" name="applicationId" value="<%= a.getId() %>">
                                     <input type="text" name="notes" placeholder="Optional notes" class="note-input">
                                     <div class="decision-buttons decision-buttons-inline">
@@ -434,6 +439,7 @@
                     <% } else if ("interview".equals(moView)) { %>
                     <% if (!interviewRecs.isEmpty()) { %>
                     <% if (!moReadOnly) { %><form id="<%= batchNoticeFormId %>" action="${pageContext.request.contextPath}/mo/batch-applicants" method="post" class="notice-form-fields">
+                        <%@ include file="/WEB-INF/jspf/csrf-hidden.jspf" %>
                         <input type="hidden" name="action" value="sendNotice">
                         <input type="hidden" name="returnJobId" value="<%= j.getId() %>">
                         <div class="notice-fields">
@@ -521,6 +527,7 @@
                             <div class="decision-bar decision-bar-recorded"><p class="muted-inline">Read-only: no actions available for inactive postings.</p></div>
                             <% } else { %><div class="decision-bar">
                                 <form action="${pageContext.request.contextPath}/mo/select-applicant" method="post" class="decision-form decision-form-inline">
+                                    <%@ include file="/WEB-INF/jspf/csrf-hidden.jspf" %>
                                     <input type="hidden" name="applicationId" value="<%= a.getId() %>">
                                     <input type="text" name="notes" placeholder="Optional notes" class="note-input">
                                     <div class="decision-buttons decision-buttons-inline">
@@ -592,6 +599,7 @@
                             <div class="decision-bar decision-bar-recorded"><p class="muted-inline">Read-only: no actions available for inactive postings.</p></div>
                             <% } else { %><div class="decision-bar">
                                 <form action="${pageContext.request.contextPath}/mo/select-applicant" method="post" class="decision-form decision-form-inline">
+                                    <%@ include file="/WEB-INF/jspf/csrf-hidden.jspf" %>
                                     <input type="hidden" name="applicationId" value="<%= a.getId() %>">
                                     <input type="text" name="notes" placeholder="Optional notes" class="note-input">
                                     <div class="decision-buttons decision-buttons-inline">

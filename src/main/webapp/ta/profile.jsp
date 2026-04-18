@@ -26,7 +26,7 @@
 <div class="container">
     <div class="nav top-nav">
         <span class="brand">BUPT Teaching Assistant Recruitment System</span>
-        <span class="user"><%= session.getAttribute("realName") %> | <a href="${pageContext.request.contextPath}/logout">Logout</a></span>
+        <div class="user user-inline-actions"><span><%= session.getAttribute("realName") %> |</span><form action="${pageContext.request.contextPath}/logout" method="post" class="inline-form logout-form"><%@ include file="/WEB-INF/jspf/csrf-hidden.jspf" %><button type="submit" class="logout-button">Logout</button></form></div>
     </div>
     <div class="page-layout">
         <div class="left-nav-wrap">
@@ -46,18 +46,28 @@
                 <p>Profiles with complete academic details, experience, skills, availability and CV are easier for MO to review and shortlist. The <strong>Email</strong> field below is shown to module organisers when you apply (along with your Student ID and phone).</p>
             </div>
             <% if ("1".equals(request.getParameter("success"))) { %><p class="success">Profile saved.</p><% } %>
+            <% String aiStatus = request.getParameter("ai_status"); %>
             <% if ("cv_success".equals(request.getParameter("cv_success")) || "1".equals(request.getParameter("cv_success"))) { %>
             <p class="success">CV uploaded successfully.
-            <% if ("1".equals(request.getParameter("ai_fill"))) { %>
-             <strong>AI pre-filled empty profile fields</strong> from your document—please review and save.
+            <% if ("filled".equals(aiStatus) || "1".equals(request.getParameter("ai_fill"))) { %>
+             <strong>AI pre-filled empty profile fields</strong> from your CV. Please review and save.
+            <% } else if ("no_changes".equals(aiStatus)) { %>
+             AI reviewed the CV, but there were no empty profile fields to update.
+            <% } else if ("no_text".equals(aiStatus)) { %>
+             AI prefill was skipped because we could not extract readable text from the file.
+            <% } else if ("disabled".equals(aiStatus)) { %>
+             AI prefill is currently unavailable because the AI service is not configured.
+            <% } else if ("failed".equals(aiStatus)) { %>
+             AI prefill was skipped because the file could not be processed automatically.
             <% } %>
             </p>
             <% } %>
             <% if ("no_file".equals(request.getParameter("error"))) { %><p class="error">Please select a file to upload.</p><% } %>
-            <% if ("invalid_type".equals(request.getParameter("error"))) { %><p class="error">Invalid file type. Use PDF, DOC, DOCX or TXT.</p><% } %>
+            <% if ("invalid_type".equals(request.getParameter("error"))) { %><p class="error">Invalid file type. Use <%= escHtml(bupt.ta.cv.ResumeTextExtractor.supportedExtensionsDisplay()) %>.</p><% } %>
             <% if (request.getAttribute("errorMessage") != null) { %><p class="error"><%= escHtml((String) request.getAttribute("errorMessage")) %></p><% } %>
 
             <form action="${pageContext.request.contextPath}/ta/profile" method="post" class="form form--ta ta-profile-form">
+                <%@ include file="/WEB-INF/jspf/csrf-hidden.jspf" %>
                 <% if (returnUrlAttr != null && !returnUrlAttr.isEmpty()) { %>
                 <input type="hidden" name="returnUrl" value="<%= escHtml(returnUrlAttr) %>">
                 <% } %>
@@ -97,7 +107,8 @@
             </p>
             <% } %>
             <form action="${pageContext.request.contextPath}/ta/upload-cv" method="post" enctype="multipart/form-data" class="form form--ta form--ta-cv">
-                <label>Select file (PDF, DOC, DOCX, TXT, max 5MB)</label>
+                <%@ include file="/WEB-INF/jspf/csrf-hidden.jspf" %>
+                <label>Select file (<%= escHtml(bupt.ta.cv.ResumeTextExtractor.supportedExtensionsDisplay()) %>, max 5MB)</label>
                 <input type="file" name="cvFile" accept=".pdf,.doc,.docx,.txt">
                 <button type="submit">Upload CV</button>
             </form>
@@ -112,7 +123,7 @@
             </div>
             <div class="widget-card">
                 <div class="widget-title">CV Reminder</div>
-                <p class="widget-line">Accepted: PDF, DOC, DOCX, TXT</p>
+                <p class="widget-line">Accepted: <%= escHtml(bupt.ta.cv.ResumeTextExtractor.supportedExtensionsDisplay()) %></p>
                 <p class="widget-line">Max upload size: 5MB</p>
             </div>
         </aside>

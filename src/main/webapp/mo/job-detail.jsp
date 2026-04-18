@@ -75,7 +75,7 @@
 <div class="container">
     <div class="nav top-nav">
         <span class="brand">BUPT Teaching Assistant Recruitment System</span>
-        <span class="user"><%= session.getAttribute("realName") %> | <a href="${pageContext.request.contextPath}/logout">Logout</a></span>
+        <div class="user user-inline-actions"><span><%= session.getAttribute("realName") %> |</span><form action="${pageContext.request.contextPath}/logout" method="post" class="inline-form logout-form"><%@ include file="/WEB-INF/jspf/csrf-hidden.jspf" %><button type="submit" class="logout-button">Logout</button></form></div>
     </div>
     <div class="page-layout">
         <div class="left-nav-wrap">
@@ -118,6 +118,7 @@
             <h2 class="job-wa-heading">Work arrangements</h2>
             <p class="muted-inline job-wa-edit-hint">You can change <strong>TA count</strong> per row anytime; other columns reflect what was set at posting time.</p>
             <form action="<%= moCtx %>/mo/update-work-ta-counts" method="post" class="form job-wa-ta-form">
+                <%@ include file="/WEB-INF/jspf/csrf-hidden.jspf" %>
                 <input type="hidden" name="jobId" value="<%= escHtml(job.getId()) %>">
                 <table class="job-wa-table">
                     <thead>

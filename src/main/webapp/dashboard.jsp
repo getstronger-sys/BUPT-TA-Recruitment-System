@@ -9,7 +9,10 @@
 <html>
 <head><meta charset="UTF-8"><%@ include file="/WEB-INF/jspf/viewport.jspf" %><title>Access Denied</title><link rel="stylesheet" href="<%= request.getContextPath() %>/css/style.css"></head>
 <body><div class="container"><p class="error">Access denied. You do not have permission for this page.</p>
-<a href="<%= request.getContextPath() %>/logout">Logout</a></div></body></html>
+<form action="<%= request.getContextPath() %>/logout" method="post" class="inline-form logout-form">
+<%@ include file="/WEB-INF/jspf/csrf-hidden.jspf" %>
+<button type="submit" class="logout-button">Logout</button>
+</form></div></body></html>
 <% return; }
     String role = (String) session.getAttribute("role");
     if (role == null) role = "";

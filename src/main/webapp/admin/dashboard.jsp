@@ -32,7 +32,7 @@
 <div class="container">
     <div class="nav top-nav">
         <span class="brand">BUPT Teaching Assistant Recruitment System</span>
-        <span class="user"><%= session.getAttribute("realName") %> | <a href="${pageContext.request.contextPath}/logout">Logout</a></span>
+        <div class="user user-inline-actions"><span><%= session.getAttribute("realName") %> |</span><form action="${pageContext.request.contextPath}/logout" method="post" class="inline-form logout-form"><%@ include file="/WEB-INF/jspf/csrf-hidden.jspf" %><button type="submit" class="logout-button">Logout</button></form></div>
     </div>
     <div class="page-layout">
         <div class="left-nav-wrap">
@@ -136,6 +136,7 @@
                 <p><strong>Hour cap (recommended):</strong> set a maximum total of <em>estimated hours per selected TA</em> from each job’s structured work arrangements (same basis as MO workload planning). When auto-close is on, once a TA’s selected posts reach that hour total, their other <strong>pending</strong> applications are closed. New applications are also blocked if current selected hours plus this job’s estimate would exceed the cap.</p>
                 <p><strong>Job-count cap (legacy):</strong> used only when the hour cap is set to 0 — limits how many distinct selected posts a TA may hold.</p>
                 <form action="${pageContext.request.contextPath}/admin/dashboard" method="post" class="form form--admin-settings">
+                    <%@ include file="/WEB-INF/jspf/csrf-hidden.jspf" %>
                     <label for="admin-hour-cap">Maximum workload hours per TA (0 = use job-count rule below)</label>
                     <input id="admin-hour-cap" type="number" min="0" step="0.5" name="maxWorkloadHoursPerTa" value="<%= settings.getMaxWorkloadHoursPerTa() > 0 ? settings.getMaxWorkloadHoursPerTa() : "" %>" placeholder="e.g. 40">
                     <label for="admin-limit">Maximum selected jobs per TA (only when hour cap is 0)</label>

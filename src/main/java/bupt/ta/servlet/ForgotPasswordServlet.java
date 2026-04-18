@@ -5,6 +5,7 @@ import bupt.ta.model.User;
 import bupt.ta.service.EmailNotificationService;
 import bupt.ta.service.EmailOtpService;
 import bupt.ta.storage.DataStorage;
+import bupt.ta.util.PasswordHasher;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -106,7 +107,7 @@ public class ForgotPasswordServlet extends HttpServlet {
                 if (!verify.isSuccess()) {
                     error = "Email verification failed: " + verify.getDetail();
                 } else {
-                    user.setPassword(newPassword);
+                    user.setPassword(PasswordHasher.hash(newPassword));
                     storage.saveUser(user);
                     resp.sendRedirect(req.getContextPath() + "/index.jsp?reset=1");
                     return;

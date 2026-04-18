@@ -8,6 +8,8 @@ import bupt.ta.model.SiteNotification;
 import bupt.ta.model.TAProfile;
 import bupt.ta.model.User;
 import bupt.ta.storage.DataStorage;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -23,6 +25,16 @@ import static org.junit.Assert.assertTrue;
 public class AdminServiceTest {
 
     private final AdminService adminService = new AdminService();
+
+    @Before
+    public void disableMailForTests() {
+        System.setProperty("ta.mail.enabled", "false");
+    }
+
+    @After
+    public void clearMailOverride() {
+        System.clearProperty("ta.mail.enabled");
+    }
 
     @Test
     public void testAdminSettingsPersistence() throws Exception {
