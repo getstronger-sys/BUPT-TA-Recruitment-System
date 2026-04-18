@@ -33,10 +33,12 @@
         return datePart + " " + timePart;
     }
 %>
-<%
+<% 
     request.setAttribute("taNavActive", "applications");
     List<Object[]> applications = (List<Object[]>) request.getAttribute("applications");
     if (applications == null) applications = java.util.Collections.emptyList();
+    Map<String, Integer> slotCountByJobId = (Map<String, Integer>) request.getAttribute("slotCountByJobId");
+    if (slotCountByJobId == null) slotCountByJobId = java.util.Collections.emptyMap();
     Integer pointsObj = (Integer) request.getAttribute("points");
     int points = pointsObj != null ? pointsObj : 0;
     Integer selectedObj = (Integer) request.getAttribute("selectedCount");
@@ -75,7 +77,7 @@
             <h1>My Applications</h1>
             <div class="context-card">
                 <strong>How it works</strong>
-                <p>Pending &rarr; Interview (see time and location posted by the module organiser) &rarr; Selected or rejected. Interview notices stay in-app, and email reminders can be enabled by system configuration.</p>
+                <p>Pending &rarr; Interview (book a slot if the module organiser opens one) &rarr; Selected or rejected. Interview notices stay in-app, and email reminders can be enabled by system configuration.</p>
             </div>
             <% if ("1".equals(request.getParameter("success"))) { %><p class="success">Application submitted successfully!</p><% } %>
             <% if ("1".equals(request.getParameter("withdrawn"))) { %><p class="success">Application withdrawn.</p><% } %>
@@ -124,6 +126,8 @@
                     boolean hasNotice = (a.getInterviewTime() != null && !a.getInterviewTime().isEmpty())
                             || (a.getInterviewLocation() != null && !a.getInterviewLocation().isEmpty())
                             || (a.getInterviewAssessment() != null && !a.getInterviewAssessment().isEmpty());
+                    boolean hasBookableSlots = slotCountByJobId.getOrDefault(a.getJobId(), 0) > 0;
+                    boolean hasBookedSlot = a.getInterviewSlotId() != null && !a.getInterviewSlotId().trim().isEmpty();
                     String noticeTplId = "ta-notice-" + a.getId().replaceAll("[^A-Za-z0-9]", "_");
                     String jobTitle = j != null ? j.getTitle() : a.getJobId();
                     String timeN = a.getInterviewTime() != null ? a.getInterviewTime() : "";
@@ -165,8 +169,17 @@
                             </div>
                         </template>
                         <div><a class="mini-link" href="${pageContext.request.contextPath}/ta/interview-calendar?applicationId=<%= a.getId() %>">Download .ics</a></div>
+                        <% if (hasBookableSlots) { %>
+                        <div><a class="mini-link" href="${pageContext.request.contextPath}/ta/interview-booking?applicationId=<%= a.getId() %>"><%= hasBookedSlot ? "Change booking" : "Book slot" %></a></div>
+                        <% } %>
                         <% } else if ("INTERVIEW".equals(a.getStatus())) { %>
+                        <% if (hasBookableSlots) { %>
+                        <a class="mini-link" href="${pageContext.request.contextPath}/ta/interview-booking?applicationId=<%= a.getId() %>">Book interview slot</a>
+                        <% } else { %>
                         <span class="muted-inline">Awaiting organiser</span>
+                        <% } %>
+                        <% } else if ("WAITLIST".equals(a.getStatus()) && hasBookableSlots) { %>
+                        <a class="mini-link" href="${pageContext.request.contextPath}/ta/interview-booking?applicationId=<%= a.getId() %>"><%= hasBookedSlot ? "Review booking" : "Optional slot booking" %></a>
                         <% } else { %>
                         <span class="muted-inline">&mdash;</span>
                         <% } %>

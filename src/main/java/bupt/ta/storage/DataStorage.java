@@ -28,6 +28,7 @@ public class DataStorage {
     private static final String SETTINGS_FILE = "settings.json";
     private static final String SITE_NOTIFICATIONS_FILE = "site-notifications.json";
     private static final String EMAIL_OTP_FILE = "email-otp.json";
+    private static final String INTERVIEW_SLOTS_FILE = "interview-slots.json";
     private static final Map<Path, ReentrantReadWriteLock> LOCKS_BY_BASE_PATH = new ConcurrentHashMap<>();
 
     private final Path basePath;
@@ -742,6 +743,54 @@ public class DataStorage {
             saveUnlocked(APPLICATIONS_FILE, apps);
         });
         return app;
+    }
+
+    // ---- Interview slots ----
+    public List<InterviewSlot> loadInterviewSlots() throws IOException {
+        List<InterviewSlot> list = load(INTERVIEW_SLOTS_FILE, new TypeToken<ArrayList<InterviewSlot>>(){}.getType());
+        return list != null ? list : new ArrayList<>();
+    }
+
+    public InterviewSlot getInterviewSlotById(String slotId) throws IOException {
+        return loadInterviewSlots().stream()
+                .filter(s -> Objects.equals(slotId, s.getId()))
+                .findFirst()
+                .orElse(null);
+    }
+
+    public List<InterviewSlot> getInterviewSlotsByJobId(String jobId) throws IOException {
+        return loadInterviewSlots().stream()
+                .filter(s -> Objects.equals(jobId, s.getJobId()))
+                .sorted(Comparator.comparing(InterviewSlot::getStartsAt, Comparator.nullsLast(String::compareTo)))
+                .collect(Collectors.toList());
+    }
+
+    public void saveInterviewSlot(InterviewSlot slot) throws IOException {
+        List<InterviewSlot> slots = loadInterviewSlots();
+        slots.removeIf(s -> Objects.equals(s.getId(), slot.getId()));
+        slots.add(slot);
+        save(INTERVIEW_SLOTS_FILE, slots);
+    }
+
+    public InterviewSlot addInterviewSlot(InterviewSlot slot) throws IOException {
+        List<InterviewSlot> slots = loadInterviewSlots();
+        String newId = "S" + String.format("%05d", slots.size() + 1);
+        slot.setId(newId);
+        if (slot.getCreatedAt() == null || slot.getCreatedAt().trim().isEmpty()) {
+            slot.setCreatedAt(java.time.LocalDateTime.now().toString());
+        }
+        slots.add(slot);
+        save(INTERVIEW_SLOTS_FILE, slots);
+        return slot;
+    }
+
+    public boolean deleteInterviewSlot(String slotId) throws IOException {
+        List<InterviewSlot> slots = loadInterviewSlots();
+        boolean changed = slots.removeIf(s -> Objects.equals(slotId, s.getId()));
+        if (changed) {
+            save(INTERVIEW_SLOTS_FILE, slots);
+        }
+        return changed;
     }
 
     // ---- Admin settings ----

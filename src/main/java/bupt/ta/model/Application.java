@@ -15,6 +15,8 @@ public class Application {
     private String interviewTime;
     private String interviewLocation;
     private String interviewAssessment;
+    private String interviewSlotId;
+    private String interviewBookedAt;
     /** TA-selected preferred role/slot for this job, e.g. TA-1, TA-2. */
     private String preferredRole;
 
@@ -43,6 +45,10 @@ public class Application {
     public void setInterviewLocation(String interviewLocation) { this.interviewLocation = interviewLocation; }
     public String getInterviewAssessment() { return interviewAssessment; }
     public void setInterviewAssessment(String interviewAssessment) { this.interviewAssessment = interviewAssessment; }
+    public String getInterviewSlotId() { return interviewSlotId; }
+    public void setInterviewSlotId(String interviewSlotId) { this.interviewSlotId = interviewSlotId; }
+    public String getInterviewBookedAt() { return interviewBookedAt; }
+    public void setInterviewBookedAt(String interviewBookedAt) { this.interviewBookedAt = interviewBookedAt; }
     public String getPreferredRole() { return preferredRole; }
     public void setPreferredRole(String preferredRole) { this.preferredRole = preferredRole; }
 }

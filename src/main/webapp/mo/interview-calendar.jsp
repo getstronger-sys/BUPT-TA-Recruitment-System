@@ -50,7 +50,7 @@
         </div>
         <main class="main-panel mo-main">
             <h1>Interview calendar</h1>
-            <p class="mo-page-lead">All <strong>Interview</strong> and <strong>Waitlist</strong> applications across your postings, grouped by interview date when a time string is recognised. Times are parsed from the per-applicant interview notice field (use formats like <code>2026-04-10 14:00</code>).</p>
+            <p class="mo-page-lead">All <strong>Interview</strong> and <strong>Waitlist</strong> applications across your postings, grouped by booked slot time when available, or by the legacy per-applicant interview notice field otherwise.</p>
 
             <div class="stats-row mo-cal-stats">
                 <div class="stat-card">

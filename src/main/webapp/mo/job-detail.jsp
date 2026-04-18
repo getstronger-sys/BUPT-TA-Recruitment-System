@@ -2,6 +2,7 @@
 <%@ include file="/WEB-INF/jspf/html-esc.jspf" %>
 <%@ page import="bupt.ta.model.Job" %>
 <%@ page import="bupt.ta.model.WorkArrangementItem" %>
+<%@ page import="bupt.ta.service.InterviewBookingService.SlotSummary" %>
 <%@ page import="bupt.ta.util.WorkQuotaPlanner" %>
 <%@ page import="java.util.ArrayList" %>
 <%@ page import="java.util.List" %>
@@ -32,6 +33,8 @@
     String interviewLocation = job.getInterviewLocation() != null && !job.getInterviewLocation().isEmpty() ? escHtml(job.getInterviewLocation()) : "&mdash;";
     int plannedRecruits = job.getTaSlots() > 0 ? job.getTaSlots() : 1;
     WorkQuotaPlanner.Recommendation quotaRec = WorkQuotaPlanner.recommend(job.getWorkArrangements(), plannedRecruits);
+    List<SlotSummary> slotSummaries = (List<SlotSummary>) request.getAttribute("slotSummaries");
+    if (slotSummaries == null) slotSummaries = new ArrayList<>();
     List<String[]> weekMilestones = new ArrayList<>();
     String timelineRaw = job.getExamTimeline() != null ? job.getExamTimeline() : "";
     Matcher weekMatcher = Pattern.compile("(?:Week|W)\\s*(\\d{1,2})\\s*[:\\-]?\\s*([^;\\n]+)?", Pattern.CASE_INSENSITIVE).matcher(timelineRaw);
@@ -95,10 +98,14 @@
             <% if ("1".equals(request.getParameter("taCountsUpdated"))) { %>
             <p class="success">TA counts per work item were updated. Summary text was refreshed while planned recruits stayed unchanged.</p>
             <% } %>
+            <% if ("1".equals(request.getParameter("slotSaved"))) { %>
+            <p class="success">Interview slot updated successfully.</p>
+            <% } %>
             <% String waErr = request.getParameter("error");
                if ("wa_count_mismatch".equals(waErr)) { %><p class="error">Could not update TA counts (form mismatch). Please try again.</p><% }
                else if ("wa_ta_invalid".equals(waErr)) { %><p class="error">Each row needs at least 1 TA.</p><% }
                else if ("planned_ta_invalid".equals(waErr)) { %><p class="error">Planned recruits must be at least 1.</p><% } %>
+            <% if (request.getParameter("slotError") != null) { %><p class="error"><%= escHtml(request.getParameter("slotError")) %></p><% } %>
             <h1><%= safeTitle %></h1>
             <p class="job-detail-meta">
                 <span class="status-pill <%= isOpen ? "status-pill-pending" : "status-pill-rejected" %>"><%= escHtml(job.getStatus()) %></span>
@@ -267,6 +274,76 @@
                 </article>
                 <% } %>
             </div>
+
+            <section class="detail-card">
+                <h2>Bookable interview slots</h2>
+                <p class="muted-inline job-wa-edit-hint">Create reusable interview times here. Applicants in Interview or Waitlist can book, change, or cancel their own slot.</p>
+                <% if (!moPastJobsPage) { %>
+                <form action="<%= moCtx %>/mo/interview-slots" method="post" class="form">
+                    <input type="hidden" name="jobId" value="<%= escHtml(job.getId()) %>">
+                    <input type="hidden" name="action" value="create">
+                    <label>Start time</label>
+                    <input type="datetime-local" name="startsAt" required>
+                    <label>Duration (minutes)</label>
+                    <input type="number" name="durationMinutes" min="15" value="45" required>
+                    <label>Capacity</label>
+                    <input type="number" name="capacity" min="1" value="1" required>
+                    <label>Location</label>
+                    <input type="text" name="location" required placeholder="Room or Teams link">
+                    <label>Notes</label>
+                    <textarea name="notes" placeholder="Optional instructions for applicants"></textarea>
+                    <button type="submit" class="btn btn-primary">Add interview slot</button>
+                </form>
+                <% } %>
+
+                <% if (slotSummaries.isEmpty()) { %>
+                <p class="section-empty">No bookable interview slots yet.</p>
+                <% } else { %>
+                <div class="table-scroll-wrap">
+                    <table class="admin-table mo-cal-table">
+                        <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Location</th>
+                            <th>Capacity</th>
+                            <th>Booked applicants</th>
+                            <th>Notes</th>
+                            <% if (!moPastJobsPage) { %><th></th><% } %>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <% for (SlotSummary summary : slotSummaries) { %>
+                        <tr>
+                            <td class="pre-wrap"><%= escHtml(summary.getSlot().getStartsAt()) %><br><span class="muted-inline">to <%= escHtml(summary.getSlot().getEndsAt()) %></span></td>
+                            <td class="pre-wrap"><%= escHtml(summary.getSlot().getLocation()) %></td>
+                            <td><%= summary.getBookedCount() %> / <%= summary.getCapacity() %></td>
+                            <td>
+                                <% if (summary.getBookedApplications().isEmpty()) { %>
+                                <span class="muted-inline">No bookings yet</span>
+                                <% } else { %>
+                                <% for (bupt.ta.model.Application booked : summary.getBookedApplications()) { %>
+                                <div><%= escHtml(booked.getApplicantName() != null ? booked.getApplicantName() : booked.getApplicantId()) %> (<%= escHtml(booked.getStatus()) %>)</div>
+                                <% } %>
+                                <% } %>
+                            </td>
+                            <td class="pre-wrap"><%= escHtml(summary.getSlot().getNotes() != null && !summary.getSlot().getNotes().isEmpty() ? summary.getSlot().getNotes() : "-") %></td>
+                            <% if (!moPastJobsPage) { %>
+                            <td>
+                                <form action="<%= moCtx %>/mo/interview-slots" method="post" class="inline-form">
+                                    <input type="hidden" name="jobId" value="<%= escHtml(job.getId()) %>">
+                                    <input type="hidden" name="slotId" value="<%= escHtml(summary.getSlot().getId()) %>">
+                                    <input type="hidden" name="action" value="delete">
+                                    <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Delete this interview slot?');">Delete</button>
+                                </form>
+                            </td>
+                            <% } %>
+                        </tr>
+                        <% } %>
+                        </tbody>
+                    </table>
+                </div>
+                <% } %>
+            </section>
 
             <div class="context-card job-detail-overview">
                 <strong>Overview</strong>

@@ -1,6 +1,7 @@
 package bupt.ta.servlet;
 
 import bupt.ta.model.Job;
+import bupt.ta.service.InterviewBookingService;
 import bupt.ta.storage.DataStorage;
 import bupt.ta.util.JobActivity;
 
@@ -14,6 +15,8 @@ import java.io.IOException;
  * MO view of a full job posting (same fields as TA-facing detail, without apply flow).
  */
 public class MOJobDetailServlet extends HttpServlet {
+
+    private final InterviewBookingService bookingService = new InterviewBookingService();
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
@@ -32,6 +35,7 @@ public class MOJobDetailServlet extends HttpServlet {
         }
 
         req.setAttribute("job", job);
+        req.setAttribute("slotSummaries", bookingService.buildSlotSummaries(storage, job.getId()));
         req.setAttribute("moListPath", JobActivity.listPathFor(job));
         req.setAttribute("moPastJobsPage", JobActivity.isInactive(job));
         req.setAttribute("moJobsBase", req.getContextPath() + JobActivity.listPathFor(job));

@@ -222,6 +222,31 @@ public class DataStorageTest {
     }
 
     @Test
+    public void testInterviewSlotStorage() throws Exception {
+        Path tmp = Files.createTempDirectory("ta-test");
+        try {
+            DataStorage storage = new DataStorage(tmp.toString());
+            InterviewSlot slot = new InterviewSlot();
+            slot.setJobId("J0001");
+            slot.setStartsAt("2026-04-20T14:00");
+            slot.setEndsAt("2026-04-20T14:45");
+            slot.setLocation("Room 402");
+            slot.setCapacity(2);
+            slot.setNotes("Bring teaching demo slides.");
+            storage.addInterviewSlot(slot);
+
+            assertNotNull(slot.getId());
+            assertEquals(1, storage.getInterviewSlotsByJobId("J0001").size());
+            assertEquals("Room 402", storage.getInterviewSlotById(slot.getId()).getLocation());
+
+            assertTrue(storage.deleteInterviewSlot(slot.getId()));
+            assertNull(storage.getInterviewSlotById(slot.getId()));
+        } finally {
+            deleteRecursive(tmp);
+        }
+    }
+
+    @Test
     public void testConcurrentApplicationAddsRemainUniqueAcrossStorageInstances() throws Exception {
         Path tmp = Files.createTempDirectory("ta-test");
         int workers = 20;
