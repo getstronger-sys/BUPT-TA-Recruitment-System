@@ -7,6 +7,7 @@ import bupt.ta.service.AdminService;
 import bupt.ta.service.StudentNotificationService;
 import bupt.ta.storage.DataStorage;
 import bupt.ta.util.JobActivity;
+import bupt.ta.util.JobSelectionCapacity;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.*;
@@ -80,6 +81,11 @@ public class SelectApplicantServlet extends HttpServlet {
         } else if ("select".equalsIgnoreCase(action)) {
             if (!"INTERVIEW".equals(target.getStatus()) && !"WAITLIST".equals(target.getStatus())) {
                 redirectJobs(resp, req, listPath, "interview", jobId, "error=not_interview");
+                return;
+            }
+            if (!JobSelectionCapacity.hasVacancy(job, storage.getApplicationsByJobId(jobId), target.getId())) {
+                String fullView = "WAITLIST".equals(target.getStatus()) ? "waitlist" : "interview";
+                redirectJobs(resp, req, listPath, fullView, jobId, "error=capacity_reached");
                 return;
             }
             target.setStatus("SELECTED");
