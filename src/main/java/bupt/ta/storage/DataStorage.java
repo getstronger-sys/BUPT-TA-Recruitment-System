@@ -1,6 +1,7 @@
 package bupt.ta.storage;
 
 import bupt.ta.model.*;
+import bupt.ta.util.PasswordHasher;
 import com.google.gson.*;
 import com.google.gson.reflect.TypeToken;
 
@@ -446,7 +447,7 @@ public class DataStorage {
     }
 
     private User createUser(String id, String uname, String pwd, String role, String email, String name) {
-        User u = new User(id, uname, pwd, role);
+        User u = new User(id, uname, PasswordHasher.hash(pwd), role);
         u.setEmail(email);
         u.setRealName(name);
         return u;

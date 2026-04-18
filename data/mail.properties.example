@@ -1,0 +1,15 @@
+# Copy this file to data/mail.properties for local development.
+# Keep real SMTP credentials out of git.
+
+ta.mail.enabled=false
+ta.mail.host=
+ta.mail.port=587
+ta.mail.username=
+ta.mail.password=
+ta.mail.from=
+ta.mail.starttls=true
+ta.mail.sslProtocols=TLSv1.2
+ta.mail.connectionTimeoutMs=10000
+ta.mail.timeoutMs=10000
+ta.mail.writeTimeoutMs=10000
+ta.mail.appBaseUrl=http://localhost:8080/ta-recruitment
