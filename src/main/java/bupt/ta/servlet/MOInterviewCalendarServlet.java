@@ -1,6 +1,7 @@
 package bupt.ta.servlet;
 
 import bupt.ta.model.Application;
+import bupt.ta.model.InterviewSlot;
 import bupt.ta.model.Job;
 import bupt.ta.storage.DataStorage;
 
@@ -127,6 +128,10 @@ public class MOInterviewCalendarServlet extends HttpServlet {
         }
 
         List<Application> apps = storage.loadApplications();
+        Map<String, InterviewSlot> slotById = new HashMap<>();
+        for (InterviewSlot slot : storage.loadInterviewSlots()) {
+            slotById.put(slot.getId(), slot);
+        }
         List<CalendarRow> scheduled = new ArrayList<>();
         List<CalendarRow> unscheduled = new ArrayList<>();
 
@@ -138,8 +143,11 @@ public class MOInterviewCalendarServlet extends HttpServlet {
             if (job == null) {
                 continue;
             }
-            String timeRaw = a.getInterviewTime() != null ? a.getInterviewTime().trim() : "";
-            String loc = a.getInterviewLocation() != null ? a.getInterviewLocation().trim() : "";
+            InterviewSlot slot = a.getInterviewSlotId() != null ? slotById.get(a.getInterviewSlotId()) : null;
+            String timeRaw = slot != null && slot.getStartsAt() != null ? slot.getStartsAt().trim()
+                    : (a.getInterviewTime() != null ? a.getInterviewTime().trim() : "");
+            String loc = slot != null && slot.getLocation() != null ? slot.getLocation().trim()
+                    : (a.getInterviewLocation() != null ? a.getInterviewLocation().trim() : "");
             String applicant = a.getApplicantName() != null && !a.getApplicantName().isEmpty()
                     ? a.getApplicantName() : a.getApplicantId();
             String title = job.getTitle() != null ? job.getTitle() : a.getJobId();

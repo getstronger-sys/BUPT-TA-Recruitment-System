@@ -1,6 +1,7 @@
 package bupt.ta.servlet;
 
 import bupt.ta.model.Application;
+import bupt.ta.model.InterviewSlot;
 import bupt.ta.model.Job;
 import bupt.ta.service.AdminService;
 import bupt.ta.storage.DataStorage;
@@ -9,6 +10,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.*;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -22,7 +24,12 @@ public class ApplicationStatusServlet extends HttpServlet {
 
         List<Application> applications = storage.getApplicationsByApplicantId(applicantId);
         List<Job> allJobs = storage.loadJobs();
+        List<InterviewSlot> allSlots = storage.loadInterviewSlots();
         Map<String, Job> jobMap = allJobs.stream().collect(Collectors.toMap(Job::getId, j -> j));
+        Map<String, Integer> slotCountByJobId = new HashMap<>();
+        for (InterviewSlot slot : allSlots) {
+            slotCountByJobId.merge(slot.getJobId(), 1, Integer::sum);
+        }
 
         List<Object[]> enriched = new ArrayList<>();
         int selectedCount = 0;
@@ -50,6 +57,7 @@ public class ApplicationStatusServlet extends HttpServlet {
         req.setAttribute("waitlistCount", waitlistCount);
         req.setAttribute("rejectedCount", rejectedCount);
         req.setAttribute("autoClosedCount", autoClosedCount);
+        req.setAttribute("slotCountByJobId", slotCountByJobId);
         req.setAttribute("points", points);
         req.getRequestDispatcher("/ta/applications.jsp").forward(req, resp);
     }
