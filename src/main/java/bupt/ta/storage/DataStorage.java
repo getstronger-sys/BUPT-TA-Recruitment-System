@@ -10,6 +10,7 @@ import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 
@@ -26,23 +27,26 @@ public class DataStorage {
     private static final String SETTINGS_FILE = "settings.json";
     private static final String SITE_NOTIFICATIONS_FILE = "site-notifications.json";
     private static final String EMAIL_OTP_FILE = "email-otp.json";
+    private static final Map<Path, ReentrantReadWriteLock> LOCKS_BY_BASE_PATH = new ConcurrentHashMap<>();
 
     private final Path basePath;
     private final Gson gson;
     private final boolean seedDemoData;
-    private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
+    private final ReentrantReadWriteLock lock;
 
     public DataStorage(ServletContext ctx) {
         this.basePath = resolveServletBasePath(ctx);
         this.gson = new GsonBuilder().setPrettyPrinting().create();
         this.seedDemoData = true;
+        this.lock = LOCKS_BY_BASE_PATH.computeIfAbsent(this.basePath, key -> new ReentrantReadWriteLock());
         ensureDataDir();
     }
 
     public DataStorage(String baseDir) {
-        this.basePath = Paths.get(baseDir, DATA_DIR);
+        this.basePath = Paths.get(baseDir, DATA_DIR).toAbsolutePath().normalize();
         this.gson = new GsonBuilder().setPrettyPrinting().create();
         this.seedDemoData = false;
+        this.lock = LOCKS_BY_BASE_PATH.computeIfAbsent(this.basePath, key -> new ReentrantReadWriteLock());
         ensureDataDir();
     }
 
@@ -86,11 +90,14 @@ public class DataStorage {
     }
 
     private void ensureDataDir() {
+        lock.writeLock().lock();
         try {
             Files.createDirectories(basePath);
             initSampleDataIfEmpty();
         } catch (IOException e) {
             throw new RuntimeException("Cannot create data directory: " + basePath, e);
+        } finally {
+            lock.writeLock().unlock();
         }
     }
 
@@ -453,28 +460,84 @@ public class DataStorage {
     }
 
     private <T> void save(String filename, T data) throws IOException {
+        withWriteLock(() -> saveUnlocked(filename, data));
+    }
+
+    private <T> T load(String filename, Type type) throws IOException {
+        return withReadLock(() -> loadUnlocked(filename, type));
+    }
+
+    private <T> void saveUnlocked(String filename, T data) throws IOException {
+        Path file = basePath.resolve(filename);
+        String json = gson.toJson(data);
+        Files.write(file, json.getBytes(StandardCharsets.UTF_8), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+    }
+
+    private <T> T loadUnlocked(String filename, Type type) throws IOException {
+        Path file = basePath.resolve(filename);
+        if (!Files.exists(file) || Files.size(file) == 0) {
+            return null;
+        }
+        String json = new String(Files.readAllBytes(file), StandardCharsets.UTF_8);
+        return gson.fromJson(json, type);
+    }
+
+    private List<User> loadUsersUnlocked() throws IOException {
+        List<User> list = loadUnlocked(USERS_FILE, new TypeToken<ArrayList<User>>(){}.getType());
+        return list != null ? list : new ArrayList<>();
+    }
+
+    private List<TAProfile> loadProfilesUnlocked() throws IOException {
+        List<TAProfile> list = loadUnlocked(PROFILES_FILE, new TypeToken<ArrayList<TAProfile>>(){}.getType());
+        return list != null ? list : new ArrayList<>();
+    }
+
+    private List<Job> loadJobsUnlocked() throws IOException {
+        List<Job> list = loadUnlocked(JOBS_FILE, new TypeToken<ArrayList<Job>>(){}.getType());
+        return list != null ? list : new ArrayList<>();
+    }
+
+    private List<Application> loadApplicationsUnlocked() throws IOException {
+        List<Application> list = loadUnlocked(APPLICATIONS_FILE, new TypeToken<ArrayList<Application>>(){}.getType());
+        return list != null ? list : new ArrayList<>();
+    }
+
+    private List<SiteNotification> loadSiteNotificationsUnlocked() throws IOException {
+        List<SiteNotification> list = loadUnlocked(SITE_NOTIFICATIONS_FILE, new TypeToken<ArrayList<SiteNotification>>(){}.getType());
+        return list != null ? list : new ArrayList<>();
+    }
+
+    private List<EmailOtpRecord> loadEmailOtpRecordsUnlocked() throws IOException {
+        List<EmailOtpRecord> list = loadUnlocked(EMAIL_OTP_FILE, new TypeToken<ArrayList<EmailOtpRecord>>(){}.getType());
+        return list != null ? list : new ArrayList<>();
+    }
+
+    private <T> T withReadLock(IOSupplier<T> supplier) throws IOException {
+        lock.readLock().lock();
+        try {
+            return supplier.get();
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    private void withWriteLock(IOAction action) throws IOException {
         lock.writeLock().lock();
         try {
-            Path file = basePath.resolve(filename);
-            String json = gson.toJson(data);
-            Files.write(file, json.getBytes(StandardCharsets.UTF_8), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+            action.run();
         } finally {
             lock.writeLock().unlock();
         }
     }
 
-    private <T> T load(String filename, Type type) throws IOException {
-        lock.readLock().lock();
-        try {
-            Path file = basePath.resolve(filename);
-            if (!Files.exists(file) || Files.size(file) == 0) {
-                return null;
-            }
-            String json = new String(Files.readAllBytes(file), StandardCharsets.UTF_8);
-            return gson.fromJson(json, type);
-        } finally {
-            lock.readLock().unlock();
-        }
+    @FunctionalInterface
+    private interface IOSupplier<T> {
+        T get() throws IOException;
+    }
+
+    @FunctionalInterface
+    private interface IOAction {
+        void run() throws IOException;
     }
 
     // ---- Users ----
@@ -497,30 +560,32 @@ public class DataStorage {
     }
 
     public List<User> loadUsers() throws IOException {
-        List<User> list = load(USERS_FILE, new TypeToken<ArrayList<User>>(){}.getType());
-        return list != null ? list : new ArrayList<>();
+        return withReadLock(this::loadUsersUnlocked);
     }
 
     public void saveUser(User user) throws IOException {
-        List<User> users = loadUsers();
-        users.removeIf(u -> u.getId().equals(user.getId()));
-        users.add(user);
-        save(USERS_FILE, users);
+        withWriteLock(() -> {
+            List<User> users = loadUsersUnlocked();
+            users.removeIf(u -> u.getId().equals(user.getId()));
+            users.add(user);
+            saveUnlocked(USERS_FILE, users);
+        });
     }
 
     public User addUser(User user) throws IOException {
-        List<User> users = loadUsers();
-        String newId = "U" + String.format("%03d", users.size() + 1);
-        user.setId(newId);
-        users.add(user);
-        save(USERS_FILE, users);
+        withWriteLock(() -> {
+            List<User> users = loadUsersUnlocked();
+            String newId = "U" + String.format("%03d", users.size() + 1);
+            user.setId(newId);
+            users.add(user);
+            saveUnlocked(USERS_FILE, users);
+        });
         return user;
     }
 
     // ---- TA Profiles ----
     public List<TAProfile> loadProfiles() throws IOException {
-        List<TAProfile> list = load(PROFILES_FILE, new TypeToken<ArrayList<TAProfile>>(){}.getType());
-        return list != null ? list : new ArrayList<>();
+        return withReadLock(this::loadProfilesUnlocked);
     }
 
     public TAProfile getProfileByUserId(String userId) throws IOException {
@@ -538,10 +603,12 @@ public class DataStorage {
         if (profile.getSavedJobIds() == null) {
             profile.setSavedJobIds(new ArrayList<>());
         }
-        List<TAProfile> profiles = loadProfiles();
-        profiles.removeIf(p -> p.getUserId().equals(profile.getUserId()));
-        profiles.add(profile);
-        save(PROFILES_FILE, profiles);
+        withWriteLock(() -> {
+            List<TAProfile> profiles = loadProfilesUnlocked();
+            profiles.removeIf(p -> p.getUserId().equals(profile.getUserId()));
+            profiles.add(profile);
+            saveUnlocked(PROFILES_FILE, profiles);
+        });
     }
 
     public TAProfile getOrCreateProfile(String userId) throws IOException {
@@ -560,28 +627,44 @@ public class DataStorage {
     }
 
     public boolean setJobSaved(String userId, String jobId, boolean saved) throws IOException {
-        TAProfile profile = getOrCreateProfile(userId);
-        List<String> savedJobIds = new ArrayList<>(profile.getSavedJobIds());
-        boolean changed;
-        if (saved) {
-            changed = !savedJobIds.contains(jobId);
-            if (changed) {
-                savedJobIds.add(jobId);
+        final boolean[] changedRef = {false};
+        withWriteLock(() -> {
+            List<TAProfile> profiles = loadProfilesUnlocked();
+            TAProfile profile = profiles.stream()
+                    .filter(p -> p.getUserId().equals(userId))
+                    .findFirst()
+                    .orElseGet(() -> {
+                        TAProfile created = new TAProfile(userId);
+                        profiles.add(created);
+                        return created;
+                    });
+            if (profile.getSavedJobIds() == null) {
+                profile.setSavedJobIds(new ArrayList<>());
             }
-        } else {
-            changed = savedJobIds.removeIf(jobId::equals);
-        }
-        if (changed) {
-            profile.setSavedJobIds(savedJobIds);
-            saveProfile(profile);
-        }
-        return changed;
+
+            List<String> savedJobIds = new ArrayList<>(profile.getSavedJobIds());
+            boolean changed;
+            if (saved) {
+                changed = !savedJobIds.contains(jobId);
+                if (changed) {
+                    savedJobIds.add(jobId);
+                }
+            } else {
+                changed = savedJobIds.removeIf(jobId::equals);
+            }
+
+            if (changed) {
+                profile.setSavedJobIds(savedJobIds);
+                saveUnlocked(PROFILES_FILE, profiles);
+                changedRef[0] = true;
+            }
+        });
+        return changedRef[0];
     }
 
     // ---- Jobs ----
     public List<Job> loadJobs() throws IOException {
-        List<Job> list = load(JOBS_FILE, new TypeToken<ArrayList<Job>>(){}.getType());
-        return list != null ? list : new ArrayList<>();
+        return withReadLock(this::loadJobsUnlocked);
     }
 
     public Job getJobById(String id) throws IOException {
@@ -589,27 +672,30 @@ public class DataStorage {
     }
 
     public void saveJob(Job job) throws IOException {
-        List<Job> jobs = loadJobs();
-        jobs.removeIf(j -> j.getId().equals(job.getId()));
-        jobs.add(job);
-        save(JOBS_FILE, jobs);
+        withWriteLock(() -> {
+            List<Job> jobs = loadJobsUnlocked();
+            jobs.removeIf(j -> j.getId().equals(job.getId()));
+            jobs.add(job);
+            saveUnlocked(JOBS_FILE, jobs);
+        });
     }
 
     public Job addJob(Job job) throws IOException {
-        List<Job> jobs = loadJobs();
-        String newId = "J" + String.format("%04d", jobs.size() + 1);
-        job.setId(newId);
-        job.setCreatedAt(java.time.LocalDateTime.now().toString());
-        job.setStatus("OPEN");
-        jobs.add(job);
-        save(JOBS_FILE, jobs);
+        withWriteLock(() -> {
+            List<Job> jobs = loadJobsUnlocked();
+            String newId = "J" + String.format("%04d", jobs.size() + 1);
+            job.setId(newId);
+            job.setCreatedAt(java.time.LocalDateTime.now().toString());
+            job.setStatus("OPEN");
+            jobs.add(job);
+            saveUnlocked(JOBS_FILE, jobs);
+        });
         return job;
     }
 
     // ---- Applications ----
     public List<Application> loadApplications() throws IOException {
-        List<Application> list = load(APPLICATIONS_FILE, new TypeToken<ArrayList<Application>>(){}.getType());
-        return list != null ? list : new ArrayList<>();
+        return withReadLock(this::loadApplicationsUnlocked);
     }
 
     public List<Application> getApplicationsByJobId(String jobId) throws IOException {
@@ -636,20 +722,24 @@ public class DataStorage {
     }
 
     public void saveApplication(Application app) throws IOException {
-        List<Application> apps = loadApplications();
-        apps.removeIf(a -> a.getId().equals(app.getId()));
-        apps.add(app);
-        save(APPLICATIONS_FILE, apps);
+        withWriteLock(() -> {
+            List<Application> apps = loadApplicationsUnlocked();
+            apps.removeIf(a -> a.getId().equals(app.getId()));
+            apps.add(app);
+            saveUnlocked(APPLICATIONS_FILE, apps);
+        });
     }
 
     public Application addApplication(Application app) throws IOException {
-        List<Application> apps = loadApplications();
-        String newId = "A" + String.format("%05d", apps.size() + 1);
-        app.setId(newId);
-        app.setAppliedAt(java.time.LocalDateTime.now().toString());
-        app.setStatus("PENDING");
-        apps.add(app);
-        save(APPLICATIONS_FILE, apps);
+        withWriteLock(() -> {
+            List<Application> apps = loadApplicationsUnlocked();
+            String newId = "A" + String.format("%05d", apps.size() + 1);
+            app.setId(newId);
+            app.setAppliedAt(java.time.LocalDateTime.now().toString());
+            app.setStatus("PENDING");
+            apps.add(app);
+            saveUnlocked(APPLICATIONS_FILE, apps);
+        });
         return app;
     }
 
@@ -665,19 +755,20 @@ public class DataStorage {
 
     // ---- Site notifications ----
     public List<SiteNotification> loadSiteNotifications() throws IOException {
-        List<SiteNotification> list = load(SITE_NOTIFICATIONS_FILE, new TypeToken<ArrayList<SiteNotification>>(){}.getType());
-        return list != null ? list : new ArrayList<>();
+        return withReadLock(this::loadSiteNotificationsUnlocked);
     }
 
     public SiteNotification addSiteNotification(SiteNotification n) throws IOException {
-        List<SiteNotification> all = loadSiteNotifications();
-        String newId = "N" + String.format("%06d", all.size() + 1);
-        n.setId(newId);
-        if (n.getCreatedAt() == null || n.getCreatedAt().trim().isEmpty()) {
-            n.setCreatedAt(java.time.LocalDateTime.now().toString());
-        }
-        all.add(n);
-        save(SITE_NOTIFICATIONS_FILE, all);
+        withWriteLock(() -> {
+            List<SiteNotification> all = loadSiteNotificationsUnlocked();
+            String newId = "N" + String.format("%06d", all.size() + 1);
+            n.setId(newId);
+            if (n.getCreatedAt() == null || n.getCreatedAt().trim().isEmpty()) {
+                n.setCreatedAt(java.time.LocalDateTime.now().toString());
+            }
+            all.add(n);
+            saveUnlocked(SITE_NOTIFICATIONS_FILE, all);
+        });
         return n;
     }
 
@@ -702,33 +793,37 @@ public class DataStorage {
     }
 
     public boolean markSiteNotificationRead(String notificationId, String userId) throws IOException {
-        List<SiteNotification> all = loadSiteNotifications();
-        boolean changed = false;
-        for (SiteNotification n : all) {
-            if (Objects.equals(notificationId, n.getId()) && Objects.equals(userId, n.getRecipientUserId()) && !n.isRead()) {
-                n.setRead(true);
-                changed = true;
+        final boolean[] changedRef = {false};
+        withWriteLock(() -> {
+            List<SiteNotification> all = loadSiteNotificationsUnlocked();
+            for (SiteNotification n : all) {
+                if (Objects.equals(notificationId, n.getId()) && Objects.equals(userId, n.getRecipientUserId()) && !n.isRead()) {
+                    n.setRead(true);
+                    changedRef[0] = true;
+                }
             }
-        }
-        if (changed) {
-            save(SITE_NOTIFICATIONS_FILE, all);
-        }
-        return changed;
+            if (changedRef[0]) {
+                saveUnlocked(SITE_NOTIFICATIONS_FILE, all);
+            }
+        });
+        return changedRef[0];
     }
 
     public int markAllSiteNotificationsReadForUser(String userId) throws IOException {
-        List<SiteNotification> all = loadSiteNotifications();
-        int changed = 0;
-        for (SiteNotification n : all) {
-            if (Objects.equals(userId, n.getRecipientUserId()) && !n.isRead()) {
-                n.setRead(true);
-                changed++;
+        final int[] changedRef = {0};
+        withWriteLock(() -> {
+            List<SiteNotification> all = loadSiteNotificationsUnlocked();
+            for (SiteNotification n : all) {
+                if (Objects.equals(userId, n.getRecipientUserId()) && !n.isRead()) {
+                    n.setRead(true);
+                    changedRef[0]++;
+                }
             }
-        }
-        if (changed > 0) {
-            save(SITE_NOTIFICATIONS_FILE, all);
-        }
-        return changed;
+            if (changedRef[0] > 0) {
+                saveUnlocked(SITE_NOTIFICATIONS_FILE, all);
+            }
+        });
+        return changedRef[0];
     }
 
     public int markSiteNotificationsReadForUser(String userId, Collection<String> notificationIds) throws IOException {
@@ -736,60 +831,67 @@ public class DataStorage {
             return 0;
         }
         Set<String> idSet = notificationIds.stream().filter(Objects::nonNull).collect(Collectors.toSet());
-        List<SiteNotification> all = loadSiteNotifications();
-        int changed = 0;
-        for (SiteNotification n : all) {
-            if (Objects.equals(userId, n.getRecipientUserId()) && idSet.contains(n.getId()) && !n.isRead()) {
-                n.setRead(true);
-                changed++;
+        final int[] changedRef = {0};
+        withWriteLock(() -> {
+            List<SiteNotification> all = loadSiteNotificationsUnlocked();
+            for (SiteNotification n : all) {
+                if (Objects.equals(userId, n.getRecipientUserId()) && idSet.contains(n.getId()) && !n.isRead()) {
+                    n.setRead(true);
+                    changedRef[0]++;
+                }
             }
-        }
-        if (changed > 0) {
-            save(SITE_NOTIFICATIONS_FILE, all);
-        }
-        return changed;
+            if (changedRef[0] > 0) {
+                saveUnlocked(SITE_NOTIFICATIONS_FILE, all);
+            }
+        });
+        return changedRef[0];
     }
 
     public boolean markSiteNotificationUnread(String notificationId, String userId) throws IOException {
-        List<SiteNotification> all = loadSiteNotifications();
-        boolean changed = false;
-        for (SiteNotification n : all) {
-            if (Objects.equals(notificationId, n.getId()) && Objects.equals(userId, n.getRecipientUserId()) && n.isRead()) {
-                n.setRead(false);
-                changed = true;
+        final boolean[] changedRef = {false};
+        withWriteLock(() -> {
+            List<SiteNotification> all = loadSiteNotificationsUnlocked();
+            for (SiteNotification n : all) {
+                if (Objects.equals(notificationId, n.getId()) && Objects.equals(userId, n.getRecipientUserId()) && n.isRead()) {
+                    n.setRead(false);
+                    changedRef[0] = true;
+                }
             }
-        }
-        if (changed) {
-            save(SITE_NOTIFICATIONS_FILE, all);
-        }
-        return changed;
+            if (changedRef[0]) {
+                saveUnlocked(SITE_NOTIFICATIONS_FILE, all);
+            }
+        });
+        return changedRef[0];
     }
 
     // ---- Email OTP ----
     public List<EmailOtpRecord> loadEmailOtpRecords() throws IOException {
-        List<EmailOtpRecord> list = load(EMAIL_OTP_FILE, new TypeToken<ArrayList<EmailOtpRecord>>(){}.getType());
-        return list != null ? list : new ArrayList<>();
+        return withReadLock(this::loadEmailOtpRecordsUnlocked);
     }
 
     public void saveEmailOtpRecord(EmailOtpRecord record) throws IOException {
         if (record == null || record.getId() == null) {
             return;
         }
-        List<EmailOtpRecord> all = loadEmailOtpRecords();
-        all.removeIf(r -> Objects.equals(r.getId(), record.getId()));
-        all.add(record);
-        save(EMAIL_OTP_FILE, all);
+        withWriteLock(() -> {
+            List<EmailOtpRecord> all = loadEmailOtpRecordsUnlocked();
+            all.removeIf(r -> Objects.equals(r.getId(), record.getId()));
+            all.add(record);
+            saveUnlocked(EMAIL_OTP_FILE, all);
+        });
     }
 
     public EmailOtpRecord addEmailOtpRecord(EmailOtpRecord record) throws IOException {
         if (record == null) {
             return null;
         }
-        List<EmailOtpRecord> all = loadEmailOtpRecords();
-        String newId = "E" + String.format("%06d", all.size() + 1);
-        record.setId(newId);
-        all.add(record);
-        save(EMAIL_OTP_FILE, all);
+        withWriteLock(() -> {
+            List<EmailOtpRecord> all = loadEmailOtpRecordsUnlocked();
+            String newId = "E" + String.format("%06d", all.size() + 1);
+            record.setId(newId);
+            all.add(record);
+            saveUnlocked(EMAIL_OTP_FILE, all);
+        });
         return record;
     }
 
@@ -812,18 +914,20 @@ public class DataStorage {
             return 0;
         }
         Set<String> idSet = notificationIds.stream().filter(Objects::nonNull).collect(Collectors.toSet());
-        List<SiteNotification> all = loadSiteNotifications();
-        int changed = 0;
-        for (SiteNotification n : all) {
-            if (Objects.equals(userId, n.getRecipientUserId()) && idSet.contains(n.getId()) && n.isRead()) {
-                n.setRead(false);
-                changed++;
+        final int[] changedRef = {0};
+        withWriteLock(() -> {
+            List<SiteNotification> all = loadSiteNotificationsUnlocked();
+            for (SiteNotification n : all) {
+                if (Objects.equals(userId, n.getRecipientUserId()) && idSet.contains(n.getId()) && n.isRead()) {
+                    n.setRead(false);
+                    changedRef[0]++;
+                }
             }
-        }
-        if (changed > 0) {
-            save(SITE_NOTIFICATIONS_FILE, all);
-        }
-        return changed;
+            if (changedRef[0] > 0) {
+                saveUnlocked(SITE_NOTIFICATIONS_FILE, all);
+            }
+        });
+        return changedRef[0];
     }
 
     public Path getBasePath() { return basePath; }
