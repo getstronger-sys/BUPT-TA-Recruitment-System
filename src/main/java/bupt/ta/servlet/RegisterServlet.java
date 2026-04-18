@@ -6,6 +6,7 @@ import bupt.ta.model.User;
 import bupt.ta.service.EmailNotificationService;
 import bupt.ta.service.EmailOtpService;
 import bupt.ta.storage.DataStorage;
+import bupt.ta.util.PasswordHasher;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.*;
@@ -106,23 +107,23 @@ public class RegisterServlet extends HttpServlet {
                     }
                 }
                 if (error == null) {
-                User user = new User();
-                user.setUsername(username);
-                user.setPassword(password);
-                user.setRole(role);
-                user.setEmail(email);
-                user.setStudentId(studentId);
-                user.setRealName(realName.isEmpty() ? username : realName);
-                user = storage.addUser(user);
+                    User user = new User();
+                    user.setUsername(username);
+                    user.setPassword(PasswordHasher.hash(password));
+                    user.setRole(role);
+                    user.setEmail(email);
+                    user.setStudentId(studentId);
+                    user.setRealName(realName.isEmpty() ? username : realName);
+                    user = storage.addUser(user);
 
-                if ("TA".equals(role)) {
-                    TAProfile profile = new TAProfile(user.getId());
-                    profile.setStudentId(studentId);
-                    storage.saveProfile(profile);
-                }
+                    if ("TA".equals(role)) {
+                        TAProfile profile = new TAProfile(user.getId());
+                        profile.setStudentId(studentId);
+                        storage.saveProfile(profile);
+                    }
 
-                resp.sendRedirect(req.getContextPath() + "/index.jsp?registered=1");
-                return;
+                    resp.sendRedirect(req.getContextPath() + "/index.jsp?registered=1");
+                    return;
                 }
             }
         }

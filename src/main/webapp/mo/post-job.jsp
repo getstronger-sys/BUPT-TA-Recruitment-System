@@ -40,7 +40,7 @@
 <div class="container">
     <div class="nav top-nav">
         <span class="brand">BUPT Teaching Assistant Recruitment System</span>
-        <span class="user"><%= session.getAttribute("realName") %> | <a href="${pageContext.request.contextPath}/logout">Logout</a></span>
+        <div class="user user-inline-actions"><span><%= session.getAttribute("realName") %> |</span><form action="${pageContext.request.contextPath}/logout" method="post" class="inline-form logout-form"><%@ include file="/WEB-INF/jspf/csrf-hidden.jspf" %><button type="submit" class="logout-button">Logout</button></form></div>
     </div>
     <div class="page-layout">
         <div class="left-nav-wrap">
@@ -63,6 +63,7 @@
     <p class="error"><%= escHtml(err) %></p>
     <% } %>
     <form action="${pageContext.request.contextPath}/mo/post-job" method="post" class="form form--mo-post">
+        <%@ include file="/WEB-INF/jspf/csrf-hidden.jspf" %>
         <div id="post-basic" class="mo-post-section-anchor"></div>
         <h2 class="mo-post-section-title">Basic information</h2>
         <label>Job Title *</label>

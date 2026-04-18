@@ -2,6 +2,7 @@ package bupt.ta.servlet;
 
 import bupt.ta.model.User;
 import bupt.ta.storage.DataStorage;
+import bupt.ta.util.PasswordHasher;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.*;
@@ -20,9 +21,17 @@ public class LoginServlet extends HttpServlet {
         } else {
             DataStorage storage = new DataStorage(getServletContext());
             User user = storage.findByUsername(username.trim());
-            if (user == null || !user.getPassword().equals(password)) {
+            if (user == null || !PasswordHasher.matches(password, user.getPassword())) {
                 error = "Invalid username or password.";
             } else {
+                if (!PasswordHasher.isHashed(user.getPassword())) {
+                    user.setPassword(PasswordHasher.hash(password));
+                    storage.saveUser(user);
+                }
+                HttpSession existing = req.getSession(false);
+                if (existing != null) {
+                    existing.invalidate();
+                }
                 HttpSession session = req.getSession(true);
                 session.setAttribute("user", user);
                 session.setAttribute("userId", user.getId());

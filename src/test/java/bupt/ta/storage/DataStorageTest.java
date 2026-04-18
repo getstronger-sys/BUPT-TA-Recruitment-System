@@ -7,6 +7,14 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.*;
 
@@ -209,6 +217,53 @@ public class DataStorageTest {
             assertEquals("Year 2", saved.getYearOfStudy());
             assertEquals("Tutored first-year programming labs.", saved.getTaExperience());
         } finally {
+            deleteRecursive(tmp);
+        }
+    }
+
+    @Test
+    public void testConcurrentApplicationAddsRemainUniqueAcrossStorageInstances() throws Exception {
+        Path tmp = Files.createTempDirectory("ta-test");
+        int workers = 20;
+        ExecutorService pool = Executors.newFixedThreadPool(workers);
+        try {
+            DataStorage storage = new DataStorage(tmp.toString());
+            CountDownLatch ready = new CountDownLatch(workers);
+            CountDownLatch start = new CountDownLatch(1);
+            Future<?>[] futures = new Future<?>[workers];
+
+            for (int i = 0; i < workers; i++) {
+                final int idx = i;
+                futures[i] = pool.submit(() -> {
+                    ready.countDown();
+                    assertTrue("Workers did not reach the start gate in time", ready.await(5, TimeUnit.SECONDS));
+                    assertTrue("Start signal timed out", start.await(5, TimeUnit.SECONDS));
+
+                    DataStorage concurrentStorage = new DataStorage(tmp.toString());
+                    Application app = new Application();
+                    app.setJobId("J" + String.format("%04d", idx + 1));
+                    app.setApplicantId("U" + String.format("%03d", idx + 100));
+                    app.setApplicantName("Applicant " + idx);
+                    concurrentStorage.addApplication(app);
+                    return null;
+                });
+            }
+
+            assertTrue("Workers were not ready in time", ready.await(5, TimeUnit.SECONDS));
+            start.countDown();
+            for (Future<?> future : futures) {
+                future.get(10, TimeUnit.SECONDS);
+            }
+
+            List<Application> apps = storage.loadApplications();
+            Set<String> ids = new HashSet<>();
+            for (Application app : apps) {
+                assertTrue("Duplicate application ID detected: " + app.getId(), ids.add(app.getId()));
+            }
+            assertEquals(workers, apps.size());
+            assertEquals(workers, ids.size());
+        } finally {
+            pool.shutdownNow();
             deleteRecursive(tmp);
         }
     }

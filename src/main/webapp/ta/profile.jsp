@@ -26,7 +26,7 @@
 <div class="container">
     <div class="nav top-nav">
         <span class="brand">BUPT Teaching Assistant Recruitment System</span>
-        <span class="user"><%= session.getAttribute("realName") %> | <a href="${pageContext.request.contextPath}/logout">Logout</a></span>
+        <div class="user user-inline-actions"><span><%= session.getAttribute("realName") %> |</span><form action="${pageContext.request.contextPath}/logout" method="post" class="inline-form logout-form"><%@ include file="/WEB-INF/jspf/csrf-hidden.jspf" %><button type="submit" class="logout-button">Logout</button></form></div>
     </div>
     <div class="page-layout">
         <div class="left-nav-wrap">
@@ -67,6 +67,7 @@
             <% if (request.getAttribute("errorMessage") != null) { %><p class="error"><%= escHtml((String) request.getAttribute("errorMessage")) %></p><% } %>
 
             <form action="${pageContext.request.contextPath}/ta/profile" method="post" class="form form--ta ta-profile-form">
+                <%@ include file="/WEB-INF/jspf/csrf-hidden.jspf" %>
                 <% if (returnUrlAttr != null && !returnUrlAttr.isEmpty()) { %>
                 <input type="hidden" name="returnUrl" value="<%= escHtml(returnUrlAttr) %>">
                 <% } %>
@@ -106,8 +107,9 @@
             </p>
             <% } %>
             <form action="${pageContext.request.contextPath}/ta/upload-cv" method="post" enctype="multipart/form-data" class="form form--ta form--ta-cv">
+                <%@ include file="/WEB-INF/jspf/csrf-hidden.jspf" %>
                 <label>Select file (<%= escHtml(bupt.ta.cv.ResumeTextExtractor.supportedExtensionsDisplay()) %>, max 5MB)</label>
-                <input type="file" name="cvFile" accept=".pdf,.docx,.txt">
+                <input type="file" name="cvFile" accept=".pdf,.doc,.docx,.txt">
                 <button type="submit">Upload CV</button>
             </form>
             </div>

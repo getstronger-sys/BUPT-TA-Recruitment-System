@@ -17,7 +17,7 @@
 <div class="container">
     <div class="nav top-nav">
         <span class="brand">BUPT Teaching Assistant Recruitment System</span>
-        <span class="user"><%= session.getAttribute("realName") %> | <a href="${pageContext.request.contextPath}/logout">Logout</a></span>
+        <div class="user user-inline-actions"><span><%= session.getAttribute("realName") %> |</span><form action="${pageContext.request.contextPath}/logout" method="post" class="inline-form logout-form"><%@ include file="/WEB-INF/jspf/csrf-hidden.jspf" %><button type="submit" class="logout-button">Logout</button></form></div>
     </div>
     <div class="page-layout">
         <div class="left-nav-wrap">
@@ -114,6 +114,7 @@
                 <div class="ta-job-actions">
                     <a href="${pageContext.request.contextPath}/ta/job?jobId=<%= safeJobId %>" class="btn btn-primary">Open vacancy details</a>
                     <form action="${pageContext.request.contextPath}/ta/save-job" method="post" class="inline-form">
+                        <%@ include file="/WEB-INF/jspf/csrf-hidden.jspf" %>
                         <input type="hidden" name="jobId" value="<%= safeJobId %>">
                         <input type="hidden" name="action" value="<%= saved ? "unsave" : "save" %>">
                         <input type="hidden" name="returnTo" value="/ta/jobs">

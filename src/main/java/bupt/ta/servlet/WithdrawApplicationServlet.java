@@ -6,6 +6,7 @@ import bupt.ta.model.Job;
 import bupt.ta.model.TAProfile;
 import bupt.ta.service.StudentNotificationService;
 import bupt.ta.storage.DataStorage;
+import bupt.ta.util.JobSelectionCapacity;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.*;
@@ -60,6 +61,9 @@ public class WithdrawApplicationServlet extends HttpServlet {
 
     private void autoPromoteFromWaitlist(DataStorage storage, Job job) throws IOException {
         List<Application> apps = storage.getApplicationsByJobId(job.getId());
+        if (!JobSelectionCapacity.hasVacancy(job, apps, null)) {
+            return;
+        }
         List<Application> waitlist = apps.stream()
                 .filter(a -> "WAITLIST".equals(a.getStatus()))
                 .collect(Collectors.toList());
