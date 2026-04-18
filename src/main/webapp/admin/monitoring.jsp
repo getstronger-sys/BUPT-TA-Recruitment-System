@@ -34,7 +34,7 @@
 <div class="container">
     <div class="nav top-nav">
         <span class="brand">BUPT Teaching Assistant Recruitment System</span>
-        <span class="user"><%= session.getAttribute("realName") %> | <a href="${pageContext.request.contextPath}/logout">Logout</a></span>
+        <div class="user user-inline-actions"><span><%= session.getAttribute("realName") %> |</span><form action="${pageContext.request.contextPath}/logout" method="post" class="inline-form logout-form"><%@ include file="/WEB-INF/jspf/csrf-hidden.jspf" %><button type="submit" class="logout-button">Logout</button></form></div>
     </div>
     <div class="page-layout">
         <div class="left-nav-wrap">
@@ -73,6 +73,7 @@
                 <p><strong>Users with unread messages:</strong> <%= reminderPreview.getUsersWithUnread() %> | <strong>Unread messages:</strong> <%= reminderPreview.getUnreadMessages() %> | <strong>Users with an email ready to remind:</strong> <%= reminderPreview.getRemindableUsers() %></p>
                 <p><strong>Email channel:</strong> <%= reminderPreview.isEmailConfigured() ? "Configured" : "Not configured" %></p>
                 <form action="${pageContext.request.contextPath}/admin/monitoring" method="post" class="inline-form">
+                    <%@ include file="/WEB-INF/jspf/csrf-hidden.jspf" %>
                     <input type="hidden" name="action" value="sendUnreadReminders">
                     <button type="submit" class="btn btn-primary" <%= reminderPreview.getUsersWithUnread() == 0 ? "disabled" : "" %>>Send unread message reminders</button>
                 </form>

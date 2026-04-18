@@ -17,7 +17,7 @@
 <div class="container">
     <div class="nav top-nav">
         <span class="brand">BUPT Teaching Assistant Recruitment System</span>
-        <span class="user"><%= session.getAttribute("realName") %> | <a href="${pageContext.request.contextPath}/logout">Logout</a></span>
+        <div class="user user-inline-actions"><span><%= session.getAttribute("realName") %> |</span><form action="${pageContext.request.contextPath}/logout" method="post" class="inline-form logout-form"><%@ include file="/WEB-INF/jspf/csrf-hidden.jspf" %><button type="submit" class="logout-button">Logout</button></form></div>
     </div>
     <div class="page-layout">
         <div class="left-nav-wrap">
@@ -51,6 +51,7 @@
                 <h3>SMTP configuration</h3>
                 <p class="muted-inline">Leave password empty to keep the existing saved password.</p>
                 <form action="${pageContext.request.contextPath}/admin/email" method="post" class="form form--admin-settings">
+                    <%@ include file="/WEB-INF/jspf/csrf-hidden.jspf" %>
                     <label class="checkbox-line" for="admin-mail-enabled">
                         <input id="admin-mail-enabled" type="checkbox" name="mailEnabled" <%= settings.isMailEnabled() ? "checked" : "" %>>
                         Enable email delivery

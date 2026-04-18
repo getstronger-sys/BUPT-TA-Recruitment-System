@@ -60,7 +60,7 @@
 <div class="container">
     <div class="nav top-nav">
         <span class="brand">BUPT Teaching Assistant Recruitment System</span>
-        <span class="user"><%= session.getAttribute("realName") %> | <a href="${pageContext.request.contextPath}/logout">Logout</a></span>
+        <div class="user user-inline-actions"><span><%= session.getAttribute("realName") %> |</span><form action="${pageContext.request.contextPath}/logout" method="post" class="inline-form logout-form"><%@ include file="/WEB-INF/jspf/csrf-hidden.jspf" %><button type="submit" class="logout-button">Logout</button></form></div>
     </div>
     <div class="page-layout">
         <div class="left-nav-wrap">
@@ -177,6 +177,7 @@
                         <span class="muted-inline">Unavailable (posting inactive)</span>
                         <% } else { %>
                         <form action="${pageContext.request.contextPath}/ta/withdraw" method="post" style="display:inline;">
+                            <%@ include file="/WEB-INF/jspf/csrf-hidden.jspf" %>
                             <input type="hidden" name="applicationId" value="<%= a.getId() %>">
                             <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Withdraw this application?')">Withdraw</button>
                         </form>

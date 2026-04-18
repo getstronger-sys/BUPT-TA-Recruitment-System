@@ -109,6 +109,7 @@
             <% } %>
 
             <form action="${pageContext.request.contextPath}/login" method="post" class="form form--auth form--login">
+                <%@ include file="/WEB-INF/jspf/csrf-hidden.jspf" %>
                 <label for="login-username">Username</label>
                 <input id="login-username" type="text" name="username" required autocomplete="username" placeholder="Enter your username">
                 <label for="login-password">Password</label>

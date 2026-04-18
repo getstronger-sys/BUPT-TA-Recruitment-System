@@ -1807,6 +1807,28 @@ tr:hover { background: #f8f7ff; }
     display: inline-flex;
     margin: 0;
 }
+.user-inline-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+.logout-form {
+    display: inline-flex;
+    margin: 0;
+}
+.logout-button {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+    text-decoration: underline;
+}
+.logout-button:hover,
+.logout-button:focus {
+    opacity: 0.8;
+}
 .inline-form .btn,
 .job-save-form .btn {
     margin: 0;

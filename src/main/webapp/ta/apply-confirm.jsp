@@ -59,7 +59,7 @@
 <div class="container">
     <div class="nav top-nav">
         <span class="brand">BUPT Teaching Assistant Recruitment System</span>
-        <span class="user"><%= session.getAttribute("realName") %> | <a href="${pageContext.request.contextPath}/logout">Logout</a></span>
+        <div class="user user-inline-actions"><span><%= session.getAttribute("realName") %> |</span><form action="${pageContext.request.contextPath}/logout" method="post" class="inline-form logout-form"><%@ include file="/WEB-INF/jspf/csrf-hidden.jspf" %><button type="submit" class="logout-button">Logout</button></form></div>
     </div>
     <div class="page-layout">
         <div class="left-nav-wrap">
@@ -154,6 +154,7 @@
             <div class="apply-confirm-actions">
                 <a href="<%= escHtml(profileEditUrl) %>" class="btn btn-primary">Edit profile first</a>
                 <form action="${pageContext.request.contextPath}/ta/apply" method="post" class="apply-confirm-submit-form">
+                    <%@ include file="/WEB-INF/jspf/csrf-hidden.jspf" %>
                     <input type="hidden" name="jobId" value="<%= escHtml(job.getId()) %>">
                     <label for="preferredRole"><strong>Choose your preferred TA role</strong></label>
                     <select id="preferredRole" name="preferredRole" class="note-input" required>
