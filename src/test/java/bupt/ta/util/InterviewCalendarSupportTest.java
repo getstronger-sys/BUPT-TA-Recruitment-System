@@ -24,6 +24,36 @@ public class InterviewCalendarSupportTest {
     }
 
     @Test
+    public void parseInterviewTimeExtractsFromFreeTextAndRanges() {
+        LocalDateTime fromNotice = InterviewCalendarSupport.parseInterviewTime(
+                "Please attend on 2026-04-20 14:30; bring your ID.");
+        assertNotNull(fromNotice);
+        assertEquals(14, fromNotice.getHour());
+        assertEquals(30, fromNotice.getMinute());
+
+        LocalDateTime rangeStart = InterviewCalendarSupport.parseInterviewTime("2026-04-20 14:00-17:00");
+        assertNotNull(rangeStart);
+        assertEquals(14, rangeStart.getHour());
+    }
+
+    @Test
+    public void buildCalendarUsesSameDayRangeForEnd() {
+        Application app = new Application();
+        app.setId("A00099");
+        app.setJobId("J0001");
+        app.setInterviewTime("2026-04-20 14:00-17:00");
+        app.setInterviewLocation("Room 101");
+
+        Job job = new Job();
+        job.setTitle("TA for Python");
+        job.setModuleCode("EBU6377");
+
+        String calendar = InterviewCalendarSupport.buildCalendarFile(app, job);
+        assertTrue(calendar.contains("DTSTART:20260420T140000"));
+        assertTrue(calendar.contains("DTEND:20260420T170000"));
+    }
+
+    @Test
     public void buildCalendarFileIncludesInterviewFields() {
         Application app = new Application();
         app.setId("A00002");

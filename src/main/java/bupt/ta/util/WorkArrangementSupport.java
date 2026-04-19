@@ -3,6 +3,7 @@ package bupt.ta.util;
 import bupt.ta.model.Job;
 import bupt.ta.model.WorkArrangementItem;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -16,6 +17,76 @@ public final class WorkArrangementSupport {
 
     private static String trim(String s) {
         return s != null ? s.trim() : "";
+    }
+
+    /**
+     * Parses work-arrangement rows from the MO posting / edit form (same field names as post-job.jsp).
+     */
+    public static List<WorkArrangementItem> parseWorkRowsFromRequest(HttpServletRequest req) {
+        String[] names = req.getParameterValues("waWorkName");
+        if (names == null || names.length == 0) {
+            return new ArrayList<>();
+        }
+        String[] sessionDurs = req.getParameterValues("waSessionDuration");
+        String[] occCounts = req.getParameterValues("waOccurrenceCount");
+        String[] taCounts = req.getParameterValues("waTaCount");
+        String[] times = req.getParameterValues("waSpecificTime");
+        List<WorkArrangementItem> out = new ArrayList<>();
+        for (int i = 0; i < names.length; i++) {
+            String n = trim(names[i]);
+            String sd = sessionDurs != null && i < sessionDurs.length ? trim(sessionDurs[i]) : "";
+            int oc = 0;
+            if (occCounts != null && i < occCounts.length) {
+                try {
+                    oc = Integer.parseInt(trim(occCounts[i]));
+                } catch (NumberFormatException ignored) {
+                }
+            }
+            int tc = 0;
+            if (taCounts != null && i < taCounts.length) {
+                try {
+                    tc = Integer.parseInt(trim(taCounts[i]));
+                } catch (NumberFormatException ignored) {
+                }
+            }
+            String t = times != null && i < times.length ? trim(times[i]) : "";
+            if (n.isEmpty() && sd.isEmpty() && oc <= 0 && tc <= 0 && t.isEmpty()) {
+                continue;
+            }
+            WorkArrangementItem it = new WorkArrangementItem();
+            it.setWorkName(n);
+            it.setSessionDuration(sd);
+            it.setOccurrenceCount(oc);
+            it.setTaCount(tc);
+            it.setSpecificTime(t);
+            out.add(it);
+        }
+        return out;
+    }
+
+    /**
+     * @return null if valid, otherwise a short English message for the MO
+     */
+    public static String validateWorkRowsForPosting(List<WorkArrangementItem> items) {
+        if (items.isEmpty()) {
+            return "Add at least one work arrangement row (work name, per-session duration, occurrences, and TA count are required).";
+        }
+        for (int i = 0; i < items.size(); i++) {
+            WorkArrangementItem it = items.get(i);
+            if (trim(it.getWorkName()).isEmpty()) {
+                return "Work arrangement row " + (i + 1) + ": work name is required.";
+            }
+            if (trim(it.getResolvedSessionDuration()).isEmpty()) {
+                return "Work arrangement row " + (i + 1) + ": per-session duration is required.";
+            }
+            if (it.getOccurrenceCount() < 1) {
+                return "Work arrangement row " + (i + 1) + ": number of occurrences must be at least 1.";
+            }
+            if (it.getTaCount() < 1) {
+                return "Work arrangement row " + (i + 1) + ": TA count must be at least 1.";
+            }
+        }
+        return null;
     }
 
     /**

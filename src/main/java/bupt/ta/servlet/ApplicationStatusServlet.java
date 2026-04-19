@@ -21,6 +21,7 @@ public class ApplicationStatusServlet extends HttpServlet {
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         String applicantId = (String) req.getSession().getAttribute("userId");
         DataStorage storage = new DataStorage(getServletContext());
+        storage.syncJobStatusesWithDeadlines();
 
         List<Application> applications = storage.getApplicationsByApplicantId(applicantId);
         List<Job> allJobs = storage.loadJobs();

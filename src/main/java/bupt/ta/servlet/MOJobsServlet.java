@@ -24,35 +24,49 @@ public class MOJobsServlet extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        // Logged-in user id (MO)
         String moId = (String) req.getSession().getAttribute("userId");
+        // Persistence layer for jobs, applications, profiles
         DataStorage storage = new DataStorage(getServletContext());
+        storage.syncJobStatusesWithDeadlines();
 
+        // Jobs posted by this MO that are still active (open) for management
         List<Job> jobs = storage.loadJobs().stream()
                 .filter(j -> moId.equals(j.getPostedBy()))
                 .filter(JobActivity::isActive)
                 .collect(Collectors.toList());
 
         List<Application> allApps = storage.loadApplications();
+        // jobId -> applications for that job
         Map<String, List<Application>> appsByJob = allApps.stream().collect(Collectors.groupingBy(Application::getJobId));
 
+        // SELECTED applications: used to compute per-TA workload
         List<Application> selectedApps = allApps.stream().filter(a -> "SELECTED".equals(a.getStatus())).collect(Collectors.toList());
+        // applicantId -> number of SELECTED roles (workload)
         Map<String, Integer> workloadByTa = new HashMap<>();
         for (Application a : selectedApps) {
+            // one increment per SELECTED application
             workloadByTa.merge(a.getApplicantId(), 1, Integer::sum);
         }
+        // average workload across TAs with at least one SELECTED; 0 if none
         double avgWorkload = workloadByTa.isEmpty() ? 0 : workloadByTa.values().stream().mapToInt(Integer::intValue).average().orElse(0);
 
         List<TAProfile> profiles = storage.loadProfiles();
+        // userId -> profile for skill matching; first wins on duplicate keys
         Map<String, TAProfile> profileByUser = profiles.stream().collect(Collectors.toMap(TAProfile::getUserId, p -> p, (a, b) -> a));
 
+        // Per active job: job + five status buckets + AI match / workload hints
         List<Object[]> enrichedAll = buildEnriched(jobs, appsByJob, profileByUser, workloadByTa, avgWorkload);
 
         String paramJobId = req.getParameter("jobId");
+        // null -> empty; else trim
         final String selectedJobId = paramJobId != null ? paramJobId.trim() : "";
+        // no jobId: job list mode; with jobId: single-job management mode
         boolean jobListMode = selectedJobId.isEmpty();
 
         String view = req.getParameter("view");
         if (view == null || !JOB_VIEWS.contains(view)) {
+            // invalid or missing -> default tab
             view = "pending";
         }
 
@@ -63,6 +77,7 @@ public class MOJobsServlet extends HttpServlet {
                 return;
             }
             if (JobActivity.isInactive(sel)) {
+                // inactive jobs are managed under past postings
                 resp.sendRedirect(req.getContextPath() + JobActivity.PATH_INACTIVE + "?jobId="
                         + URLEncoder.encode(selectedJobId, StandardCharsets.UTF_8) + "&view=" + view);
                 return;
@@ -88,12 +103,14 @@ public class MOJobsServlet extends HttpServlet {
                     .filter(row -> selectedJobId.equals(((Job) row[0]).getId()))
                     .collect(Collectors.toList());
             req.setAttribute("jobsWithApps", oneJob);
+            // tab badge counts for the selected job row
             int countPending = 0;
             int countInterview = 0;
             int countWaitlist = 0;
             int countWithdrawn = 0;
             int countOutcome = 0;
             for (Object[] row : oneJob) {
+                // row[1..5]: pending, interview, waitlist, withdrawn, outcome lists
                 countPending += listSize(row, 1);
                 countInterview += listSize(row, 2);
                 countWaitlist += listSize(row, 3);

@@ -20,7 +20,6 @@
         return;
     }
     boolean isOpen = "OPEN".equals(job.getStatus());
-    String moduleName = job.getModuleName() != null && !job.getModuleName().isEmpty() ? escHtml(job.getModuleName()) : "—";
     String wh = job.getWorkingHours() != null && !job.getWorkingHours().isEmpty() ? escHtml(job.getWorkingHours()) : "—";
     String wl = job.getWorkload() != null && !job.getWorkload().isEmpty() ? escHtml(job.getWorkload()) : "—";
     String pay = job.getPayment() != null && !job.getPayment().isEmpty() ? escHtml(job.getPayment()) : "—";
@@ -29,10 +28,11 @@
     String interviewSchedule = job.getInterviewSchedule() != null && !job.getInterviewSchedule().isEmpty() ? escHtml(job.getInterviewSchedule()) : "—";
     String interviewLocation = job.getInterviewLocation() != null && !job.getInterviewLocation().isEmpty() ? escHtml(job.getInterviewLocation()) : "—";
     int plannedRecruits = job.getTaSlots() > 0 ? job.getTaSlots() : 1;
+    boolean hasWorkArrangementsTable = job.getWorkArrangements() != null && !job.getWorkArrangements().isEmpty();
     WorkQuotaPlanner.Recommendation quotaRec = WorkQuotaPlanner.recommend(job.getWorkArrangements(), plannedRecruits);
     List<String[]> weekMilestones = new ArrayList<>();
     String timelineRaw = job.getExamTimeline() != null ? job.getExamTimeline() : "";
-    Matcher weekMatcher = Pattern.compile("(?:Week|W)\\s*(\\d{1,2})\\s*[:\\-]?\\s*([^;\\n]+)?", Pattern.CASE_INSENSITIVE).matcher(timelineRaw);
+    Matcher weekMatcher = Pattern.compile("(?:Week|W)\\s*(\\d{1,3})\\s*[:\\-–.]?\\s*([^;\\n]+)?", Pattern.CASE_INSENSITIVE).matcher(timelineRaw);
     while (weekMatcher.find()) {
         String weekNo = weekMatcher.group(1);
         String detail = weekMatcher.group(2) != null ? weekMatcher.group(2).trim() : "";
@@ -54,6 +54,22 @@
     String respText = job.getResponsibilities() != null && !job.getResponsibilities().isEmpty() ? escHtml(job.getResponsibilities()) : "—";
     String desc = job.getDescription() != null && !job.getDescription().isEmpty() ? escHtml(job.getDescription()) : "—";
     String safeTitle = escHtml(job.getTitle() != null ? job.getTitle() : "");
+    boolean taPlanSingleUnstructured = !taPlanChunks.isEmpty()
+            && taPlanChunks.size() == 1
+            && taPlanChunks.get(0)[0] == null;
+    boolean hideTaPlanDuplicateOfTable = hasWorkArrangementsTable && taPlanSingleUnstructured;
+    int timelineMaxWeek = 14;
+    for (String[] item : weekMilestones) {
+        try {
+            int w = Integer.parseInt(item[0]);
+            if (w > timelineMaxWeek) {
+                timelineMaxWeek = w;
+            }
+        } catch (Exception ignored) { /* keep */ }
+    }
+    if (timelineMaxWeek < 1) {
+        timelineMaxWeek = 14;
+    }
 %>
 <!DOCTYPE html>
 <html>
@@ -101,8 +117,12 @@
             </div>
             <% } %>
 
-            <% if (job.getWorkArrangements() != null && !job.getWorkArrangements().isEmpty()) { %>
-            <h2 class="job-wa-heading">Work arrangements</h2>
+            <div class="ta-job-detail">
+
+            <% if (hasWorkArrangementsTable) { %>
+            <section class="ta-job-detail__section" aria-labelledby="ta-job-wa-title">
+            <h2 id="ta-job-wa-title" class="ta-job-detail__heading">Work arrangements</h2>
+            <p class="ta-job-detail__lede muted-inline">Concrete duties, durations, occurrences, and how many TAs share each line.</p>
             <table class="job-wa-table">
                 <thead>
                 <tr>
@@ -131,45 +151,102 @@
                 <% } %>
                 </tbody>
             </table>
+            </section>
             <% } %>
 
-            <dl class="job-detail-dl">
-                <dt>Module code</dt><dd><%= escHtml(job.getModuleCode() != null ? job.getModuleCode() : "—") %></dd>
-                <dt>Module name</dt><dd><%= moduleName %></dd>
+            <section class="ta-job-detail__section" aria-labelledby="ta-job-key-title">
+            <h2 id="ta-job-key-title" class="ta-job-detail__heading">Key information</h2>
+            <p class="ta-job-detail__lede muted-inline">Compensation, identifiers, planned headcount, deadline, and whether applications are open.</p>
+            <dl class="job-detail-dl job-detail-dl--ta-summary">
+                <dt>Module</dt>
+                <dd><%
+                    String mcodeRaw = job.getModuleCode() != null ? job.getModuleCode().trim() : "";
+                    String mnameRaw = job.getModuleName() != null ? job.getModuleName().trim() : "";
+                    if (mcodeRaw.isEmpty() && mnameRaw.isEmpty()) { %>—<% }
+                    else if (!mcodeRaw.isEmpty() && !mnameRaw.isEmpty()) { %><%= escHtml(mcodeRaw) %> <span class="muted-inline">&middot;</span> <%= escHtml(mnameRaw) %><% }
+                    else if (!mcodeRaw.isEmpty()) { %><%= escHtml(mcodeRaw) %><% }
+                    else { %><%= escHtml(mnameRaw) %><% }
+                %></dd>
+                <% if (!hasWorkArrangementsTable) { %>
                 <dt>Hours / schedule</dt><dd class="pre-wrap"><%= wh %></dd>
+                <% } %>
                 <dt>Payment</dt><dd class="pre-wrap"><%= pay %></dd>
                 <dt>Required skills</dt><dd><%= job.getRequiredSkills() != null && !job.getRequiredSkills().isEmpty() ? escHtml(String.join(", ", job.getRequiredSkills())) : "—" %></dd>
-                <dt>Responsibilities</dt><dd class="pre-wrap"><%= respText %></dd>
+                <% if (!hasWorkArrangementsTable) { %>
                 <dt>Workload</dt><dd class="pre-wrap"><%= wl %></dd>
+                <% } %>
                 <dt>Planned recruits</dt><dd><%= plannedRecruits %></dd>
-                <dt>Course timeline</dt>
-                <dd>
+                <dt>Application deadline</dt><dd><%= deadline %></dd>
+                <dt>Open status</dt><dd><%= isOpen ? "Open for applications" : "Closed" %></dd>
+            </dl>
+            </section>
+
+            <section class="ta-job-detail__section" aria-labelledby="ta-job-role-title">
+            <h2 id="ta-job-role-title" class="ta-job-detail__heading">Role &amp; scope</h2>
+            <p class="ta-job-detail__lede muted-inline">What the module expects from TAs in this posting.</p>
+            <div class="ta-job-role-unified">
+                <% if (job.getDescription() != null && !job.getDescription().trim().isEmpty()) { %>
+                <div class="ta-job-role-unified__block">
+                    <h3 class="ta-job-role-unified__h">Summary</h3>
+                    <p class="ta-job-role-unified__body pre-wrap"><%= desc %></p>
+                </div>
+                <% } %>
+                <div class="ta-job-role-unified__block">
+                    <h3 class="ta-job-role-unified__h">Responsibilities</h3>
+                    <p class="ta-job-role-unified__body pre-wrap"><%= respText %></p>
+                </div>
+            </div>
+            </section>
+
+            <section class="ta-job-detail__section" aria-labelledby="ta-job-schedule-title">
+            <h2 id="ta-job-schedule-title" class="ta-job-detail__heading">Schedule &amp; interview</h2>
+            <p class="ta-job-detail__lede muted-inline">Milestones use <strong>teaching weeks</strong> (W) from the module. Interview times are a preview only until you receive process notifications.</p>
+            <div class="ta-job-panel">
+                <div class="ta-job-panel__chunk">
+                    <h3 class="ta-job-panel__title">Course milestones</h3>
                     <% if (weekMilestones.isEmpty()) { %>
-                    <span class="pre-wrap"><%= examTimeline %></span>
+                    <p class="ta-job-panel__body pre-wrap"><%= examTimeline %></p>
                     <% } else { %>
-                    <div class="week-timeline-list">
-                        <% for (String[] item : weekMilestones) {
+                    <p class="ta-job-panel__caption muted-inline">Bar length is relative to the latest week listed below (week <%= timelineMaxWeek %>).</p>
+                    <div class="week-timeline-list week-timeline-list--panel">
+                        <% for (int ix = 0; ix < weekMilestones.size(); ix++) {
+                               String[] item = weekMilestones.get(ix);
                                int weekNum = 1;
                                try { weekNum = Integer.parseInt(item[0]); } catch (Exception ignored) {}
-                               int progress = Math.max(0, Math.min(100, (int) Math.round((weekNum / 14.0) * 100)));
+                               int progress = Math.max(0, Math.min(100, (int) Math.round((weekNum / (double) timelineMaxWeek) * 100)));
+                               String rawDesc = item[1] != null ? item[1].trim() : "";
+                               boolean numericOnly = !rawDesc.isEmpty() && rawDesc.matches("\\d{1,4}");
+                               String displayDesc = numericOnly ? "" : rawDesc;
                         %>
                         <div class="week-timeline-row">
-                            <div class="week-line">
-                                <span class="week-label">W<%= weekNum %></span>
-                                <span class="week-progress"><span class="week-progress-fill" style="width:<%= progress %>%"></span></span>
+                            <div class="week-timeline-head">
+                                <span class="week-badge" title="Teaching week in the module calendar">Week <%= weekNum %></span>
+                                <% if (weekMilestones.size() > 1) { %>
+                                <span class="muted-inline week-milestone-index">Milestone <%= ix + 1 %> of <%= weekMilestones.size() %></span>
+                                <% } %>
                             </div>
-                            <div class="week-desc"><%= item[1] != null && !item[1].isEmpty() ? item[1] : "Milestone" %></div>
+                            <div class="week-progress week-progress--full" role="img" aria-label="Relative position in module weeks: week <%= weekNum %> of <%= timelineMaxWeek %>">
+                                <span class="week-progress-fill" style="width:<%= progress %>%"></span>
+                            </div>
+                            <% if (!displayDesc.isEmpty()) { %>
+                            <p class="week-desc"><%= displayDesc %></p>
+                            <% } else if (numericOnly) { %>
+                            <p class="week-desc week-desc--muted muted-inline">No readable milestone text for this entry (module referenced week <%= weekNum %> only).</p>
+                            <% } else { %>
+                            <p class="week-desc week-desc--muted muted-inline">No extra detail for this week.</p>
+                            <% } %>
                         </div>
                         <% } %>
                     </div>
                     <% } %>
-                </dd>
-                <dt class="job-detail-dt job-detail-dt--rich job-detail-dt--plan"><span class="job-detail-dt-inner"><span class="job-detail-dt-ico" aria-hidden="true">&#128203;</span>Multi-TA allocation plan</span></dt>
-                <dd class="job-detail-dd job-detail-dd--rich">
+                </div>
+                <% if (!hideTaPlanDuplicateOfTable) { %>
+                <div class="ta-job-panel__chunk ta-job-panel__chunk--sep">
+                    <h3 class="ta-job-panel__title">Multi-TA allocation plan</h3>
                     <% if (taPlanChunks.isEmpty()) { %>
-                    <span class="job-detail-empty">—</span>
+                    <p class="job-detail-empty">—</p>
                     <% } else if (taPlanChunks.size() == 1 && taPlanChunks.get(0)[0] == null) { %>
-                    <div class="job-rich-text pre-wrap"><%= taPlanChunks.get(0)[1] %></div>
+                    <div class="job-rich-text pre-wrap ta-job-panel__body"><%= taPlanChunks.get(0)[1] %></div>
                     <% } else { %>
                     <div class="ta-plan-grid">
                         <% for (String[] row : taPlanChunks) { %>
@@ -180,48 +257,35 @@
                         <% } %>
                     </div>
                     <% } %>
-                </dd>
-                <dt class="job-detail-dt job-detail-dt--rich job-detail-dt--schedule"><span class="job-detail-dt-inner"><span class="job-detail-dt-ico" aria-hidden="true">&#128197;</span>Interview schedule</span></dt>
-                <dd class="job-detail-dd job-detail-dd--rich">
-                    <% if (job.getInterviewSchedule() == null || job.getInterviewSchedule().trim().isEmpty()) { %>
-                    <span class="job-detail-empty">—</span>
-                    <% } else { %>
-                    <div class="interview-info-card interview-info-card--schedule">
-                        <div class="interview-info-card-head">
-                            <span class="arr-icon arr-icon-interview" aria-hidden="true">CAL</span>
-                            <div class="interview-info-card-body">
-                                <span class="interview-info-label">When</span>
-                                <p class="interview-info-value"><%= interviewSchedule %></p>
-                            </div>
+                </div>
+                <% } %>
+                <div class="ta-job-panel__chunk ta-job-panel__chunk--sep ta-job-panel__chunk--interview">
+                    <h3 class="ta-job-panel__title">Interview <span class="ta-job-panel__title-tag">preview</span></h3>
+                    <div class="job-interview-inline job-interview-inline--panel" role="group" aria-label="Estimated interview time and location">
+                        <div class="job-interview-inline-col job-interview-inline-col--time">
+                            <span class="interview-info-label">Time</span>
+                            <p class="interview-info-value pre-wrap"><% if (job.getInterviewSchedule() == null || job.getInterviewSchedule().trim().isEmpty()) { %><span class="job-detail-empty">Not published</span><% } else { %><%= interviewSchedule %><% } %></p>
                         </div>
-                        <p class="interview-info-note">Arrive a few minutes early; bring your student ID if the module team requires it.</p>
-                    </div>
-                    <% } %>
-                </dd>
-                <dt class="job-detail-dt job-detail-dt--rich job-detail-dt--location"><span class="job-detail-dt-inner"><span class="job-detail-dt-ico" aria-hidden="true">&#128205;</span>Interview location</span></dt>
-                <dd class="job-detail-dd job-detail-dd--rich">
-                    <% if (job.getInterviewLocation() == null || job.getInterviewLocation().trim().isEmpty()) { %>
-                    <span class="job-detail-empty">—</span>
-                    <% } else { %>
-                    <div class="interview-info-card interview-info-card--location">
-                        <div class="interview-info-card-head">
-                            <span class="arr-icon arr-icon-location" aria-hidden="true">LOC</span>
-                            <div class="interview-info-card-body">
-                                <span class="interview-info-label">Where</span>
-                                <p class="interview-info-value pre-wrap"><%= interviewLocation %></p>
-                            </div>
+                        <div class="job-interview-inline-col job-interview-inline-col--loc">
+                            <span class="interview-info-label">Location</span>
+                            <p class="interview-info-value pre-wrap"><% if (job.getInterviewLocation() == null || job.getInterviewLocation().trim().isEmpty()) { %><span class="job-detail-empty">Not published</span><% } else { %><%= interviewLocation %><% } %></p>
                         </div>
                     </div>
-                    <% } %>
-                </dd>
-                <dt>Application deadline</dt><dd><%= deadline %></dd>
-                <dt>Open status</dt><dd><%= isOpen ? "Open for applications" : "Closed" %></dd>
-            </dl>
-            <h2>Per-TA responsibilities</h2>
+                    <div class="interview-inline-notes interview-inline-notes--panel">
+                        <p class="muted-inline">Arrive a few minutes early; bring your student ID if the module team requires it.</p>
+                        <p class="muted-inline ta-interview-process-note">The exact interview time is subject to the notification issued during the application process.</p>
+                    </div>
+                </div>
+            </div>
+            </section>
+
+            <section class="ta-job-detail__section" aria-labelledby="ta-job-workload-title">
+            <h2 id="ta-job-workload-title" class="ta-job-detail__heading">Workload per TA <span class="ta-job-detail__heading-note">(estimate)</span></h2>
             <p class="muted-inline job-wa-edit-hint">
-                Balanced by planned recruits: total estimated workload <strong><%= String.format(Locale.US, "%.2f", quotaRec.getTotalHours()) %> h</strong>,
-                average per TA <strong><%= String.format(Locale.US, "%.2f", quotaRec.getAverageHours()) %> h</strong>,
-                imbalance (max-min) <strong><%= String.format(Locale.US, "%.2f", quotaRec.getImbalanceHours()) %> h</strong>.
+                If every planned TA slot is filled, the same duties split about like this (modelled on <strong><%= plannedRecruits %></strong> recruit(s)):
+                total <strong><%= String.format(Locale.US, "%.2f", quotaRec.getTotalHours()) %> h</strong>,
+                average <strong><%= String.format(Locale.US, "%.2f", quotaRec.getAverageHours()) %> h</strong> per TA,
+                imbalance (max &minus; min) <strong><%= String.format(Locale.US, "%.2f", quotaRec.getImbalanceHours()) %> h</strong>.
             </p>
             <div class="ta-duty-board">
                 <% for (WorkQuotaPlanner.TAQuota q : quotaRec.getQuotas()) {
@@ -239,23 +303,23 @@
                 </article>
                 <% } %>
             </div>
+            </section>
 
-            <div class="context-card job-detail-overview">
-                <strong>Overview</strong>
-                <p class="pre-wrap"><%= desc %></p>
-            </div>
-
-            <p><em>Posted by <%= escHtml(job.getPostedByName() != null ? job.getPostedByName() : "MO") %></em></p>
+            <p class="ta-job-detail__posted"><em>Posted by <%= escHtml(job.getPostedByName() != null ? job.getPostedByName() : "MO") %></em></p>
 
             <% if (isOpen) { %>
+            <section class="ta-job-detail__section ta-job-detail__section--apply" aria-labelledby="ta-job-apply-title">
             <div class="job-detail-apply">
-                <h2>Apply for this position</h2>
+                <h2 id="ta-job-apply-title">Apply for this position</h2>
                 <p class="muted-inline">Review the job details above, then continue to confirm what will be shared from your profile and CV.</p>
                 <p><a href="${pageContext.request.contextPath}/ta/apply-confirm?jobId=<%= escHtml(job.getId()) %>" class="btn btn-primary btn-lg">Review and apply</a></p>
             </div>
+            </section>
             <% } else { %>
             <p class="error">This job is closed; applications are not accepted.</p>
             <% } %>
+
+            </div>
         </main>
         <aside class="right-sidebar">
             <div class="widget-card">

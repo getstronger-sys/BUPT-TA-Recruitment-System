@@ -24,6 +24,7 @@ public class SavedJobsServlet extends HttpServlet {
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         String userId = (String) req.getSession().getAttribute("userId");
         DataStorage storage = new DataStorage(getServletContext());
+        storage.syncJobStatusesWithDeadlines();
         TAProfile profile = storage.getOrCreateProfile(userId);
 
         List<Object[]> jobsWithMatch = new ArrayList<>();

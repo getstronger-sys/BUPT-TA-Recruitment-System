@@ -10,6 +10,7 @@
 <%@ page import="bupt.ta.model.Application" %>
 <%@ page import="bupt.ta.ai.AIMatchService" %>
 <%@ page import="bupt.ta.util.WorkQuotaPlanner" %>
+<%@ page import="bupt.ta.util.JobActivity" %>
 <% List<Object[]> jobsWithApps = (List<Object[]>) request.getAttribute("jobsWithApps"); if (jobsWithApps == null) jobsWithApps = java.util.Collections.emptyList();
    List<Object[]> moJobPickList = (List<Object[]>) request.getAttribute("moJobPickList");
    if (moJobPickList == null) moJobPickList = java.util.Collections.emptyList();
@@ -69,6 +70,7 @@
                    else if ("invalid_action".equals(err)) errMsg = "Invalid action.";
                    else if ("invalid_job".equals(err)) errMsg = "Invalid posting or access denied.";
                    else if ("job_inactive".equals(err)) errMsg = "This posting is closed or past deadline. Management actions are disabled.";
+                   else if ("reopen_deadline_required".equals(err)) errMsg = "The application deadline has passed. Enter a new deadline (today or later) to reopen this posting; it will return to My Jobs.";
             %><p class="error">Error: <%= errMsg %></p><% } %>
 
             <% if (moJobListMode) { %>
@@ -197,11 +199,11 @@
                         </td>
                     </tr>
                     <tr>
-                        <th><span class="arr-icon arr-icon-interview" aria-hidden="true">IV</span>Interview timetable</th>
+                        <th><span class="arr-icon arr-icon-interview" aria-hidden="true">IV</span>Estimated interview time</th>
                         <td class="pre-wrap"><%= escHtml(hdr.getInterviewSchedule() != null ? hdr.getInterviewSchedule() : "Not set.") %></td>
                     </tr>
                     <tr>
-                        <th><span class="arr-icon arr-icon-location" aria-hidden="true">LOC</span>Interview location</th>
+                        <th><span class="arr-icon arr-icon-location" aria-hidden="true">LOC</span>Estimated interview location</th>
                         <td class="pre-wrap"><%= escHtml(hdr.getInterviewLocation() != null ? hdr.getInterviewLocation() : "Not set.") %></td>
                     </tr>
                     </tbody>
@@ -278,12 +280,19 @@
                             <input type="hidden" name="action" value="close">
                             <button type="submit" class="btn btn-danger">Close Job</button>
                         </form>
-                        <% } else { %>
-                        <form action="${pageContext.request.contextPath}/mo/close-job" method="post">
+                        <% } else {
+                               boolean reopenNeedsDeadline = JobActivity.isApplicationDeadlinePast(j.getDeadline());
+                        %>
+                        <form action="${pageContext.request.contextPath}/mo/close-job" method="post" class="mo-reopen-form">
                             <%@ include file="/WEB-INF/jspf/csrf-hidden.jspf" %>
                             <input type="hidden" name="jobId" value="<%= j.getId() %>">
                             <input type="hidden" name="action" value="reopen">
-                            <button type="submit" class="btn btn-primary">Reopen</button>
+                            <% if (reopenNeedsDeadline) { %>
+                            <label class="mo-reopen-deadline-label">New application deadline
+                                <input type="date" name="newDeadline" class="note-input" required aria-required="true">
+                            </label>
+                            <% } %>
+                            <button type="submit" class="btn btn-primary"><%= reopenNeedsDeadline ? "Reopen with new deadline" : "Reopen" %></button>
                         </form>
                         <% } %>
                     </div>
