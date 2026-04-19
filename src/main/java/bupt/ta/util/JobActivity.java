@@ -19,7 +19,7 @@ public final class JobActivity {
     public static boolean isInactive(Job job) {
         if (job == null) return true;
         if ("CLOSED".equalsIgnoreCase(job.getStatus())) return true;
-        return isPastDeadline(job.getDeadline());
+        return isApplicationDeadlinePast(job.getDeadline());
     }
 
     public static boolean isActive(Job job) {
@@ -30,7 +30,11 @@ public final class JobActivity {
         return isInactive(job) ? PATH_INACTIVE : PATH_ACTIVE;
     }
 
-    private static boolean isPastDeadline(String deadline) {
+    /**
+     * True if the application deadline date (yyyy-MM-dd prefix) is strictly before today.
+     * Missing or unparseable deadlines are not treated as past.
+     */
+    public static boolean isApplicationDeadlinePast(String deadline) {
         if (deadline == null || deadline.trim().isEmpty()) return false;
         String d = deadline.trim();
         if (d.length() >= 10) {
@@ -42,5 +46,18 @@ public final class JobActivity {
         } catch (DateTimeParseException e) {
             return false;
         }
+    }
+
+    /**
+     * If the job is still OPEN but the deadline has passed, set status to CLOSED (call before persisting).
+     *
+     * @return true if the in-memory job was modified
+     */
+    public static boolean closeOpenJobIfDeadlinePassed(Job job) {
+        if (job == null) return false;
+        if (!"OPEN".equalsIgnoreCase(job.getStatus())) return false;
+        if (!isApplicationDeadlinePast(job.getDeadline())) return false;
+        job.setStatus("CLOSED");
+        return true;
     }
 }

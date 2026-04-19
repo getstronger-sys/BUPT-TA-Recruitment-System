@@ -29,6 +29,7 @@ public class ApplyConfirmServlet extends HttpServlet {
         jobId = jobId.trim();
 
         DataStorage storage = new DataStorage(getServletContext());
+        storage.syncJobStatusesWithDeadlines();
         Job job = storage.getJobById(jobId);
         if (job == null) {
             resp.sendRedirect(req.getContextPath() + "/ta/jobs?error=job_not_found");

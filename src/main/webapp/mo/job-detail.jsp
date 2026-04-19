@@ -4,6 +4,7 @@
 <%@ page import="bupt.ta.model.WorkArrangementItem" %>
 <%@ page import="bupt.ta.service.InterviewBookingService.SlotSummary" %>
 <%@ page import="bupt.ta.util.WorkQuotaPlanner" %>
+<%@ page import="bupt.ta.util.JobActivity" %>
 <%@ page import="java.util.ArrayList" %>
 <%@ page import="java.util.List" %>
 <%@ page import="java.util.Locale" %>
@@ -37,7 +38,7 @@
     if (slotSummaries == null) slotSummaries = new ArrayList<>();
     List<String[]> weekMilestones = new ArrayList<>();
     String timelineRaw = job.getExamTimeline() != null ? job.getExamTimeline() : "";
-    Matcher weekMatcher = Pattern.compile("(?:Week|W)\\s*(\\d{1,2})\\s*[:\\-]?\\s*([^;\\n]+)?", Pattern.CASE_INSENSITIVE).matcher(timelineRaw);
+    Matcher weekMatcher = Pattern.compile("(?:Week|W)\\s*(\\d{1,3})\\s*[:\\-–.]?\\s*([^;\\n]+)?", Pattern.CASE_INSENSITIVE).matcher(timelineRaw);
     while (weekMatcher.find()) {
         String weekNo = weekMatcher.group(1);
         String detail = weekMatcher.group(2) != null ? weekMatcher.group(2).trim() : "";
@@ -62,6 +63,29 @@
     String createdAt = job.getCreatedAt() != null && !job.getCreatedAt().isEmpty() ? escHtml(job.getCreatedAt()) : "&mdash;";
     String maxAppText = job.getMaxApplicants() <= 0 ? "No limit" : String.valueOf(job.getMaxApplicants());
     request.setAttribute("moNavActive", moPastJobsPage ? "past" : "jobs");
+    boolean canEditWorkArrangements = !moPastJobsPage && JobActivity.isActive(job);
+    List<WorkArrangementItem> waRowsForEdit = new ArrayList<>();
+    if (job.getWorkArrangements() != null) {
+        waRowsForEdit.addAll(job.getWorkArrangements());
+    }
+    if (canEditWorkArrangements && waRowsForEdit.isEmpty()) {
+        waRowsForEdit.add(new WorkArrangementItem());
+    }
+    boolean taPlanSingleUnstructured = !taPlanChunks.isEmpty() && taPlanChunks.size() == 1 && taPlanChunks.get(0)[0] == null;
+    boolean hasPersistedWorkRows = job.getWorkArrangements() != null && !job.getWorkArrangements().isEmpty();
+    boolean hideMoTaPlanDuplicate = hasPersistedWorkRows && taPlanSingleUnstructured;
+    int timelineMaxWeekMo = 14;
+    for (String[] item : weekMilestones) {
+        try {
+            int w = Integer.parseInt(item[0]);
+            if (w > timelineMaxWeekMo) {
+                timelineMaxWeekMo = w;
+            }
+        } catch (Exception ignored) { /* keep */ }
+    }
+    if (timelineMaxWeekMo < 1) {
+        timelineMaxWeekMo = 14;
+    }
 %>
 <!DOCTYPE html>
 <html>
@@ -86,7 +110,7 @@
             </div>
             <%@ include file="/WEB-INF/jspf/mo-side-nav.jspf" %>
         </div>
-        <main class="main-panel">
+        <main class="main-panel mo-main">
             <p class="breadcrumb-line">
                 <a href="<%= moCtx %><%= moListPath %>">&larr; Back to posting list</a>
                 &nbsp;|&nbsp;
@@ -95,16 +119,19 @@
             <% if ("1".equals(request.getParameter("posted"))) { %>
             <p class="success">Posting saved. Everything below is the full text you entered (same fields TAs see, plus MO-only limits). When you are ready, open <a href="<%= manageHref %>">Manage applicants</a>.</p>
             <% } %>
-            <% if ("1".equals(request.getParameter("taCountsUpdated"))) { %>
-            <p class="success">TA counts per work item were updated. Summary text was refreshed while planned recruits stayed unchanged.</p>
+            <% if ("1".equals(request.getParameter("workArrangementsUpdated"))) { %>
+            <p class="success">Work arrangements and planned recruits were saved. Summary text and quota hints were refreshed.</p>
             <% } %>
             <% if ("1".equals(request.getParameter("slotSaved"))) { %>
             <p class="success">Interview slot updated successfully.</p>
             <% } %>
             <% String waErr = request.getParameter("error");
-               if ("wa_count_mismatch".equals(waErr)) { %><p class="error">Could not update TA counts (form mismatch). Please try again.</p><% }
+               if ("wa_count_mismatch".equals(waErr)) { %><p class="error">Could not update work arrangements (form mismatch). Please try again.</p><% }
                else if ("wa_ta_invalid".equals(waErr)) { %><p class="error">Each row needs at least 1 TA.</p><% }
-               else if ("planned_ta_invalid".equals(waErr)) { %><p class="error">Planned recruits must be at least 1.</p><% } %>
+               else if ("planned_ta_invalid".equals(waErr)) { %><p class="error">Planned recruits must be at least 1.</p><% }
+               else if ("wa_confirm_required".equals(waErr)) { %><p class="error">Please tick both confirmation boxes before saving changes to work arrangements.</p><% }
+               else if ("wa_validation".equals(waErr)) { %><p class="error">Fix work arrangement rows: each needs a name, per-session duration, occurrences (≥1), and TA count (≥1).</p><% }
+               else if ("wa_job_inactive".equals(waErr)) { %><p class="error">This posting is closed or past deadline; work arrangements cannot be edited here.</p><% } %>
             <% if (request.getParameter("slotError") != null) { %><p class="error"><%= escHtml(request.getParameter("slotError")) %></p><% } %>
             <h1><%= safeTitle %></h1>
             <p class="job-detail-meta">
@@ -114,90 +141,227 @@
                 <% } %>
             </p>
 
-            <% if (job.getWorkArrangements() != null && !job.getWorkArrangements().isEmpty()) { %>
-            <h2 class="job-wa-heading">Work arrangements</h2>
-            <p class="muted-inline job-wa-edit-hint">You can change <strong>TA count</strong> per row anytime; other columns reflect what was set at posting time.</p>
-            <form action="<%= moCtx %>/mo/update-work-ta-counts" method="post" class="form job-wa-ta-form">
+            <div class="ta-job-detail">
+
+            <% if ((job.getWorkArrangements() != null && !job.getWorkArrangements().isEmpty()) || canEditWorkArrangements) { %>
+            <section class="ta-job-detail__section" aria-labelledby="mo-job-wa-title">
+            <h2 id="mo-job-wa-title" class="ta-job-detail__heading">Work arrangements</h2>
+            <% if (canEditWorkArrangements) { %>
+            <p class="ta-job-detail__lede muted-inline">While this posting is <strong>open and before the deadline</strong>, edit the table below. Changes refresh workload summaries and smart-quota hints; avoid unnecessary edits.</p>
+            <form id="job-detail-wa-form" action="<%= moCtx %>/mo/update-work-ta-counts" method="post" class="form form--mo-post job-detail-wa-form">
                 <%@ include file="/WEB-INF/jspf/csrf-hidden.jspf" %>
                 <input type="hidden" name="jobId" value="<%= escHtml(job.getId()) %>">
-                <table class="job-wa-table">
-                    <thead>
-                    <tr>
-                        <th scope="col">Work name</th>
-                        <th scope="col">Per-session duration</th>
-                        <th scope="col">Occurrences</th>
-                        <th scope="col">TA count</th>
-                        <th scope="col">Specific time</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <% for (WorkArrangementItem wa : job.getWorkArrangements()) {
-                           String wn = wa.getWorkName() != null && !wa.getWorkName().isEmpty() ? escHtml(wa.getWorkName()) : "&mdash;";
-                           String sdRaw = wa.getResolvedSessionDuration();
-                           String sd = sdRaw != null && !sdRaw.isEmpty() ? escHtml(sdRaw) : "&mdash;";
-                           int occ = wa.getResolvedOccurrenceCount();
-                           int wc = wa.getTaCount() > 0 ? wa.getTaCount() : 1;
-                    %>
-                    <tr>
-                        <td><%= wn %></td>
-                        <td class="pre-wrap"><%= sd %></td>
-                        <td><%= occ %></td>
-                        <td class="job-wa-ta-cell">
-                            <label class="sr-only">TA count</label>
-                            <input type="number" name="waTaCount" class="job-wa-ta-input" min="1" required value="<%= wc %>">
-                        </td>
-                        <td class="pre-wrap"><% if (wa.getSpecificTime() != null && !wa.getSpecificTime().isEmpty()) { %><%= escHtml(wa.getSpecificTime()) %><% } else { %><span class="muted-inline">TBD &mdash; to be arranged as needed</span><% } %></td>
-                    </tr>
-                    <% } %>
-                    </tbody>
-                </table>
-                <label>Planned recruits *</label>
-                <input type="number" name="plannedTaCount" min="1" required value="<%= plannedRecruits %>">
-                <p class="job-wa-save-row"><button type="submit" class="btn btn-primary">Save TA counts</button></p>
+                <div class="wa-section mo-wa-card">
+                    <div class="mo-wa-table-scroll">
+                    <table class="wa-edit-table" role="grid" aria-label="Work arrangement rows">
+                        <caption class="sr-only">Work arrangement rows, required fields per column header</caption>
+                        <thead>
+                        <tr>
+                            <th scope="col" class="wa-edit-table__col-name">Work name</th>
+                            <th scope="col" class="wa-edit-table__col-duration">Per-session duration</th>
+                            <th scope="col" class="wa-edit-table__col-num">Sessions</th>
+                            <th scope="col" class="wa-edit-table__col-num">TAs</th>
+                            <th scope="col" class="wa-edit-table__col-time">Specific time <span class="muted-inline">(optional)</span></th>
+                            <th scope="col" class="wa-edit-table__col-actions"><span class="sr-only">Remove row</span></th>
+                        </tr>
+                        </thead>
+                        <tbody id="job-detail-wa-rows" class="wa-rows wa-rows--edit">
+                        <% for (int waIdx = 0; waIdx < waRowsForEdit.size(); waIdx++) {
+                               WorkArrangementItem w = waRowsForEdit.get(waIdx);
+                               String wid = "jd-wa-" + waIdx;
+                               String wn = w.getWorkName() != null ? w.getWorkName() : "";
+                               String sd = w.getSessionDuration() != null && !w.getSessionDuration().isEmpty()
+                                       ? w.getSessionDuration()
+                                       : (w.getDuration() != null ? w.getDuration() : "");
+                               int oc = w.getOccurrenceCount() > 0 ? w.getOccurrenceCount() : (w.getResolvedOccurrenceCount() > 0 ? w.getResolvedOccurrenceCount() : 1);
+                               int wc = w.getTaCount() > 0 ? w.getTaCount() : 1;
+                               String wt = w.getSpecificTime() != null ? w.getSpecificTime() : "";
+                        %>
+                        <tr class="wa-row" data-wa-row>
+                            <td class="wa-edit-table__cell">
+                                <label class="sr-only" for="<%= wid %>-wn">Work name</label>
+                                <input id="<%= wid %>-wn" type="text" name="waWorkName" required value="<%= escHtml(wn) %>" placeholder="e.g. Lab" autocomplete="off" class="wa-edit-table__input">
+                            </td>
+                            <td class="wa-edit-table__cell">
+                                <label class="sr-only" for="<%= wid %>-sd">Per-session duration</label>
+                                <input id="<%= wid %>-sd" type="text" name="waSessionDuration" required value="<%= escHtml(sd) %>" placeholder="e.g. 2 h" autocomplete="off" class="wa-edit-table__input">
+                            </td>
+                            <td class="wa-edit-table__cell wa-edit-table__cell--num">
+                                <label class="sr-only" for="<%= wid %>-oc">Sessions</label>
+                                <input id="<%= wid %>-oc" type="number" name="waOccurrenceCount" min="1" required value="<%= oc %>" class="wa-input-num wa-edit-table__input">
+                            </td>
+                            <td class="wa-edit-table__cell wa-edit-table__cell--num">
+                                <label class="sr-only" for="<%= wid %>-tc">TAs</label>
+                                <input id="<%= wid %>-tc" type="number" name="waTaCount" min="1" required value="<%= wc %>" class="wa-input-num wa-edit-table__input">
+                            </td>
+                            <td class="wa-edit-table__cell">
+                                <label class="sr-only" for="<%= wid %>-st">Specific time</label>
+                                <input id="<%= wid %>-st" type="text" name="waSpecificTime" value="<%= escHtml(wt) %>" placeholder="e.g. Wed 14:00" autocomplete="off" class="wa-edit-table__input">
+                            </td>
+                            <td class="wa-edit-table__cell wa-edit-table__cell--actions">
+                                <button type="button" class="btn btn-secondary wa-remove-compact" title="Remove row" aria-label="Remove this row">&minus;</button>
+                            </td>
+                        </tr>
+                        <% } %>
+                        </tbody>
+                    </table>
+                    </div>
+                    <div class="wa-toolbar">
+                        <button type="button" id="job-detail-wa-add-row" class="btn btn-secondary" title="Add work arrangement row">+ Add row</button>
+                        <button type="button" id="job-detail-wa-suggest-quota" class="btn btn-secondary" title="Suggest balanced TA quotas">Smart quota recommendation</button>
+                    </div>
+                    <div id="job-detail-wa-suggestion-panel" class="wa-suggestion-panel" hidden>
+                        <p id="job-detail-wa-suggestion-meta" class="muted-inline wa-suggestion-meta"></p>
+                        <div id="job-detail-wa-suggestion-list" class="wa-suggestion-list"></div>
+                    </div>
+                    <div class="mo-wa-form-footer">
+                        <div class="mo-wa-planned-row">
+                            <label for="job-detail-planned-ta">Planned recruits <abbr title="required">*</abbr></label>
+                            <input type="number" name="plannedTaCount" id="job-detail-planned-ta" class="mo-wa-planned-input" min="1" required value="<%= plannedRecruits %>">
+                        </div>
+                        <div class="mo-wa-confirm-stack">
+                            <label class="checkbox-line mo-wa-checkbox-line"><input type="checkbox" name="waConfirmUnderstand" value="1" required> I understand this updates the published workload summary and may affect TA-facing text.</label>
+                            <label class="checkbox-line mo-wa-checkbox-line"><input type="checkbox" name="waConfirmAccurate" value="1" required> I confirm the rows above are correct before saving.</label>
+                        </div>
+                        <div class="mo-wa-save-row">
+                            <button type="submit" class="btn btn-primary" id="job-detail-wa-submit">Save work arrangements</button>
+                        </div>
+                    </div>
+                </div>
             </form>
+            <% } else if (job.getWorkArrangements() != null && !job.getWorkArrangements().isEmpty()) { %>
+            <p class="ta-job-detail__lede muted-inline">Read-only snapshot from when this posting became inactive.</p>
+            <table class="job-wa-table">
+                <thead>
+                <tr>
+                    <th scope="col">Work name</th>
+                    <th scope="col">Per-session duration</th>
+                    <th scope="col">Occurrences</th>
+                    <th scope="col">TA count</th>
+                    <th scope="col">Specific time</th>
+                </tr>
+                </thead>
+                <tbody>
+                <% for (WorkArrangementItem wa : job.getWorkArrangements()) {
+                       String wn = wa.getWorkName() != null && !wa.getWorkName().isEmpty() ? escHtml(wa.getWorkName()) : "&mdash;";
+                       String sdRaw = wa.getResolvedSessionDuration();
+                       String sd = sdRaw != null && !sdRaw.isEmpty() ? escHtml(sdRaw) : "&mdash;";
+                       int occ = wa.getResolvedOccurrenceCount();
+                       int wc = wa.getTaCount() > 0 ? wa.getTaCount() : 1;
+                %>
+                <tr>
+                    <td><%= wn %></td>
+                    <td class="pre-wrap"><%= sd %></td>
+                    <td><%= occ %></td>
+                    <td><%= wc %></td>
+                    <td class="pre-wrap"><% if (wa.getSpecificTime() != null && !wa.getSpecificTime().isEmpty()) { %><%= escHtml(wa.getSpecificTime()) %><% } else { %><span class="muted-inline">TBD &mdash; to be arranged as needed</span><% } %></td>
+                </tr>
+                <% } %>
+                </tbody>
+            </table>
+            <% } %>
+            </section>
             <% } %>
 
-            <dl class="job-detail-dl">
+            <section class="ta-job-detail__section" aria-labelledby="mo-job-key-title">
+            <h2 id="mo-job-key-title" class="ta-job-detail__heading">Key information</h2>
+            <p class="ta-job-detail__lede muted-inline">Posting identifiers, limits, compensation, deadline, and open status (mirrors what TAs see in &ldquo;Key information&rdquo;).</p>
+            <dl class="job-detail-dl job-detail-dl--ta-summary">
                 <dt>Posting ID</dt><dd><code><%= escHtml(job.getId()) %></code></dd>
                 <dt>Created</dt><dd><%= createdAt %></dd>
-                <dt>Module code</dt><dd><%= escHtml(job.getModuleCode() != null ? job.getModuleCode() : "&mdash;") %></dd>
-                <dt>Module name</dt><dd><%= moduleName %></dd>
+                <dt>Module</dt>
+                <dd><%
+                    String mcodeRawMo = job.getModuleCode() != null ? job.getModuleCode().trim() : "";
+                    String mnameRawMo = job.getModuleName() != null ? job.getModuleName().trim() : "";
+                    if (mcodeRawMo.isEmpty() && mnameRawMo.isEmpty()) { %>&mdash;<% }
+                    else if (!mcodeRawMo.isEmpty() && !mnameRawMo.isEmpty()) { %><%= escHtml(mcodeRawMo) %> <span class="muted-inline">&middot;</span> <%= escHtml(mnameRawMo) %><% }
+                    else if (!mcodeRawMo.isEmpty()) { %><%= escHtml(mcodeRawMo) %><% }
+                    else { %><%= escHtml(mnameRawMo) %><% }
+                %></dd>
+                <% if (!(hasPersistedWorkRows || canEditWorkArrangements)) { %>
                 <dt>Hours / schedule</dt><dd class="pre-wrap"><%= wh %></dd>
+                <% } %>
                 <dt>Payment</dt><dd class="pre-wrap"><%= pay %></dd>
                 <dt>Required skills</dt><dd><%= job.getRequiredSkills() != null && !job.getRequiredSkills().isEmpty() ? escHtml(String.join(", ", job.getRequiredSkills())) : "&mdash;" %></dd>
-                <dt>Responsibilities</dt><dd class="pre-wrap"><%= respText %></dd>
+                <% if (!(hasPersistedWorkRows || canEditWorkArrangements)) { %>
                 <dt>Workload</dt><dd class="pre-wrap"><%= wl %></dd>
+                <% } %>
                 <dt>Max applicants</dt><dd><%= maxAppText %></dd>
+                <% if (!canEditWorkArrangements) { %>
                 <dt>Planned recruits</dt><dd><%= plannedRecruits %></dd>
+                <% } %>
                 <dt>Auto-fill from waitlist</dt><dd><%= job.isAutoFillFromWaitlist() ? "Yes" : "No" %></dd>
-                <dt>Course timeline</dt>
-                <dd>
+                <dt>Application deadline</dt><dd><%= deadline %></dd>
+                <dt>Open status</dt><dd><%= isOpen ? "Open for applications" : "Closed" %></dd>
+            </dl>
+            </section>
+
+            <section class="ta-job-detail__section" aria-labelledby="mo-job-role-title">
+            <h2 id="mo-job-role-title" class="ta-job-detail__heading">Role &amp; scope</h2>
+            <p class="ta-job-detail__lede muted-inline">Published overview and responsibilities (same block as the TA &ldquo;Role &amp; scope&rdquo; view).</p>
+            <div class="ta-job-role-unified">
+                <% if (job.getDescription() != null && !job.getDescription().trim().isEmpty()) { %>
+                <div class="ta-job-role-unified__block">
+                    <h3 class="ta-job-role-unified__h">Summary</h3>
+                    <p class="ta-job-role-unified__body pre-wrap"><%= desc %></p>
+                </div>
+                <% } %>
+                <div class="ta-job-role-unified__block">
+                    <h3 class="ta-job-role-unified__h">Responsibilities</h3>
+                    <p class="ta-job-role-unified__body pre-wrap"><%= respText %></p>
+                </div>
+            </div>
+            </section>
+
+            <section class="ta-job-detail__section" aria-labelledby="mo-job-schedule-title">
+            <h2 id="mo-job-schedule-title" class="ta-job-detail__heading">Schedule &amp; interview</h2>
+            <p class="ta-job-detail__lede muted-inline">Teaching-week milestones (W) and the interview preview TAs see on the job page.</p>
+            <div class="ta-job-panel">
+                <div class="ta-job-panel__chunk">
+                    <h3 class="ta-job-panel__title">Course milestones</h3>
                     <% if (weekMilestones.isEmpty()) { %>
-                    <span class="pre-wrap"><%= examTimeline %></span>
+                    <p class="ta-job-panel__body pre-wrap"><%= examTimeline %></p>
                     <% } else { %>
-                    <div class="week-timeline-list">
-                        <% for (String[] item : weekMilestones) {
+                    <p class="ta-job-panel__caption muted-inline">Bar length is relative to the latest week listed (week <%= timelineMaxWeekMo %>).</p>
+                    <div class="week-timeline-list week-timeline-list--panel">
+                        <% for (int ix = 0; ix < weekMilestones.size(); ix++) {
+                               String[] item = weekMilestones.get(ix);
                                int weekNum = 1;
                                try { weekNum = Integer.parseInt(item[0]); } catch (Exception ignored) {}
-                               int progress = Math.max(0, Math.min(100, (int) Math.round((weekNum / 14.0) * 100)));
+                               int progress = Math.max(0, Math.min(100, (int) Math.round((weekNum / (double) timelineMaxWeekMo) * 100)));
+                               String rawDesc = item[1] != null ? item[1].trim() : "";
+                               boolean numericOnly = !rawDesc.isEmpty() && rawDesc.matches("\\d{1,4}");
+                               String displayDesc = numericOnly ? "" : rawDesc;
                         %>
                         <div class="week-timeline-row">
-                            <div class="week-line">
-                                <span class="week-label">W<%= weekNum %></span>
-                                <span class="week-progress"><span class="week-progress-fill" style="width:<%= progress %>%"></span></span>
+                            <div class="week-timeline-head">
+                                <span class="week-badge" title="Teaching week in the module calendar">Week <%= weekNum %></span>
+                                <% if (weekMilestones.size() > 1) { %>
+                                <span class="muted-inline week-milestone-index">Milestone <%= ix + 1 %> of <%= weekMilestones.size() %></span>
+                                <% } %>
                             </div>
-                            <div class="week-desc"><%= item[1] != null && !item[1].isEmpty() ? item[1] : "Milestone" %></div>
+                            <div class="week-progress week-progress--full" role="img" aria-label="Relative position in module weeks: week <%= weekNum %> of <%= timelineMaxWeekMo %>">
+                                <span class="week-progress-fill" style="width:<%= progress %>%"></span>
+                            </div>
+                            <% if (!displayDesc.isEmpty()) { %>
+                            <p class="week-desc"><%= displayDesc %></p>
+                            <% } else if (numericOnly) { %>
+                            <p class="week-desc week-desc--muted muted-inline">No readable milestone text for this entry (module referenced week <%= weekNum %> only).</p>
+                            <% } else { %>
+                            <p class="week-desc week-desc--muted muted-inline">No extra detail for this week.</p>
+                            <% } %>
                         </div>
                         <% } %>
                     </div>
                     <% } %>
-                </dd>
-                <dt class="job-detail-dt job-detail-dt--rich job-detail-dt--plan"><span class="job-detail-dt-inner"><span class="job-detail-dt-ico" aria-hidden="true">&#128203;</span>Multi-TA allocation plan</span></dt>
-                <dd class="job-detail-dd job-detail-dd--rich">
+                </div>
+                <% if (!hideMoTaPlanDuplicate) { %>
+                <div class="ta-job-panel__chunk ta-job-panel__chunk--sep">
+                    <h3 class="ta-job-panel__title">Multi-TA allocation plan</h3>
                     <% if (taPlanChunks.isEmpty()) { %>
-                    <span class="job-detail-empty">&mdash;</span>
+                    <p class="job-detail-empty">&mdash;</p>
                     <% } else if (taPlanChunks.size() == 1 && taPlanChunks.get(0)[0] == null) { %>
-                    <div class="job-rich-text pre-wrap"><%= taPlanChunks.get(0)[1] %></div>
+                    <div class="job-rich-text pre-wrap ta-job-panel__body"><%= taPlanChunks.get(0)[1] %></div>
                     <% } else { %>
                     <div class="ta-plan-grid">
                         <% for (String[] row : taPlanChunks) { %>
@@ -208,52 +372,34 @@
                         <% } %>
                     </div>
                     <% } %>
-                </dd>
-                <dt class="job-detail-dt job-detail-dt--rich job-detail-dt--schedule"><span class="job-detail-dt-inner"><span class="job-detail-dt-ico" aria-hidden="true">&#128197;</span>Interview schedule (published)</span></dt>
-                <dd class="job-detail-dd job-detail-dd--rich">
-                    <% if (job.getInterviewSchedule() == null || job.getInterviewSchedule().trim().isEmpty()) { %>
-                    <span class="job-detail-empty">&mdash;</span>
-                    <% } else { %>
-                    <div class="interview-info-card interview-info-card--schedule">
-                        <div class="interview-info-card-head">
-                            <span class="arr-icon arr-icon-interview" aria-hidden="true">CAL</span>
-                            <div class="interview-info-card-body">
-                                <span class="interview-info-label">When</span>
-                                <p class="interview-info-value"><%= interviewSchedule %></p>
-                            </div>
+                </div>
+                <% } %>
+                <div class="ta-job-panel__chunk ta-job-panel__chunk--sep ta-job-panel__chunk--interview">
+                    <h3 class="ta-job-panel__title">Interview <span class="ta-job-panel__title-tag">published</span></h3>
+                    <div class="job-interview-inline job-interview-inline--panel" role="group" aria-label="Published interview preview for applicants">
+                        <div class="job-interview-inline-col job-interview-inline-col--time">
+                            <span class="interview-info-label">Time</span>
+                            <p class="interview-info-value pre-wrap"><% if (job.getInterviewSchedule() == null || job.getInterviewSchedule().trim().isEmpty()) { %><span class="job-detail-empty">&mdash;</span><% } else { %><%= interviewSchedule %><% } %></p>
                         </div>
-                        <p class="interview-info-note">Applicants see this on the TA job page. Ask them to arrive early and bring ID if needed.</p>
-                    </div>
-                    <% } %>
-                </dd>
-                <dt class="job-detail-dt job-detail-dt--rich job-detail-dt--location"><span class="job-detail-dt-inner"><span class="job-detail-dt-ico" aria-hidden="true">&#128205;</span>Interview location (published)</span></dt>
-                <dd class="job-detail-dd job-detail-dd--rich">
-                    <% if (job.getInterviewLocation() == null || job.getInterviewLocation().trim().isEmpty()) { %>
-                    <span class="job-detail-empty">&mdash;</span>
-                    <% } else { %>
-                    <div class="interview-info-card interview-info-card--location">
-                        <div class="interview-info-card-head">
-                            <span class="arr-icon arr-icon-location" aria-hidden="true">LOC</span>
-                            <div class="interview-info-card-body">
-                                <span class="interview-info-label">Where</span>
-                                <p class="interview-info-value pre-wrap"><%= interviewLocation %></p>
-                            </div>
+                        <div class="job-interview-inline-col job-interview-inline-col--loc">
+                            <span class="interview-info-label">Location</span>
+                            <p class="interview-info-value pre-wrap"><% if (job.getInterviewLocation() == null || job.getInterviewLocation().trim().isEmpty()) { %><span class="job-detail-empty">&mdash;</span><% } else { %><%= interviewLocation %><% } %></p>
                         </div>
                     </div>
-                    <% } %>
-                </dd>
-                <dt>Application deadline</dt><dd><%= deadline %></dd>
-                <dt>Open status</dt><dd><%= isOpen ? "Open for applications" : "Closed" %></dd>
-            </dl>
-            <h2>Per-TA responsibilities</h2>
+                    <p class="muted-inline mo-job-detail-interview-foot">Applicants see this preview on the TA job page; remind them to arrive early and bring ID if required.</p>
+                </div>
+            </div>
+            </section>
+
+            <section class="ta-job-detail__section" aria-labelledby="mo-job-workload-title">
+            <h2 id="mo-job-workload-title" class="ta-job-detail__heading">Workload per TA <span class="ta-job-detail__heading-note">(estimate)</span></h2>
             <p class="muted-inline job-wa-edit-hint">
-                Recommendation uses the same balancing logic as posting page:
-                planned recruits = <strong><%= plannedRecruits %></strong>,
-                total estimated workload = <strong><%= String.format(Locale.US, "%.2f", quotaRec.getTotalHours()) %> h</strong>,
-                average per TA = <strong><%= String.format(Locale.US, "%.2f", quotaRec.getAverageHours()) %> h</strong>,
-                imbalance (max-min) = <strong><%= String.format(Locale.US, "%.2f", quotaRec.getImbalanceHours()) %> h</strong>.
+                If every planned TA slot is filled, the same duties split about like this (modelled on <strong><%= plannedRecruits %></strong> recruit(s)):
+                total <strong><%= String.format(Locale.US, "%.2f", quotaRec.getTotalHours()) %> h</strong>,
+                average <strong><%= String.format(Locale.US, "%.2f", quotaRec.getAverageHours()) %> h</strong> per TA,
+                imbalance (max &minus; min) <strong><%= String.format(Locale.US, "%.2f", quotaRec.getImbalanceHours()) %> h</strong>.
                 <% if (quotaRec.getUnknownDurationRows() > 0) { %>
-                    <span> <%= quotaRec.getUnknownDurationRows() %> row(s) used default 1h because duration text could not be parsed.</span>
+                <span> <%= quotaRec.getUnknownDurationRows() %> row(s) used default 1h because duration text could not be parsed.</span>
                 <% } %>
             </p>
             <div class="ta-duty-board">
@@ -274,10 +420,13 @@
                 </article>
                 <% } %>
             </div>
+            </section>
 
-            <section class="detail-card">
-                <h2>Bookable interview slots</h2>
-                <p class="muted-inline job-wa-edit-hint">Create reusable interview times here. Applicants in Interview or Waitlist can book, change, or cancel their own slot.</p>
+            <section class="ta-job-detail__section" aria-labelledby="mo-job-slots-title">
+                <h2 id="mo-job-slots-title" class="ta-job-detail__heading">Bookable interview slots</h2>
+                <p class="ta-job-detail__lede muted-inline">Reusable slots applicants can self-book when they are in Interview or Waitlist.</p>
+                <div class="ta-job-panel mo-job-slots-panel">
+                <div class="ta-job-panel__chunk">
                 <% if (!moPastJobsPage) { %>
                 <form action="<%= moCtx %>/mo/interview-slots" method="post" class="form">
                     <input type="hidden" name="jobId" value="<%= escHtml(job.getId()) %>">
@@ -343,14 +492,13 @@
                     </table>
                 </div>
                 <% } %>
+                </div>
+            </div>
             </section>
 
-            <div class="context-card job-detail-overview">
-                <strong>Overview</strong>
-                <p class="pre-wrap"><%= desc %></p>
             </div>
 
-            <p><em>Posted as <%= escHtml(job.getPostedByName() != null ? job.getPostedByName() : "MO") %></em></p>
+            <p class="ta-job-detail__posted"><em>Posted as <%= escHtml(job.getPostedByName() != null ? job.getPostedByName() : "MO") %></em></p>
 
             <p>
                 <a href="<%= manageHref %>" class="btn btn-primary">Go to applicant management</a>
@@ -366,5 +514,166 @@
         </aside>
     </div>
 </div>
+<% if (canEditWorkArrangements) { %>
+<script>
+(function () {
+    var rowsBox = document.getElementById("job-detail-wa-rows");
+    var addBtn = document.getElementById("job-detail-wa-add-row");
+    var suggestBtn = document.getElementById("job-detail-wa-suggest-quota");
+    var suggestionPanel = document.getElementById("job-detail-wa-suggestion-panel");
+    var suggestionMeta = document.getElementById("job-detail-wa-suggestion-meta");
+    var suggestionList = document.getElementById("job-detail-wa-suggestion-list");
+    var plannedTaInput = document.getElementById("job-detail-planned-ta");
+    var waForm = document.getElementById("job-detail-wa-form");
+    if (!rowsBox || !addBtn || !waForm) return;
+
+    function clearRowInputs(row) {
+        row.querySelectorAll("input").forEach(function (inp) {
+            if (inp.name === "waTaCount" || inp.name === "waOccurrenceCount") {
+                inp.value = "1";
+            } else {
+                inp.value = "";
+            }
+        });
+    }
+
+    function bindRemove(row) {
+        var btn = row.querySelector(".wa-remove-compact");
+        if (!btn) return;
+        btn.addEventListener("click", function () {
+            if (rowsBox.querySelectorAll(".wa-row").length <= 1) return;
+            row.remove();
+        });
+    }
+
+    rowsBox.querySelectorAll(".wa-row").forEach(bindRemove);
+
+    function stripIdsForClone(row) {
+        row.querySelectorAll("[id]").forEach(function (el) { el.removeAttribute("id"); });
+        row.querySelectorAll("label[for]").forEach(function (lb) { lb.removeAttribute("for"); });
+    }
+
+    addBtn.addEventListener("click", function () {
+        var first = rowsBox.querySelector(".wa-row");
+        if (!first) return;
+        var clone = first.cloneNode(true);
+        clearRowInputs(clone);
+        stripIdsForClone(clone);
+        rowsBox.appendChild(clone);
+        bindRemove(clone);
+    });
+
+    function parseDurationHours(raw) {
+        var text = (raw || "").trim().toLowerCase();
+        if (!text) return null;
+        var valMatch = text.match(/(\d+(\.\d+)?)/);
+        if (!valMatch) return null;
+        var value = parseFloat(valMatch[1]);
+        if (!isFinite(value) || value <= 0) return null;
+        if (text.indexOf("min") >= 0 || text.indexOf("minute") >= 0) return value / 60;
+        return value;
+    }
+
+    function collectRows() {
+        var rows = [];
+        rowsBox.querySelectorAll(".wa-row").forEach(function (row) {
+            var name = (row.querySelector("input[name='waWorkName']") || {}).value || "";
+            var duration = (row.querySelector("input[name='waSessionDuration']") || {}).value || "";
+            var occRaw = parseInt(((row.querySelector("input[name='waOccurrenceCount']") || {}).value || "0"), 10);
+            var taRaw = parseInt(((row.querySelector("input[name='waTaCount']") || {}).value || "0"), 10);
+            var occ = isFinite(occRaw) ? occRaw : 0;
+            var ta = isFinite(taRaw) ? taRaw : 0;
+            rows.push({
+                workName: name.trim(),
+                durationText: duration.trim(),
+                occurrenceCount: occ,
+                taCount: ta
+            });
+        });
+        return rows;
+    }
+
+    function renderSuggestion(result) {
+        if (!suggestionPanel || !suggestionMeta || !suggestionList) return;
+        suggestionPanel.hidden = false;
+        suggestionMeta.textContent = result.meta;
+        suggestionList.innerHTML = "";
+        result.assignments.forEach(function (ta) {
+            var card = document.createElement("div");
+            card.className = "wa-suggestion-card";
+            var details = [];
+            Object.keys(ta.workCount).sort().forEach(function (workName) {
+                details.push(workName + " x " + ta.workCount[workName]);
+            });
+            card.innerHTML =
+                "<strong>" + ta.name + "</strong>" +
+                "<div class='wa-suggestion-hours'>Estimated load: " + ta.hours.toFixed(2) + " h</div>" +
+                "<div class='wa-suggestion-work'>" + (details.length ? details.join(" | ") : "No assigned items") + "</div>";
+            suggestionList.appendChild(card);
+        });
+    }
+
+    if (suggestBtn) {
+        suggestBtn.addEventListener("click", function () {
+            var rows = collectRows();
+            var units = [];
+            var unknownDurationRows = 0;
+            rows.forEach(function (r, idx) {
+                if (!r.workName || r.occurrenceCount < 1 || r.taCount < 1) return;
+                var hours = parseDurationHours(r.durationText);
+                if (hours == null) {
+                    unknownDurationRows += 1;
+                    hours = 1;
+                }
+                var totalUnits = r.occurrenceCount * r.taCount;
+                for (var i = 0; i < totalUnits; i++) {
+                    units.push({ workName: r.workName, hours: hours, rowIndex: idx });
+                }
+            });
+            if (!units.length) {
+                alert("Please complete at least one valid work arrangement row before requesting recommendations.");
+                return;
+            }
+            var taCountRaw = parseInt((plannedTaInput && plannedTaInput.value ? plannedTaInput.value : "0"), 10);
+            var taCount = isFinite(taCountRaw) ? taCountRaw : 0;
+            if (taCount < 1) {
+                alert("Planned recruits must be at least 1.");
+                return;
+            }
+            var tas = [];
+            for (var t = 0; t < taCount; t++) {
+                tas.push({ name: "TA " + (t + 1), hours: 0, workCount: {} });
+            }
+            units.sort(function (a, b) { return b.hours - a.hours; });
+            units.forEach(function (u) {
+                tas.sort(function (a, b) { return a.hours - b.hours; });
+                var pick = tas[0];
+                pick.hours += u.hours;
+                pick.workCount[u.workName] = (pick.workCount[u.workName] || 0) + 1;
+            });
+            var totalHours = units.reduce(function (s, u) { return s + u.hours; }, 0);
+            var avg = totalHours / taCount;
+            var max = Math.max.apply(null, tas.map(function (x) { return x.hours; }));
+            var min = Math.min.apply(null, tas.map(function (x) { return x.hours; }));
+            var meta = "Planned recruits: " + taCount + "; total estimated workload: " + totalHours.toFixed(2) + " h; average per TA: " + avg.toFixed(2) + " h; imbalance (max-min): " + (max - min).toFixed(2) + " h.";
+            if (unknownDurationRows > 0) {
+                meta += " " + unknownDurationRows + " row(s) used default 1h because duration text could not be parsed.";
+            }
+            renderSuggestion({ meta: meta, assignments: tas });
+        });
+    }
+
+    waForm.addEventListener("submit", function (e) {
+        if (!confirm("Save changes to work arrangements and planned recruits? This updates the published posting summary.")) {
+            e.preventDefault();
+            return;
+        }
+        if (!confirm("Second confirmation: apply these work arrangement edits now?")) {
+            e.preventDefault();
+        }
+    });
+})();
+</script>
+<% } %>
 </body>
 </html>

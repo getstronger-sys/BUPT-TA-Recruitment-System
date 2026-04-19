@@ -16,14 +16,21 @@ import java.util.regex.Pattern;
  */
 public final class WorkQuotaPlanner {
 
+    /** First integer or decimal in a duration string. */
     private static final Pattern NUMBER_PATTERN = Pattern.compile("(\\d+(?:\\.\\d+)?)");
 
     private WorkQuotaPlanner() {
     }
 
+    /**
+     * Greedy LPT-style allocation: sort units by descending hours, assign each to the TA with least total hours so far.
+     */
     public static Recommendation recommend(List<WorkArrangementItem> rows, int plannedRecruits) {
+        // at least one slot to avoid divide-by-zero
         int headcount = Math.max(1, plannedRecruits);
+        // atomic work chunks to assign one-by-one
         List<WorkUnit> units = new ArrayList<>();
+        // rows where duration text could not be parsed (still use default 1h)
         int unknownDurationRows = 0;
         if (rows != null) {
             for (WorkArrangementItem row : rows) {
@@ -58,6 +65,7 @@ public final class WorkQuotaPlanner {
             picked.totalHours += unit.hours;
             picked.workCounts.put(unit.workName, picked.workCounts.getOrDefault(unit.workName, 0) + 1);
         }
+        // string order: TA 1, TA 10, TA 2 — lexicographic by label
         quotas.sort(Comparator.comparing(TAQuota::getName));
 
         double totalHours = units.stream().mapToDouble(u -> u.hours).sum();
@@ -67,6 +75,9 @@ public final class WorkQuotaPlanner {
         return new Recommendation(quotas, totalHours, averageHours, max - min, unknownDurationRows);
     }
 
+    /**
+     * Parse human-readable duration into hours; on failure use 1h and {@code known == false}.
+     */
     private static DurationParse parseDurationHours(String raw) {
         String text = trim(raw).toLowerCase(Locale.ROOT);
         Matcher matcher = NUMBER_PATTERN.matcher(text);
@@ -85,7 +96,6 @@ public final class WorkQuotaPlanner {
         if (text.contains("min") || text.contains("minute")) {
             return new DurationParse(value / 60.0, true);
         }
-        // Treat explicit hour units, or plain numbers, as hours.
         return new DurationParse(value, true);
     }
 
@@ -93,6 +103,7 @@ public final class WorkQuotaPlanner {
         return s != null ? s.trim() : "";
     }
 
+    /** Summary of one recommendation run (API surface for JSP / callers). */
     public static final class Recommendation {
         private final List<TAQuota> quotas;
         private final double totalHours;
@@ -129,6 +140,7 @@ public final class WorkQuotaPlanner {
         }
     }
 
+    /** One virtual TA slot: running total hours and per-work-name counts. */
     public static final class TAQuota {
         private final String name;
         private double totalHours;

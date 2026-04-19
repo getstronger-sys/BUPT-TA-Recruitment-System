@@ -1,6 +1,7 @@
 package bupt.ta.storage;
 
 import bupt.ta.model.*;
+import bupt.ta.util.JobActivity;
 import bupt.ta.util.PasswordHasher;
 import com.google.gson.*;
 import com.google.gson.reflect.TypeToken;
@@ -665,6 +666,25 @@ public class DataStorage {
     }
 
     // ---- Jobs ----
+
+    /**
+     * Persists any OPEN jobs whose application deadline is already past as CLOSED so listings and TA search stay consistent.
+     */
+    public void syncJobStatusesWithDeadlines() throws IOException {
+        withWriteLock(() -> {
+            List<Job> jobs = loadJobsUnlocked();
+            boolean changed = false;
+            for (Job j : jobs) {
+                if (JobActivity.closeOpenJobIfDeadlinePassed(j)) {
+                    changed = true;
+                }
+            }
+            if (changed) {
+                saveUnlocked(JOBS_FILE, jobs);
+            }
+        });
+    }
+
     public List<Job> loadJobs() throws IOException {
         return withReadLock(this::loadJobsUnlocked);
     }

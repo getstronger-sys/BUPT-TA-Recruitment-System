@@ -24,19 +24,33 @@ public class CloseJobServlet extends HttpServlet {
         }
 
         DataStorage storage = new DataStorage(getServletContext());
-        Job job = storage.getJobById(jobId);
+        storage.syncJobStatusesWithDeadlines();
+        Job job = storage.getJobById(jobId.trim());
         if (job == null || !moId.equals(job.getPostedBy())) {
             resp.sendRedirect(req.getContextPath() + "/mo/jobs?error=forbidden");
             return;
         }
 
+        String enc = URLEncoder.encode(jobId.trim(), StandardCharsets.UTF_8);
+
         if ("close".equalsIgnoreCase(action)) {
             job.setStatus("CLOSED");
         } else if ("reopen".equalsIgnoreCase(action)) {
+            if (JobActivity.isApplicationDeadlinePast(job.getDeadline())) {
+                String newDeadline = req.getParameter("newDeadline");
+                newDeadline = newDeadline != null ? newDeadline.trim() : "";
+                if (newDeadline.isEmpty() || JobActivity.isApplicationDeadlinePast(newDeadline)) {
+                    resp.sendRedirect(req.getContextPath() + JobActivity.PATH_INACTIVE + "?error=reopen_deadline_required&jobId=" + enc);
+                    return;
+                }
+                job.setDeadline(newDeadline);
+            }
             job.setStatus("OPEN");
+        } else {
+            resp.sendRedirect(req.getContextPath() + "/mo/jobs?error=invalid");
+            return;
         }
         storage.saveJob(job);
-        String enc = URLEncoder.encode(jobId.trim(), StandardCharsets.UTF_8);
         String path = JobActivity.listPathFor(job);
         resp.sendRedirect(req.getContextPath() + path + "?updated=1&jobId=" + enc + "&view=pending");
     }

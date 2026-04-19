@@ -28,6 +28,7 @@ public class MOJobDetailServlet extends HttpServlet {
 
         String moId = (String) req.getSession().getAttribute("userId");
         DataStorage storage = new DataStorage(getServletContext());
+        storage.syncJobStatusesWithDeadlines();
         Job job = storage.getJobById(jobId.trim());
         if (job == null || !moId.equals(job.getPostedBy())) {
             resp.sendRedirect(req.getContextPath() + "/mo/jobs?error=forbidden");

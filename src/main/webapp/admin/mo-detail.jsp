@@ -206,8 +206,8 @@
                                 <h3>Recruitment planning</h3>
                                 <dl class="admin-kv-list">
                                     <dt>Required skills</dt><dd><%= job.getRequiredSkills() != null && !job.getRequiredSkills().isEmpty() ? escHtml(String.join(", ", job.getRequiredSkills())) : "-" %></dd>
-                                    <dt>Interview schedule</dt><dd class="pre-wrap"><%= escHtml(job.getInterviewSchedule() != null && !job.getInterviewSchedule().isEmpty() ? job.getInterviewSchedule() : "-") %></dd>
-                                    <dt>Interview location</dt><dd class="pre-wrap"><%= escHtml(job.getInterviewLocation() != null && !job.getInterviewLocation().isEmpty() ? job.getInterviewLocation() : "-") %></dd>
+                                    <dt>Estimated interview time</dt><dd class="pre-wrap"><%= escHtml(job.getInterviewSchedule() != null && !job.getInterviewSchedule().isEmpty() ? job.getInterviewSchedule() : "-") %></dd>
+                                    <dt>Estimated interview location</dt><dd class="pre-wrap"><%= escHtml(job.getInterviewLocation() != null && !job.getInterviewLocation().isEmpty() ? job.getInterviewLocation() : "-") %></dd>
                                     <dt>Auto-fill from waitlist</dt><dd><%= job.isAutoFillFromWaitlist() ? "Yes" : "No" %></dd>
                                     <dt>Application summary</dt><dd>Applications <strong><%= row.getTotalApplications() %></strong> | Selected <strong><%= row.getSelectedCount() %></strong> | Waitlist <strong><%= row.getWaitlistCount() %></strong></dd>
                                 </dl>

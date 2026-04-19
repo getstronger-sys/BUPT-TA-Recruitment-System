@@ -39,6 +39,8 @@ public class MOInterviewCalendarServlet extends HttpServlet {
     private static final DateTimeFormatter FMT_SLASH_YMD_HM = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm", Locale.ROOT);
     private static final DateTimeFormatter FMT_SLASH_YMD = DateTimeFormatter.ofPattern("yyyy/MM/dd", Locale.ROOT);
     private static final Pattern LEADING_ISO_DATE = Pattern.compile("(\\d{4})-(\\d{2})-(\\d{2})");
+    /** yyyy-M-d or yyyy/M/d at start of string (single-digit month/day allowed). */
+    private static final Pattern FLEX_LEADING_DATE = Pattern.compile("^\\s*(\\d{4})[\\-/](\\d{1,2})[\\-/](\\d{1,2})(?![0-9])");
 
     public static final class CalendarRow {
         private final LocalDate date;
@@ -118,6 +120,7 @@ public class MOInterviewCalendarServlet extends HttpServlet {
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         String moId = (String) req.getSession().getAttribute("userId");
         DataStorage storage = new DataStorage(getServletContext());
+        storage.syncJobStatusesWithDeadlines();
 
         List<Job> myJobs = storage.loadJobs().stream()
                 .filter(j -> moId.equals(j.getPostedBy()))
@@ -177,22 +180,44 @@ public class MOInterviewCalendarServlet extends HttpServlet {
             }
         }
 
-        scheduled.sort(Comparator
+        LocalDate today = LocalDate.now();
+        List<CalendarRow> expiredRows = new ArrayList<>();
+        List<CalendarRow> upcomingRows = new ArrayList<>();
+        for (CalendarRow r : scheduled) {
+            if (r.getDate() != null && r.getDate().isBefore(today)) {
+                expiredRows.add(r);
+            } else {
+                upcomingRows.add(r);
+            }
+        }
+        expiredRows.sort(Comparator
+                .comparing(CalendarRow::getDate).reversed()
+                .thenComparing(CalendarRow::getTimeDisplay, String.CASE_INSENSITIVE_ORDER)
+                .thenComparing(CalendarRow::getApplicantName, String.CASE_INSENSITIVE_ORDER));
+
+        upcomingRows.sort(Comparator
                 .comparing(CalendarRow::getDate)
                 .thenComparing(CalendarRow::getTimeDisplay, String.CASE_INSENSITIVE_ORDER)
                 .thenComparing(CalendarRow::getApplicantName, String.CASE_INSENSITIVE_ORDER));
 
         TreeMap<LocalDate, List<CalendarRow>> byDay = new TreeMap<>();
-        for (CalendarRow r : scheduled) {
+        for (CalendarRow r : upcomingRows) {
             byDay.computeIfAbsent(r.getDate(), d -> new ArrayList<>()).add(r);
+        }
+        for (List<CalendarRow> dayRows : byDay.values()) {
+            dayRows.sort(Comparator
+                    .comparing(CalendarRow::getTimeDisplay, String.CASE_INSENSITIVE_ORDER)
+                    .thenComparing(CalendarRow::getApplicantName, String.CASE_INSENSITIVE_ORDER));
         }
 
         unscheduled.sort(Comparator.comparing(CalendarRow::getApplicantName, String.CASE_INSENSITIVE_ORDER));
 
         req.setAttribute("moNavActive", "calendar");
         req.setAttribute("calendarByDay", byDay);
+        req.setAttribute("calendarExpiredRows", expiredRows);
         req.setAttribute("calendarUnscheduled", unscheduled);
-        req.setAttribute("calendarTotalScheduled", scheduled.size());
+        req.setAttribute("calendarTotalUpcoming", upcomingRows.size());
+        req.setAttribute("calendarTotalExpired", expiredRows.size());
         req.setAttribute("calendarTotalUnscheduled", unscheduled.size());
         req.getRequestDispatcher("/mo/interview-calendar.jsp").forward(req, resp);
     }
@@ -203,6 +228,18 @@ public class MOInterviewCalendarServlet extends HttpServlet {
             return null;
         }
         String t = raw.trim();
+
+        Matcher flex = FLEX_LEADING_DATE.matcher(t);
+        if (flex.find()) {
+            try {
+                int y = Integer.parseInt(flex.group(1), 10);
+                int mo = Integer.parseInt(flex.group(2), 10);
+                int d = Integer.parseInt(flex.group(3), 10);
+                return LocalDate.of(y, mo, d);
+            } catch (Exception ignored) {
+                // fall through
+            }
+        }
 
         Matcher m = LEADING_ISO_DATE.matcher(t);
         if (m.find()) {

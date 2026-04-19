@@ -28,6 +28,7 @@ public class TAJobDetailServlet extends HttpServlet {
         }
 
         DataStorage storage = new DataStorage(getServletContext());
+        storage.syncJobStatusesWithDeadlines();
         Job job = storage.getJobById(jobId.trim());
         if (job == null) {
             resp.sendRedirect(req.getContextPath() + "/ta/jobs?error=job_not_found");

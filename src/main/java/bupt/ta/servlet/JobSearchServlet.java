@@ -25,6 +25,7 @@ public class JobSearchServlet extends HttpServlet {
         String applicantId = (String) req.getSession().getAttribute("userId");
 
         DataStorage storage = new DataStorage(getServletContext());
+        storage.syncJobStatusesWithDeadlines();
         List<Job> jobs = storage.loadJobs().stream()
                 .filter(j -> "OPEN".equals(j.getStatus()))
                 .collect(Collectors.toList());

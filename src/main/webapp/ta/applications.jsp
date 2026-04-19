@@ -1,6 +1,7 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ include file="/WEB-INF/jspf/html-esc.jspf" %>
 <%@ page import="java.util.List" %>
+<%@ page import="java.util.Map" %>
 <%@ page import="bupt.ta.model.Application" %>
 <%@ page import="bupt.ta.model.Job" %>
 <%@ page import="bupt.ta.util.JobActivity" %>

@@ -87,9 +87,21 @@
 
         <div id="post-work-arrangements" class="mo-post-section-anchor"></div>
         <h2 class="mo-post-section-title">Work arrangements</h2>
-        <div class="wa-section">
-        <label>Work arrangements *</label>
-            <div id="wa-rows" class="wa-rows" role="group" aria-label="Work arrangement rows">
+        <div class="wa-section mo-wa-card">
+            <div class="mo-wa-table-scroll">
+            <table class="wa-edit-table" role="grid" aria-label="Work arrangement rows">
+                <caption class="sr-only">Work arrangement rows, required fields per column header</caption>
+                <thead>
+                <tr>
+                    <th scope="col" class="wa-edit-table__col-name">Work name</th>
+                    <th scope="col" class="wa-edit-table__col-duration">Per-session duration</th>
+                    <th scope="col" class="wa-edit-table__col-num">Sessions</th>
+                    <th scope="col" class="wa-edit-table__col-num">TAs</th>
+                    <th scope="col" class="wa-edit-table__col-time">Specific time <span class="muted-inline">(optional)</span></th>
+                    <th scope="col" class="wa-edit-table__col-actions"><span class="sr-only">Remove row</span></th>
+                </tr>
+                </thead>
+                <tbody id="wa-rows" class="wa-rows wa-rows--edit">
                 <% for (int waIdx = 0; waIdx < waRows.size(); waIdx++) {
                        WorkArrangementItem w = waRows.get(waIdx);
                        String wid = "wa-" + waIdx;
@@ -101,32 +113,34 @@
                        int wc = w.getTaCount() > 0 ? w.getTaCount() : 1;
                        String wt = w.getSpecificTime() != null ? w.getSpecificTime() : "";
                 %>
-                <div class="wa-row" data-wa-row>
-                    <div class="wa-field wa-field-name">
-                        <label for="<%= wid %>-wn">Work name *</label>
-                        <input id="<%= wid %>-wn" type="text" name="waWorkName" required value="<%= escHtml(wn) %>" placeholder="e.g. Lab support" autocomplete="off">
-                    </div>
-                    <div class="wa-field wa-field-session">
-                        <label for="<%= wid %>-sd">Per-session duration *</label>
-                        <input id="<%= wid %>-sd" type="text" name="waSessionDuration" required value="<%= escHtml(sd) %>" placeholder="e.g. 2 hours" autocomplete="off">
-                    </div>
-                    <div class="wa-field wa-field-num">
-                        <label for="<%= wid %>-oc">Sessions *</label>
-                        <input id="<%= wid %>-oc" type="number" name="waOccurrenceCount" min="1" required value="<%= oc %>" class="wa-input-num">
-                    </div>
-                    <div class="wa-field wa-field-num">
-                        <label for="<%= wid %>-tc">TAs *</label>
-                        <input id="<%= wid %>-tc" type="number" name="waTaCount" min="1" required value="<%= wc %>" class="wa-input-num">
-                    </div>
-                    <div class="wa-field wa-field-time">
-                        <label for="<%= wid %>-st">Specific time <span class="muted-inline">(optional)</span></label>
-                        <input id="<%= wid %>-st" type="text" name="waSpecificTime" value="<%= escHtml(wt) %>" placeholder="e.g. Wed 14:00" autocomplete="off">
-                    </div>
-                    <div class="wa-field wa-field-actions">
+                <tr class="wa-row" data-wa-row>
+                    <td class="wa-edit-table__cell">
+                        <label class="sr-only" for="<%= wid %>-wn">Work name</label>
+                        <input id="<%= wid %>-wn" type="text" name="waWorkName" required value="<%= escHtml(wn) %>" placeholder="e.g. Lab" autocomplete="off" class="wa-edit-table__input">
+                    </td>
+                    <td class="wa-edit-table__cell">
+                        <label class="sr-only" for="<%= wid %>-sd">Per-session duration</label>
+                        <input id="<%= wid %>-sd" type="text" name="waSessionDuration" required value="<%= escHtml(sd) %>" placeholder="e.g. 2 h" autocomplete="off" class="wa-edit-table__input">
+                    </td>
+                    <td class="wa-edit-table__cell wa-edit-table__cell--num">
+                        <label class="sr-only" for="<%= wid %>-oc">Sessions</label>
+                        <input id="<%= wid %>-oc" type="number" name="waOccurrenceCount" min="1" required value="<%= oc %>" class="wa-input-num wa-edit-table__input">
+                    </td>
+                    <td class="wa-edit-table__cell wa-edit-table__cell--num">
+                        <label class="sr-only" for="<%= wid %>-tc">TAs</label>
+                        <input id="<%= wid %>-tc" type="number" name="waTaCount" min="1" required value="<%= wc %>" class="wa-input-num wa-edit-table__input">
+                    </td>
+                    <td class="wa-edit-table__cell">
+                        <label class="sr-only" for="<%= wid %>-st">Specific time</label>
+                        <input id="<%= wid %>-st" type="text" name="waSpecificTime" value="<%= escHtml(wt) %>" placeholder="e.g. Wed 14:00" autocomplete="off" class="wa-edit-table__input">
+                    </td>
+                    <td class="wa-edit-table__cell wa-edit-table__cell--actions">
                         <button type="button" class="btn btn-secondary wa-remove-compact" title="Remove row" aria-label="Remove this row">&minus;</button>
-                    </div>
-                </div>
+                    </td>
+                </tr>
                 <% } %>
+                </tbody>
+            </table>
             </div>
             <div class="wa-toolbar">
                 <button type="button" id="wa-add-row" class="btn btn-secondary" title="Add work arrangement row">+ Add row</button>
@@ -137,16 +151,18 @@
                 <div id="wa-suggestion-list" class="wa-suggestion-list"></div>
             </div>
         </div>
-        <label>Planned recruits *</label>
-        <input type="number" name="plannedTaCount" min="1" required value="<%= fvPlannedTaCount.isEmpty() ? String.valueOf(waDefaultPlannedTaCount) : escHtml(fvPlannedTaCount) %>">
+        <div class="mo-wa-planned-block">
+        <label for="post-planned-ta">Planned recruits *</label>
+        <input type="number" name="plannedTaCount" id="post-planned-ta" min="1" required value="<%= fvPlannedTaCount.isEmpty() ? String.valueOf(waDefaultPlannedTaCount) : escHtml(fvPlannedTaCount) %>">
+        </div>
 
         <div id="post-recruitment" class="mo-post-section-anchor"></div>
         <h2 class="mo-post-section-title">Recruitment setup</h2>
         <label>Course timeline &amp; exam milestones *</label>
         <textarea name="examTimeline" required rows="4" placeholder="Week 1-3 onboarding; Week 4 quiz support; Week 8 mock exam; Week 12 final exam marking."><%= fva(request, "fvExamTimeline") %></textarea>
-        <label>Interview schedule *</label>
+        <label>Estimated interview time *</label>
         <input type="text" name="interviewSchedule" required placeholder="e.g. 2026-04-20 14:00-17:00 (15 min per candidate)" value="<%= fva(request, "fvInterviewSchedule") %>">
-        <label>Interview location *</label>
+        <label>Estimated interview location *</label>
         <input type="text" name="interviewLocation" required placeholder="e.g. EECS Bldg Room 402 / Teams link" value="<%= fva(request, "fvInterviewLocation") %>">
         <label>Payment / compensation *</label>
         <input type="text" name="payment" required placeholder="e.g. £15/hour; stipend amount" value="<%= fva(request, "fvPayment") %>">

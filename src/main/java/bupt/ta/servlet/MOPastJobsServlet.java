@@ -29,6 +29,7 @@ public class MOPastJobsServlet extends HttpServlet {
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         String moId = (String) req.getSession().getAttribute("userId");
         DataStorage storage = new DataStorage(getServletContext());
+        storage.syncJobStatusesWithDeadlines();
 
         List<Job> jobs = storage.loadJobs().stream()
                 .filter(j -> moId.equals(j.getPostedBy()))

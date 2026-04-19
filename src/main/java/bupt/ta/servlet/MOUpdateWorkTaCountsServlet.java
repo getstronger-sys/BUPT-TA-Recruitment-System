@@ -16,8 +16,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 /**
- * MO may adjust TA headcount per work-arrangement row when viewing a posting;
- * recomputes summary text but keeps planned recruit count (taSlots) unchanged.
+ * MO updates structured work arrangements (and planned recruits) on an active posting;
+ * recomputes derived workload text. Requires double acknowledgement on the form.
  */
 public class MOUpdateWorkTaCountsServlet extends HttpServlet {
 
@@ -32,23 +32,31 @@ public class MOUpdateWorkTaCountsServlet extends HttpServlet {
         jobId = jobId.trim();
 
         DataStorage storage = new DataStorage(getServletContext());
+        storage.syncJobStatusesWithDeadlines();
         Job job = storage.getJobById(jobId);
         if (job == null || !moId.equals(job.getPostedBy())) {
             resp.sendRedirect(req.getContextPath() + "/mo/jobs?error=forbidden");
             return;
         }
-
-        List<WorkArrangementItem> rows = job.getWorkArrangements();
-        if (rows == null || rows.isEmpty()) {
-            resp.sendRedirect(req.getContextPath() + "/mo/job?jobId=" + URLEncoder.encode(jobId, StandardCharsets.UTF_8));
+        if (JobActivity.isInactive(job)) {
+            resp.sendRedirect(req.getContextPath() + "/mo/job?jobId=" + URLEncoder.encode(jobId, StandardCharsets.UTF_8) + "&error=wa_job_inactive");
             return;
         }
 
-        String[] counts = req.getParameterValues("waTaCount");
-        if (counts == null || counts.length != rows.size()) {
-            resp.sendRedirect(req.getContextPath() + "/mo/job?jobId=" + URLEncoder.encode(jobId, StandardCharsets.UTF_8) + "&error=wa_count_mismatch");
+        boolean ack1 = req.getParameter("waConfirmUnderstand") != null;
+        boolean ack2 = req.getParameter("waConfirmAccurate") != null;
+        if (!ack1 || !ack2) {
+            resp.sendRedirect(req.getContextPath() + "/mo/job?jobId=" + URLEncoder.encode(jobId, StandardCharsets.UTF_8) + "&error=wa_confirm_required");
             return;
         }
+
+        List<WorkArrangementItem> rows = WorkArrangementSupport.parseWorkRowsFromRequest(req);
+        String validation = WorkArrangementSupport.validateWorkRowsForPosting(rows);
+        if (validation != null) {
+            resp.sendRedirect(req.getContextPath() + "/mo/job?jobId=" + URLEncoder.encode(jobId, StandardCharsets.UTF_8) + "&error=wa_validation");
+            return;
+        }
+
         int plannedRecruits = job.getTaSlots() > 0 ? job.getTaSlots() : 1;
         String plannedRaw = req.getParameter("plannedTaCount");
         if (plannedRaw != null && !plannedRaw.trim().isEmpty()) {
@@ -62,24 +70,10 @@ public class MOUpdateWorkTaCountsServlet extends HttpServlet {
             return;
         }
 
-        for (int i = 0; i < rows.size(); i++) {
-            int n = 0;
-            try {
-                n = Integer.parseInt(counts[i] != null ? counts[i].trim() : "");
-            } catch (NumberFormatException ignored) {
-            }
-            if (n < 1) {
-                resp.sendRedirect(req.getContextPath() + "/mo/job?jobId=" + URLEncoder.encode(jobId, StandardCharsets.UTF_8) + "&error=wa_ta_invalid");
-                return;
-            }
-            rows.get(i).setTaCount(n);
-        }
-
         WorkArrangementSupport.applyDerivedFields(job, rows);
         job.setTaSlots(plannedRecruits);
         storage.saveJob(job);
 
-        String path = JobActivity.listPathFor(job);
-        resp.sendRedirect(req.getContextPath() + "/mo/job?jobId=" + URLEncoder.encode(jobId, StandardCharsets.UTF_8) + "&taCountsUpdated=1");
+        resp.sendRedirect(req.getContextPath() + "/mo/job?jobId=" + URLEncoder.encode(jobId, StandardCharsets.UTF_8) + "&workArrangementsUpdated=1");
     }
 }
