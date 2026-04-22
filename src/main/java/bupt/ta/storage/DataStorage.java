@@ -30,6 +30,7 @@ public class DataStorage {
     private static final String SITE_NOTIFICATIONS_FILE = "site-notifications.json";
     private static final String EMAIL_OTP_FILE = "email-otp.json";
     private static final String INTERVIEW_SLOTS_FILE = "interview-slots.json";
+    private static final String MO_MODULE_ASSIGNMENTS_FILE = "mo-module-assignments.json";
     private static final Map<Path, ReentrantReadWriteLock> LOCKS_BY_BASE_PATH = new ConcurrentHashMap<>();
 
     private final Path basePath;
@@ -207,6 +208,7 @@ public class DataStorage {
         if (!seedDemoData) {
             return;
         }
+        ensureDefaultMoModuleAssignments();
         Path appsPath = basePath.resolve(APPLICATIONS_FILE);
         if (!Files.exists(appsPath) || Files.size(appsPath) == 0) {
             List<Application> demoApps = new ArrayList<>();
@@ -455,6 +457,49 @@ public class DataStorage {
         return value == null || value.trim().isEmpty();
     }
 
+    private void ensureDefaultMoModuleAssignments() throws IOException {
+        Map<String, List<AssignedModule>> map = loadMoModuleAssignmentsUnlocked();
+        boolean changed = false;
+
+        // Backward-compatibility: any module already posted by an MO is treated as assigned.
+        List<Job> existingJobs = loadJobsUnlocked();
+        for (Job j : existingJobs) {
+            if (j == null || j.getPostedBy() == null || j.getPostedBy().trim().isEmpty()) {
+                continue;
+            }
+            if (j.getModuleCode() == null || j.getModuleCode().trim().isEmpty()) {
+                continue;
+            }
+            String moId = j.getPostedBy().trim();
+            List<AssignedModule> assigned = map.computeIfAbsent(moId, key -> new ArrayList<>());
+            changed |= addAssignedModuleIfMissing(assigned, j.getModuleCode(), j.getModuleName());
+        }
+
+        // Keep baseline demo assignments for default mo1.
+        List<AssignedModule> mo1 = map.computeIfAbsent("U003", key -> new ArrayList<>());
+        changed |= addAssignedModuleIfMissing(mo1, "EBU6304", "Software Engineering");
+        changed |= addAssignedModuleIfMissing(mo1, "EBU6202", "Data Structures and Algorithms");
+        changed |= addAssignedModuleIfMissing(mo1, "EBU5101", "Digital Systems");
+
+        if (changed) {
+            saveUnlocked(MO_MODULE_ASSIGNMENTS_FILE, map);
+        }
+    }
+
+    private boolean addAssignedModuleIfMissing(List<AssignedModule> list, String moduleCode, String moduleName) {
+        if (list == null || moduleCode == null || moduleCode.trim().isEmpty()) {
+            return false;
+        }
+        String normalizedCode = moduleCode.trim().toUpperCase();
+        boolean exists = list.stream()
+                .anyMatch(m -> m != null && normalizedCode.equalsIgnoreCase(m.getModuleCode()));
+        if (exists) {
+            return false;
+        }
+        list.add(new AssignedModule(normalizedCode, moduleName != null ? moduleName.trim() : ""));
+        return true;
+    }
+
     private User createUser(String id, String uname, String pwd, String role, String email, String name) {
         User u = new User(id, uname, PasswordHasher.hash(pwd), role);
         u.setEmail(email);
@@ -513,6 +558,24 @@ public class DataStorage {
     private List<EmailOtpRecord> loadEmailOtpRecordsUnlocked() throws IOException {
         List<EmailOtpRecord> list = loadUnlocked(EMAIL_OTP_FILE, new TypeToken<ArrayList<EmailOtpRecord>>(){}.getType());
         return list != null ? list : new ArrayList<>();
+    }
+
+    private Map<String, List<AssignedModule>> loadMoModuleAssignmentsUnlocked() throws IOException {
+        Type t = new TypeToken<LinkedHashMap<String, ArrayList<AssignedModule>>>(){}.getType();
+        Map<String, List<AssignedModule>> map = loadUnlocked(MO_MODULE_ASSIGNMENTS_FILE, t);
+        if (map == null) {
+            return new LinkedHashMap<>();
+        }
+        LinkedHashMap<String, List<AssignedModule>> normalized = new LinkedHashMap<>();
+        for (Map.Entry<String, List<AssignedModule>> e : map.entrySet()) {
+            String key = e.getKey();
+            if (key == null || key.trim().isEmpty()) {
+                continue;
+            }
+            List<AssignedModule> value = e.getValue() != null ? new ArrayList<>(e.getValue()) : new ArrayList<>();
+            normalized.put(key.trim(), value);
+        }
+        return normalized;
     }
 
     private <T> T withReadLock(IOSupplier<T> supplier) throws IOException {
@@ -821,6 +884,40 @@ public class DataStorage {
 
     public void saveAdminSettings(AdminSettings settings) throws IOException {
         save(SETTINGS_FILE, settings != null ? settings : new AdminSettings());
+    }
+
+    // ---- MO module assignments ----
+    public List<AssignedModule> loadAssignedModulesForMo(String moUserId) throws IOException {
+        if (moUserId == null || moUserId.trim().isEmpty()) {
+            return new ArrayList<>();
+        }
+        return withReadLock(() -> {
+            Map<String, List<AssignedModule>> map = loadMoModuleAssignmentsUnlocked();
+            List<AssignedModule> list = map.getOrDefault(moUserId.trim(), Collections.emptyList());
+            return new ArrayList<>(list);
+        });
+    }
+
+    public void saveAssignedModulesForMo(String moUserId, List<AssignedModule> modules) throws IOException {
+        if (moUserId == null || moUserId.trim().isEmpty()) {
+            return;
+        }
+        withWriteLock(() -> {
+            Map<String, List<AssignedModule>> map = loadMoModuleAssignmentsUnlocked();
+            List<AssignedModule> cleaned = new ArrayList<>();
+            if (modules != null) {
+                for (AssignedModule m : modules) {
+                    if (m == null || m.getModuleCode() == null || m.getModuleCode().trim().isEmpty()) {
+                        continue;
+                    }
+                    String code = m.getModuleCode().trim().toUpperCase();
+                    String name = m.getModuleName() != null ? m.getModuleName().trim() : "";
+                    cleaned.add(new AssignedModule(code, name));
+                }
+            }
+            map.put(moUserId.trim(), cleaned);
+            saveUnlocked(MO_MODULE_ASSIGNMENTS_FILE, map);
+        });
     }
 
     // ---- Site notifications ----

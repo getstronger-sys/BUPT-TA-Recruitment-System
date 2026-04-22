@@ -2,6 +2,7 @@
 <%@ include file="/WEB-INF/jspf/html-esc.jspf" %>
 <%@ page import="java.util.List" %>
 <%@ page import="java.util.ArrayList" %>
+<%@ page import="bupt.ta.model.AssignedModule" %>
 <%@ page import="bupt.ta.model.JobTemplate" %>
 <%@ page import="bupt.ta.model.WorkArrangementItem" %>
 <%!
@@ -26,6 +27,8 @@
    int waDefaultPlannedTaCount = waRows.stream().mapToInt(WorkArrangementItem::getTaCount).sum();
    if (waDefaultPlannedTaCount < 1) waDefaultPlannedTaCount = 1;
    String fvPlannedTaCount = fv(request, "fvPlannedTaCount", "");
+   List<AssignedModule> assignedModules = (List<AssignedModule>) request.getAttribute("assignedModules");
+   if (assignedModules == null) assignedModules = java.util.Collections.emptyList();
    request.setAttribute("moNavActive", "post");
 %>
 <!DOCTYPE html>
@@ -66,6 +69,22 @@
         <%@ include file="/WEB-INF/jspf/csrf-hidden.jspf" %>
         <div id="post-basic" class="mo-post-section-anchor"></div>
         <h2 class="mo-post-section-title">Basic information</h2>
+        <% if (assignedModules.isEmpty()) { %>
+        <p class="error">No modules are assigned to your account for this term. Please contact admin before posting jobs.</p>
+        <% } else { %>
+        <label>Assigned modules this term</label>
+        <select id="assigned-module-picker">
+            <option value="">Choose assigned module to fill code/name</option>
+            <% for (AssignedModule am : assignedModules) {
+                   if (am == null || am.getModuleCode() == null || am.getModuleCode().trim().isEmpty()) continue;
+                   String code = am.getModuleCode().trim().toUpperCase();
+                   String name = am.getModuleName() != null ? am.getModuleName().trim() : "";
+            %>
+            <option value="<%= escHtml(code) %>" data-module-name="<%= escHtml(name) %>"><%= escHtml(code) %><%= name.isEmpty() ? "" : " - " + escHtml(name) %></option>
+            <% } %>
+        </select>
+        <p class="muted-inline">MO can post jobs only for admin-assigned module codes.</p>
+        <% } %>
         <label>Job Title *</label>
         <input type="text" name="title" required placeholder="e.g. TA for Software Engineering" value="<%= fva(request, "fvTitle") %>">
         <label>Module Code *</label>
@@ -211,6 +230,21 @@
 </div>
 <script>
 document.addEventListener("DOMContentLoaded", function () {
+    var assignedPicker = document.getElementById("assigned-module-picker");
+    var moduleCodeInput = document.querySelector("input[name='moduleCode']");
+    var moduleNameInput = document.querySelector("input[name='moduleName']");
+    if (assignedPicker && moduleCodeInput && moduleNameInput) {
+        assignedPicker.addEventListener("change", function () {
+            var opt = assignedPicker.options[assignedPicker.selectedIndex];
+            if (!opt || !opt.value) return;
+            moduleCodeInput.value = opt.value;
+            var moduleName = opt.getAttribute("data-module-name") || "";
+            if (moduleName) {
+                moduleNameInput.value = moduleName;
+            }
+        });
+    }
+
     var rowsBox = document.getElementById("wa-rows");
     var addBtn = document.getElementById("wa-add-row");
     var suggestBtn = document.getElementById("wa-suggest-quota");

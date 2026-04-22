@@ -1,5 +1,6 @@
 package bupt.ta.servlet;
 
+import bupt.ta.model.AssignedModule;
 import bupt.ta.model.Job;
 import bupt.ta.model.WorkArrangementItem;
 import bupt.ta.storage.DataStorage;
@@ -22,6 +23,10 @@ public class PostJobServlet extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        String postedBy = (String) req.getSession().getAttribute("userId");
+        DataStorage storage = new DataStorage(getServletContext());
+        List<AssignedModule> assignedModules = storage.loadAssignedModulesForMo(postedBy);
+        req.setAttribute("assignedModules", assignedModules);
         req.getRequestDispatcher("/mo/post-job.jsp").forward(req, resp);
     }
 
@@ -104,6 +109,17 @@ public class PostJobServlet extends HttpServlet {
         job.setAutoFillFromWaitlist(req.getParameter("autoFillFromWaitlist") != null);
 
         DataStorage storage = new DataStorage(getServletContext());
+        List<AssignedModule> assignedModules = storage.loadAssignedModulesForMo(postedBy);
+        String assignmentError = validateAssignedModule(moduleCode, moduleName, assignedModules);
+        if (assignmentError != null) {
+            repopulateForm(req, title, moduleCode, moduleName, description, responsibilities, payment, deadline,
+                    examTimeline, interviewSchedule, interviewLocation, skillsStr, maxApplicantsStr, jobType, workRows,
+                    req.getParameter("autoFillFromWaitlist") != null, plannedTaCountStr);
+            req.setAttribute("assignedModules", assignedModules);
+            req.setAttribute("error", assignmentError);
+            req.getRequestDispatcher("/mo/post-job.jsp").forward(req, resp);
+            return;
+        }
         storage.addJob(job);
         resp.sendRedirect(req.getContextPath() + "/mo/job?posted=1&jobId="
                 + java.net.URLEncoder.encode(job.getId(), java.nio.charset.StandardCharsets.UTF_8));
@@ -186,5 +202,30 @@ public class PostJobServlet extends HttpServlet {
         req.setAttribute("fvWorkArrangements", workRows != null ? workRows : new ArrayList<>());
         req.setAttribute("fvAutoFillFromWaitlist", autoFillFromWaitlist);
         req.setAttribute("fvPlannedTaCount", plannedTaCountStr != null ? plannedTaCountStr : "");
+    }
+
+    private static String validateAssignedModule(String moduleCode, String moduleName, List<AssignedModule> assignedModules) {
+        if (assignedModules == null || assignedModules.isEmpty()) {
+            return "No modules are assigned to your account for this term. Please ask admin to assign courses first.";
+        }
+        String code = moduleCode != null ? moduleCode.trim().toUpperCase() : "";
+        AssignedModule matched = assignedModules.stream()
+                .filter(m -> m != null && m.getModuleCode() != null && code.equalsIgnoreCase(m.getModuleCode().trim()))
+                .findFirst()
+                .orElse(null);
+        if (matched == null) {
+            String allowedCodes = assignedModules.stream()
+                    .filter(m -> m != null && m.getModuleCode() != null)
+                    .map(m -> m.getModuleCode().trim().toUpperCase())
+                    .distinct()
+                    .collect(Collectors.joining(", "));
+            return "You can only post jobs for modules assigned by admin. Assigned module codes: " + allowedCodes;
+        }
+        String assignedName = matched.getModuleName() != null ? matched.getModuleName().trim() : "";
+        String providedName = moduleName != null ? moduleName.trim() : "";
+        if (!assignedName.isEmpty() && !providedName.isEmpty() && !assignedName.equalsIgnoreCase(providedName)) {
+            return "Module name does not match the admin assignment for " + code + ". Expected: " + assignedName;
+        }
+        return null;
     }
 }
