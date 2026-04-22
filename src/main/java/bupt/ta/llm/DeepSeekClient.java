@@ -36,9 +36,11 @@ public final class DeepSeekClient {
 
     public DeepSeekClient() {
         this(
-                firstNonBlank(System.getenv("DEEPSEEK_API_KEY"), System.getProperty("deepseek.api.key")),
-                firstNonBlank(System.getenv("DEEPSEEK_API_BASE"), System.getProperty("deepseek.api.base"), DEFAULT_BASE_URL),
-                firstNonBlank(System.getenv("DEEPSEEK_MODEL"), System.getProperty("deepseek.api.model"), DEFAULT_MODEL)
+                resolveApiKey(),
+                firstNonBlank(System.getenv("TA_AI_BASE_URL"), System.getenv("DEEPSEEK_API_BASE"),
+                        System.getProperty("deepseek.api.base"), DEFAULT_BASE_URL),
+                firstNonBlank(System.getenv("TA_AI_MODEL"), System.getenv("DEEPSEEK_MODEL"),
+                        System.getProperty("deepseek.api.model"), DEFAULT_MODEL)
         );
     }
 
@@ -55,7 +57,25 @@ public final class DeepSeekClient {
      * @return true if a non-blank API key is configured
      */
     public boolean isConfigured() {
-        return !apiKey.isEmpty();
+        return isEnabled() && !apiKey.isEmpty();
+    }
+
+    private static boolean isEnabled() {
+        String enabled = firstNonBlank(System.getenv("TA_AI_ENABLED"));
+        if (!enabled.isEmpty()
+                && ("false".equalsIgnoreCase(enabled) || "0".equals(enabled) || "off".equalsIgnoreCase(enabled))) {
+            return false;
+        }
+        String provider = firstNonBlank(System.getenv("TA_AI_PROVIDER"));
+        return provider.isEmpty() || "deepseek".equalsIgnoreCase(provider);
+    }
+
+    private static String resolveApiKey() {
+        return firstNonBlank(
+                System.getenv("TA_AI_API_KEY"),
+                System.getenv("DEEPSEEK_API_KEY"),
+                System.getProperty("deepseek.api.key")
+        );
     }
 
     /**

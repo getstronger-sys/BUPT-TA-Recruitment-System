@@ -11,4 +11,6 @@ data/*
 *.tmp
 *.DS_Store
 Thumbs.db
+ai.env
+*.env.local
 

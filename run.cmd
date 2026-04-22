@@ -17,4 +17,10 @@ if not exist .mvn\wrapper\maven-wrapper.jar (
   exit /b 1
 )
 
-"%JAVA_HOME%\bin\java" -classpath ".mvn\wrapper\maven-wrapper.jar" "-Dmaven.multiModuleProjectDirectory=%CD%" org.apache.maven.wrapper.MavenWrapperMain clean package cargo:run
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0run-with-ai.ps1"
+if errorlevel 1 (
+  echo.
+  echo run-with-ai.ps1 failed.
+  pause
+  exit /b 1
+)
