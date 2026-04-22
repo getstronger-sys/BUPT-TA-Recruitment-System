@@ -34,8 +34,17 @@ EBU6304 Software Engineering Group Project - A lightweight Java Servlet/JSP web 
 | ----- | -------- | -------- |
 | TA    | ta1      | ta123    |
 | TA    | ta2      | ta123    |
+| TA    | ta5      | ta123    |
+| TA    | ta6      | ta123    |
 | MO    | mo1      | mo123    |
 | Admin | admin    | admin123 |
+
+### Workload conflict demo accounts
+
+For demonstrating workload imbalance and policy conflicts in Admin pages:
+
+- `ta5 / ta123`: at job cap (2 selected) and still has 1 pending application
+- `ta6 / ta123`: over job cap (3 selected), should be highlighted as high workload
 
 ## Build & Run
 
