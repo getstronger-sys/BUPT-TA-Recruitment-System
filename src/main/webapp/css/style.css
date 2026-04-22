@@ -1406,6 +1406,21 @@ tr:hover { background: #f8f7ff; }
     line-height: 1.55;
     overflow-wrap: anywhere;
 }
+.applicant-ai-summary-list {
+    margin: 8px 0 0 18px;
+    padding: 0;
+    color: #2a476d;
+}
+.applicant-ai-summary-list li {
+    margin: 4px 0;
+    line-height: 1.45;
+}
+.ai-summary-actions {
+    margin-top: 10px;
+}
+.ai-summary-result {
+    margin-top: 8px;
+}
 .applicant-actions {
     margin-top: 14px;
     padding-top: 14px;

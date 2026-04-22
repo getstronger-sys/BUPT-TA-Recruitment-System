@@ -393,6 +393,10 @@
                                 <div class="section-label">AI Review</div>
                                 <p class="section-copy"><strong>Missing skills:</strong> <%= missingText %></p>
                                 <p class="section-copy"><strong>Workload:</strong> <%= rec.currentWorkload %> jobs</p>
+                                <div class="ai-summary-actions">
+                                    <button type="button" class="btn btn-secondary btn-sm ai-summary-generate-btn" data-application-id="<%= escHtml(a.getId()) %>">Generate AI summary</button>
+                                </div>
+                                <div class="ai-summary-result" data-application-id="<%= escHtml(a.getId()) %>"></div>
                             </section>
                             <section class="applicant-section">
                                 <div class="section-label">Application</div>
@@ -524,6 +528,10 @@
                             <section class="applicant-section">
                                 <div class="section-label">AI Review</div>
                                 <p class="section-copy"><strong>Missing skills:</strong> <%= missingText %></p>
+                                <div class="ai-summary-actions">
+                                    <button type="button" class="btn btn-secondary btn-sm ai-summary-generate-btn" data-application-id="<%= escHtml(a.getId()) %>">Generate AI summary</button>
+                                </div>
+                                <div class="ai-summary-result" data-application-id="<%= escHtml(a.getId()) %>"></div>
                             </section>
                             <section class="applicant-section">
                                 <div class="section-label">Application</div>
@@ -596,6 +604,10 @@
                             <section class="applicant-section">
                                 <div class="section-label">AI Review</div>
                                 <p class="section-copy"><strong>Missing skills:</strong> <%= missingText %></p>
+                                <div class="ai-summary-actions">
+                                    <button type="button" class="btn btn-secondary btn-sm ai-summary-generate-btn" data-application-id="<%= escHtml(a.getId()) %>">Generate AI summary</button>
+                                </div>
+                                <div class="ai-summary-result" data-application-id="<%= escHtml(a.getId()) %>"></div>
                             </section>
                             <section class="applicant-section">
                                 <div class="section-label">Application</div>
@@ -695,6 +707,10 @@
                             <section class="applicant-section">
                                 <div class="section-label">AI Review</div>
                                 <p class="section-copy"><strong>Missing skills:</strong> <%= missingText %></p>
+                                <div class="ai-summary-actions">
+                                    <button type="button" class="btn btn-secondary btn-sm ai-summary-generate-btn" data-application-id="<%= escHtml(a.getId()) %>">Generate AI summary</button>
+                                </div>
+                                <div class="ai-summary-result" data-application-id="<%= escHtml(a.getId()) %>"></div>
                             </section>
                             <section class="applicant-section">
                                 <div class="section-label">Application</div>
@@ -782,6 +798,68 @@
             if (body) body.innerHTML = '';
             if (tpl && tpl.content && body) body.appendChild(tpl.content.cloneNode(true));
             dialog.showModal();
+        });
+    });
+})();
+</script>
+<script>
+(function () {
+    function escapeHtml(str) {
+        return (str || "")
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#39;");
+    }
+
+    function renderLines(resultBox, lines) {
+        if (!resultBox) return;
+        if (!lines || !lines.length) {
+            resultBox.innerHTML = "<p class='section-copy muted-inline'>No summary generated.</p>";
+            return;
+        }
+        var html = "<p class='section-copy'><strong>AI summary card:</strong></p><ul class='applicant-ai-summary-list'>";
+        lines.forEach(function (line) {
+            html += "<li>" + escapeHtml(line) + "</li>";
+        });
+        html += "</ul>";
+        resultBox.innerHTML = html;
+    }
+
+    document.querySelectorAll(".ai-summary-generate-btn").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+            var appId = btn.getAttribute("data-application-id");
+            if (!appId) return;
+            var resultBox = document.querySelector(".ai-summary-result[data-application-id='" + appId + "']");
+            if (resultBox) {
+                resultBox.innerHTML = "<p class='section-copy muted-inline'>Generating summary...</p>";
+            }
+            btn.disabled = true;
+            var oldText = btn.textContent;
+            btn.textContent = "Generating...";
+
+            var url = "<%= moCtx %>/mo/applicant-summary?applicationId=" + encodeURIComponent(appId);
+            fetch(url, { method: "GET", credentials: "same-origin" })
+                .then(function (resp) {
+                    if (!resp.ok) throw new Error("HTTP " + resp.status);
+                    return resp.json();
+                })
+                .then(function (data) {
+                    if (!data || !data.ok) {
+                        throw new Error((data && data.error) ? data.error : "Failed to generate summary");
+                    }
+                    renderLines(resultBox, data.lines);
+                    btn.textContent = "Regenerate AI summary";
+                    btn.disabled = false;
+                })
+                .catch(function (err) {
+                    if (resultBox) {
+                        resultBox.innerHTML = "<p class='section-copy error'>AI summary failed: " + escapeHtml(err.message || "Unknown error") + "</p>";
+                    }
+                    btn.textContent = oldText;
+                    btn.disabled = false;
+                });
         });
     });
 })();
