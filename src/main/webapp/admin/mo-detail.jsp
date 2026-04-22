@@ -1,9 +1,11 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ include file="/WEB-INF/jspf/html-esc.jspf" %>
+<%@ page import="java.util.List" %>
 <%@ page import="bupt.ta.model.Application" %>
 <%@ page import="bupt.ta.model.Job" %>
 <%@ page import="bupt.ta.model.User" %>
 <%@ page import="bupt.ta.model.WorkArrangementItem" %>
+<%@ page import="bupt.ta.model.AssignedModule" %>
 <%@ page import="bupt.ta.service.AdminService" %>
 <%
     AdminService.MODetailReport report = (AdminService.MODetailReport) request.getAttribute("report");
@@ -14,6 +16,18 @@
     User user = report.getUser();
     String displayName = user.getRealName() != null && !user.getRealName().trim().isEmpty() ? user.getRealName().trim()
             : (user.getUsername() != null && !user.getUsername().trim().isEmpty() ? user.getUsername().trim() : user.getId());
+    List<AssignedModule> assignedModules = (List<AssignedModule>) request.getAttribute("assignedModules");
+    if (assignedModules == null) assignedModules = java.util.Collections.emptyList();
+    StringBuilder assignedModulesText = new StringBuilder();
+    for (AssignedModule m : assignedModules) {
+        if (m == null || m.getModuleCode() == null || m.getModuleCode().trim().isEmpty()) continue;
+        if (assignedModulesText.length() > 0) assignedModulesText.append("\n");
+        assignedModulesText.append(m.getModuleCode().trim().toUpperCase());
+        if (m.getModuleName() != null && !m.getModuleName().trim().isEmpty()) {
+            assignedModulesText.append(" | ").append(m.getModuleName().trim());
+        }
+    }
+    String assignError = (String) request.getAttribute("assignError");
 %>
 <!DOCTYPE html>
 <html>
@@ -48,9 +62,15 @@
             <p class="breadcrumb-line"><a href="${pageContext.request.contextPath}/admin/users">&larr; Back to user directory</a></p>
             <h1>MO Detail: <%= escHtml(displayName) %></h1>
             <p class="ta-page-lead">Read-only history for one module organiser, including account record, posting content, workload risks, and all applications received by this MO.</p>
+            <% if ("1".equals(request.getParameter("assignedUpdated"))) { %>
+            <p class="success">Assigned modules updated successfully.</p>
+            <% } %>
+            <% if (assignError != null && !assignError.trim().isEmpty()) { %>
+            <p class="error"><%= escHtml(assignError) %></p>
+            <% } %>
             <div class="context-card">
-                <strong>Read-only admin detail</strong>
-                <p>This page is designed for governance and traceability. It keeps every posting, application count, capacity flag, and applicant status visible without allowing direct edits.</p>
+                <strong>Admin governance view</strong>
+                <p>This page is mainly read-only for traceability (posting history, application counts, risk flags, and statuses), while <strong>Assigned modules for this term</strong> can be updated below.</p>
             </div>
 
             <div class="stats-row admin-stat-grid">
@@ -113,6 +133,18 @@
                     </div>
                 </section>
             </div>
+
+            <section class="detail-card">
+                <h3>Assigned modules for this term</h3>
+                <p class="muted-inline">MO can only post jobs for these module codes. One line per module, format: <code>MODULE_CODE | Module Name</code>.</p>
+                <form action="${pageContext.request.contextPath}/admin/mo-detail" method="post" class="form">
+                    <%@ include file="/WEB-INF/jspf/csrf-hidden.jspf" %>
+                    <input type="hidden" name="userId" value="<%= escHtml(user.getId()) %>">
+                    <label>Assigned modules list</label>
+                    <textarea name="assignedModulesText" rows="6" placeholder="EBU6304 | Software Engineering&#10;EBU6202 | Data Structures and Algorithms"><%= escHtml(assignedModulesText.toString()) %></textarea>
+                    <button type="submit" class="btn btn-primary">Save assigned modules</button>
+                </form>
+            </section>
 
             <section class="detail-card">
                 <h3>Posted jobs summary</h3>

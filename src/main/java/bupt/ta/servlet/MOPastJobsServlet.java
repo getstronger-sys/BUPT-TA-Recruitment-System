@@ -1,6 +1,7 @@
 package bupt.ta.servlet;
 
 import bupt.ta.ai.AIMatchService;
+import bupt.ta.model.AssignedModule;
 import bupt.ta.model.Application;
 import bupt.ta.model.Job;
 import bupt.ta.model.TAProfile;
@@ -75,6 +76,7 @@ public class MOPastJobsServlet extends HttpServlet {
 
         req.setAttribute("moPastJobsPage", Boolean.TRUE);
         req.setAttribute("moJobsBase", req.getContextPath() + JobActivity.PATH_INACTIVE);
+        req.setAttribute("assignedModules", storage.loadAssignedModulesForMo(moId));
         req.setAttribute("moJobPickList", enrichedAll);
         req.setAttribute("moJobListMode", jobListMode);
         req.setAttribute("moSelectedJobId", jobListMode ? "" : selectedJobId);

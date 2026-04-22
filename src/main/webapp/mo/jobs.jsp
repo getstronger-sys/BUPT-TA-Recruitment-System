@@ -6,6 +6,7 @@
 <%@ page import="java.util.regex.Pattern" %>
 <%@ page import="java.util.Locale" %>
 <%@ page import="java.util.Map" %>
+<%@ page import="bupt.ta.model.AssignedModule" %>
 <%@ page import="bupt.ta.model.Job" %>
 <%@ page import="bupt.ta.model.Application" %>
 <%@ page import="bupt.ta.ai.AIMatchService" %>
@@ -30,6 +31,8 @@
    boolean moPastJobsPage = Boolean.TRUE.equals(request.getAttribute("moPastJobsPage"));
    boolean moReadOnly = moPastJobsPage;
    String moCtx = request.getContextPath();
+   List<AssignedModule> assignedModules = (List<AssignedModule>) request.getAttribute("assignedModules");
+   if (assignedModules == null) assignedModules = java.util.Collections.emptyList();
    request.setAttribute("moNavActive", moPastJobsPage ? "past" : "jobs");
 %>
 <!DOCTYPE html>
@@ -87,6 +90,21 @@
                 <% } else { %>
                 <strong>One posting at a time</strong>
                 <p>Choose a job below to manage it. Applicants, interviewees, and progress are kept separate per posting and are not mixed in one list.</p>
+                <% } %>
+            </div>
+            <div class="context-card">
+                <strong>Assigned modules this term</strong>
+                <% if (assignedModules.isEmpty()) { %>
+                <p class="muted-inline">No modules assigned by admin yet. Contact admin before posting new jobs.</p>
+                <% } else { %>
+                <p class="muted-inline">
+                    <% for (int i = 0; i < assignedModules.size(); i++) {
+                           AssignedModule am = assignedModules.get(i);
+                           if (am == null || am.getModuleCode() == null || am.getModuleCode().trim().isEmpty()) continue;
+                    %>
+                    <code><%= escHtml(am.getModuleCode().trim().toUpperCase()) %></code><%= (am.getModuleName() != null && !am.getModuleName().trim().isEmpty()) ? " - " + escHtml(am.getModuleName().trim()) : "" %><%= i < assignedModules.size() - 1 ? " | " : "" %>
+                    <% } %>
+                </p>
                 <% } %>
             </div>
             <% if (moPastJobsPage) { %>
