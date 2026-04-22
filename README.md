@@ -71,7 +71,7 @@ This produces `target/ta-recruitment.war`.
 
 ### Run with Cargo (Embedded Tomcat)
 
-`cargo:run` 需要先有打好的 WAR，请**在同一命令里先执行 `package`**（否则会报找不到 `target/ta-recruitment.war`）：
+`cargo:run` requires a packaged WAR first, so run `package` in the same command (otherwise `target/ta-recruitment.war` may be missing):
 
 ```bash
 mvn package cargo:run
@@ -81,6 +81,28 @@ mvn package cargo:run
 ```
 
 Then open: **http://localhost:8080/ta-recruitment/**
+
+### AI API configuration (team-friendly)
+
+To let collaborators use AI features safely without leaking real keys:
+
+1. Keep `ai.env.example` in Git as a template (already included in this repo).
+2. Copy it locally to `ai.env` (do not commit `ai.env`).
+3. Fill your real API key in `TA_AI_API_KEY`.
+4. Export these variables in your own terminal before running the app.
+
+PowerShell example:
+
+```powershell
+$env:TA_AI_ENABLED="true"
+$env:TA_AI_PROVIDER="deepseek"
+$env:TA_AI_BASE_URL="https://api.deepseek.com"
+$env:TA_AI_MODEL="deepseek-chat"
+$env:TA_AI_API_KEY="YOUR_REAL_KEY"
+mvn package cargo:run
+```
+
+Security note: never commit real API keys to GitHub. Commit template files only.
 
 ## Project Structure
 
