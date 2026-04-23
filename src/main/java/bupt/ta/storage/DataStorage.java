@@ -550,6 +550,11 @@ public class DataStorage {
         return list != null ? list : new ArrayList<>();
     }
 
+    private List<InterviewSlot> loadInterviewSlotsUnlocked() throws IOException {
+        List<InterviewSlot> list = loadUnlocked(INTERVIEW_SLOTS_FILE, new TypeToken<ArrayList<InterviewSlot>>(){}.getType());
+        return list != null ? list : new ArrayList<>();
+    }
+
     private List<SiteNotification> loadSiteNotificationsUnlocked() throws IOException {
         List<SiteNotification> list = loadUnlocked(SITE_NOTIFICATIONS_FILE, new TypeToken<ArrayList<SiteNotification>>(){}.getType());
         return list != null ? list : new ArrayList<>();
@@ -830,8 +835,7 @@ public class DataStorage {
 
     // ---- Interview slots ----
     public List<InterviewSlot> loadInterviewSlots() throws IOException {
-        List<InterviewSlot> list = load(INTERVIEW_SLOTS_FILE, new TypeToken<ArrayList<InterviewSlot>>(){}.getType());
-        return list != null ? list : new ArrayList<>();
+        return withReadLock(this::loadInterviewSlotsUnlocked);
     }
 
     public InterviewSlot getInterviewSlotById(String slotId) throws IOException {
@@ -849,31 +853,49 @@ public class DataStorage {
     }
 
     public void saveInterviewSlot(InterviewSlot slot) throws IOException {
-        List<InterviewSlot> slots = loadInterviewSlots();
-        slots.removeIf(s -> Objects.equals(s.getId(), slot.getId()));
-        slots.add(slot);
-        save(INTERVIEW_SLOTS_FILE, slots);
+        withWriteLock(() -> {
+            List<InterviewSlot> slots = loadInterviewSlotsUnlocked();
+            slots.removeIf(s -> Objects.equals(s.getId(), slot.getId()));
+            slots.add(slot);
+            saveUnlocked(INTERVIEW_SLOTS_FILE, slots);
+        });
     }
 
     public InterviewSlot addInterviewSlot(InterviewSlot slot) throws IOException {
-        List<InterviewSlot> slots = loadInterviewSlots();
-        String newId = "S" + String.format("%05d", slots.size() + 1);
-        slot.setId(newId);
-        if (slot.getCreatedAt() == null || slot.getCreatedAt().trim().isEmpty()) {
-            slot.setCreatedAt(java.time.LocalDateTime.now().toString());
-        }
-        slots.add(slot);
-        save(INTERVIEW_SLOTS_FILE, slots);
+        withWriteLock(() -> {
+            List<InterviewSlot> slots = loadInterviewSlotsUnlocked();
+            int maxSuffix = 0;
+            for (InterviewSlot existing : slots) {
+                String id = existing != null ? existing.getId() : null;
+                if (id == null || !id.matches("^S\\d{5}$")) {
+                    continue;
+                }
+                int suffix = Integer.parseInt(id.substring(1));
+                if (suffix > maxSuffix) {
+                    maxSuffix = suffix;
+                }
+            }
+            String newId = "S" + String.format("%05d", maxSuffix + 1);
+            slot.setId(newId);
+            if (slot.getCreatedAt() == null || slot.getCreatedAt().trim().isEmpty()) {
+                slot.setCreatedAt(java.time.LocalDateTime.now().toString());
+            }
+            slots.add(slot);
+            saveUnlocked(INTERVIEW_SLOTS_FILE, slots);
+        });
         return slot;
     }
 
     public boolean deleteInterviewSlot(String slotId) throws IOException {
-        List<InterviewSlot> slots = loadInterviewSlots();
-        boolean changed = slots.removeIf(s -> Objects.equals(slotId, s.getId()));
-        if (changed) {
-            save(INTERVIEW_SLOTS_FILE, slots);
-        }
-        return changed;
+        final boolean[] changedRef = {false};
+        withWriteLock(() -> {
+            List<InterviewSlot> slots = loadInterviewSlotsUnlocked();
+            changedRef[0] = slots.removeIf(s -> Objects.equals(slotId, s.getId()));
+            if (changedRef[0]) {
+                saveUnlocked(INTERVIEW_SLOTS_FILE, slots);
+            }
+        });
+        return changedRef[0];
     }
 
     // ---- Admin settings ----

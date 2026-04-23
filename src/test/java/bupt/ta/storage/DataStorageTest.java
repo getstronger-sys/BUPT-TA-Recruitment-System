@@ -247,6 +247,47 @@ public class DataStorageTest {
     }
 
     @Test
+    public void testInterviewSlotIdDoesNotReuseAfterDelete() throws Exception {
+        Path tmp = Files.createTempDirectory("ta-test");
+        try {
+            DataStorage storage = new DataStorage(tmp.toString());
+
+            InterviewSlot first = new InterviewSlot();
+            first.setJobId("J0001");
+            first.setStartsAt("2026-05-01T10:00");
+            first.setEndsAt("2026-05-01T10:45");
+            first.setLocation("Room 101");
+            first.setCapacity(1);
+            storage.addInterviewSlot(first);
+            assertEquals("S00001", first.getId());
+
+            InterviewSlot second = new InterviewSlot();
+            second.setJobId("J0001");
+            second.setStartsAt("2026-05-01T11:00");
+            second.setEndsAt("2026-05-01T11:45");
+            second.setLocation("Room 102");
+            second.setCapacity(1);
+            storage.addInterviewSlot(second);
+            assertEquals("S00002", second.getId());
+
+            assertTrue(storage.deleteInterviewSlot(first.getId()));
+
+            InterviewSlot third = new InterviewSlot();
+            third.setJobId("J0001");
+            third.setStartsAt("2026-05-01T12:00");
+            third.setEndsAt("2026-05-01T12:45");
+            third.setLocation("Room 103");
+            third.setCapacity(1);
+            storage.addInterviewSlot(third);
+
+            assertEquals("S00003", third.getId());
+            assertNotEquals("Deleted slot ID should not be reused", first.getId(), third.getId());
+        } finally {
+            deleteRecursive(tmp);
+        }
+    }
+
+    @Test
     public void testConcurrentApplicationAddsRemainUniqueAcrossStorageInstances() throws Exception {
         Path tmp = Files.createTempDirectory("ta-test");
         int workers = 20;

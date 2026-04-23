@@ -429,6 +429,7 @@
                 <div class="ta-job-panel__chunk">
                 <% if (!moPastJobsPage) { %>
                 <form action="<%= moCtx %>/mo/interview-slots" method="post" class="form">
+                    <%@ include file="/WEB-INF/jspf/csrf-hidden.jspf" %>
                     <input type="hidden" name="jobId" value="<%= escHtml(job.getId()) %>">
                     <input type="hidden" name="action" value="create">
                     <label>Start time</label>
@@ -479,6 +480,7 @@
                             <% if (!moPastJobsPage) { %>
                             <td>
                                 <form action="<%= moCtx %>/mo/interview-slots" method="post" class="inline-form">
+                                    <%@ include file="/WEB-INF/jspf/csrf-hidden.jspf" %>
                                     <input type="hidden" name="jobId" value="<%= escHtml(job.getId()) %>">
                                     <input type="hidden" name="slotId" value="<%= escHtml(summary.getSlot().getId()) %>">
                                     <input type="hidden" name="action" value="delete">
