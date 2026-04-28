@@ -2557,14 +2557,15 @@ tr:hover { background: #f8f7ff; }
     width: 18%;
 }
 .form.form--mo-post .wa-edit-table__col-duration {
-    min-width: 6.5rem;
+    min-width: 7.5rem;
     width: 16%;
 }
 .form.form--mo-post .wa-edit-table__col-num {
-    width: 5.5rem;
+    min-width: 6.25rem;
+    width: 6.25rem;
 }
 .form.form--mo-post .wa-edit-table__col-time {
-    min-width: 8rem;
+    min-width: 15rem;
     width: auto;
 }
 .form.form--mo-post .wa-edit-table__col-actions {
@@ -2588,7 +2589,25 @@ tr:hover { background: #f8f7ff; }
 .form.form--mo-post .wa-input-num {
     text-align: center;
     font-variant-numeric: tabular-nums;
-    max-width: 5rem;
+    min-width: 4.75rem;
+    max-width: none;
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+}
+.form.form--mo-post .wa-input-num::-webkit-outer-spin-button,
+.form.form--mo-post .wa-input-num::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+.form.form--mo-post .wa-input-num[type="number"] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+}
+.form.form--mo-post .wa-time-controls {
+    display: grid;
+    grid-template-columns: minmax(7.25rem, 1fr) minmax(6.25rem, 0.85fr);
+    gap: 8px;
+    align-items: center;
 }
 .form.form--mo-post .wa-edit-table__cell--actions {
     text-align: center;
