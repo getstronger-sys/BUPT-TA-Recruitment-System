@@ -5,6 +5,7 @@
 <%@ page import="bupt.ta.model.AssignedModule" %>
 <%@ page import="bupt.ta.model.JobTemplate" %>
 <%@ page import="bupt.ta.model.WorkArrangementItem" %>
+<%@ page import="bupt.ta.util.WorkArrangementSupport" %>
 <%!
     static String fv(javax.servlet.http.HttpServletRequest r, String key, String def) {
         Object o = r.getAttribute(key);
@@ -29,6 +30,7 @@
    String fvPlannedTaCount = fv(request, "fvPlannedTaCount", "");
    List<AssignedModule> assignedModules = (List<AssignedModule>) request.getAttribute("assignedModules");
    if (assignedModules == null) assignedModules = java.util.Collections.emptyList();
+   String[] weekdays = WorkArrangementSupport.weekdays();
    request.setAttribute("moNavActive", "post");
 %>
 <!DOCTYPE html>
@@ -113,7 +115,7 @@
                 <thead>
                 <tr>
                     <th scope="col" class="wa-edit-table__col-name">Work name</th>
-                    <th scope="col" class="wa-edit-table__col-duration">Per-session duration</th>
+                    <th scope="col" class="wa-edit-table__col-duration">Per-session duration (hours)</th>
                     <th scope="col" class="wa-edit-table__col-num">Sessions</th>
                     <th scope="col" class="wa-edit-table__col-num">TAs</th>
                     <th scope="col" class="wa-edit-table__col-time">Specific time <span class="muted-inline">(optional)</span></th>
@@ -125,12 +127,12 @@
                        WorkArrangementItem w = waRows.get(waIdx);
                        String wid = "wa-" + waIdx;
                        String wn = w.getWorkName() != null ? w.getWorkName() : "";
-                       String sd = w.getSessionDuration() != null && !w.getSessionDuration().isEmpty()
-                               ? w.getSessionDuration()
-                               : (w.getDuration() != null ? w.getDuration() : "");
+                       String sd = WorkArrangementSupport.durationHoursInputValue(w);
                        int oc = w.getOccurrenceCount() > 0 ? w.getOccurrenceCount() : 1;
                        int wc = w.getTaCount() > 0 ? w.getTaCount() : 1;
                        String wt = w.getSpecificTime() != null ? w.getSpecificTime() : "";
+                       String wtDay = WorkArrangementSupport.specificDayInputValue(wt);
+                       String wtClock = WorkArrangementSupport.specificTimeInputValue(wt);
                 %>
                 <tr class="wa-row" data-wa-row>
                     <td class="wa-edit-table__cell">
@@ -139,7 +141,7 @@
                     </td>
                     <td class="wa-edit-table__cell">
                         <label class="sr-only" for="<%= wid %>-sd">Per-session duration</label>
-                        <input id="<%= wid %>-sd" type="text" name="waSessionDuration" required value="<%= escHtml(sd) %>" placeholder="e.g. 2 h" autocomplete="off" class="wa-edit-table__input">
+                        <input id="<%= wid %>-sd" type="number" name="waSessionDuration" min="0.25" step="0.25" required value="<%= escHtml(sd) %>" placeholder="2" inputmode="decimal" autocomplete="off" class="wa-edit-table__input">
                     </td>
                     <td class="wa-edit-table__cell wa-edit-table__cell--num">
                         <label class="sr-only" for="<%= wid %>-oc">Sessions</label>
@@ -151,7 +153,15 @@
                     </td>
                     <td class="wa-edit-table__cell">
                         <label class="sr-only" for="<%= wid %>-st">Specific time</label>
-                        <input id="<%= wid %>-st" type="text" name="waSpecificTime" value="<%= escHtml(wt) %>" placeholder="e.g. Wed 14:00" autocomplete="off" class="wa-edit-table__input">
+                        <div class="wa-time-controls">
+                            <select id="<%= wid %>-day" name="waSpecificDay" class="wa-edit-table__input">
+                                <option value="">TBD</option>
+                                <% for (String day : weekdays) { %>
+                                <option value="<%= escHtml(day) %>" <%= day.equals(wtDay) ? "selected" : "" %>><%= escHtml(day) %></option>
+                                <% } %>
+                            </select>
+                            <input id="<%= wid %>-st" type="time" name="waSpecificStartTime" value="<%= escHtml(wtClock) %>" autocomplete="off" class="wa-edit-table__input">
+                        </div>
                     </td>
                     <td class="wa-edit-table__cell wa-edit-table__cell--actions">
                         <button type="button" class="btn btn-secondary wa-remove-compact" title="Remove row" aria-label="Remove this row">&minus;</button>
@@ -262,6 +272,9 @@ document.addEventListener("DOMContentLoaded", function () {
                 inp.value = "";
             }
         });
+        row.querySelectorAll("select").forEach(function (sel) {
+            sel.selectedIndex = 0;
+        });
     }
 
     function bindRemove(row) {
@@ -291,14 +304,11 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     function parseDurationHours(raw) {
-        var text = (raw || "").trim().toLowerCase();
+        var text = (raw || "").trim();
         if (!text) return null;
-        var valMatch = text.match(/(\d+(\.\d+)?)/);
-        if (!valMatch) return null;
-        var value = parseFloat(valMatch[1]);
+        if (!/^\d+(\.\d+)?$/.test(text) && !/^\.\d+$/.test(text)) return null;
+        var value = parseFloat(text);
         if (!isFinite(value) || value <= 0) return null;
-        if (text.indexOf("min") >= 0 || text.indexOf("minute") >= 0) return value / 60;
-        if (text.indexOf("hr") >= 0 || text.indexOf("hour") >= 0 || text.indexOf("h") >= 0) return value;
         return value;
     }
 
