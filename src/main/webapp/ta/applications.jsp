@@ -151,6 +151,9 @@
                         <% if (jobInactive && ("PENDING".equals(a.getStatus()) || "INTERVIEW".equals(a.getStatus()) || "WAITLIST".equals(a.getStatus()))) { %>
                         <div class="muted-inline">Posting expired/closed</div>
                         <% } %>
+                        <% if (a.getApplicantFeedback() != null && !a.getApplicantFeedback().isEmpty()) { %>
+                        <div class="muted-inline pre-wrap"><strong>Feedback:</strong> <%= escHtml(a.getApplicantFeedback()) %></div>
+                        <% } %>
                     </td>
                     <td class="col-notice interview-notice-cell">
                         <% if (hasNotice) { %>

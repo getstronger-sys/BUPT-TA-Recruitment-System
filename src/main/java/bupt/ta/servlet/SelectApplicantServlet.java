@@ -2,6 +2,7 @@ package bupt.ta.servlet;
 
 import bupt.ta.model.AdminSettings;
 import bupt.ta.model.Application;
+import bupt.ta.model.InterviewEvaluation;
 import bupt.ta.model.Job;
 import bupt.ta.service.AdminService;
 import bupt.ta.service.StudentNotificationService;
@@ -38,6 +39,8 @@ public class SelectApplicantServlet extends HttpServlet {
         String appId = req.getParameter("applicationId");
         String action = req.getParameter("action");  // interview, waitlist, select or reject
         String notes = req.getParameter("notes");
+        String decisionReason = trim(req.getParameter("decisionReason"));
+        String applicantFeedback = trim(req.getParameter("applicantFeedback"));
         String moId = (String) req.getSession().getAttribute("userId");
 
         if (appId == null || appId.trim().isEmpty()) {
@@ -83,6 +86,20 @@ public class SelectApplicantServlet extends HttpServlet {
                 redirectJobs(resp, req, listPath, "interview", jobId, "error=not_interview");
                 return;
             }
+            InterviewEvaluation evaluation = storage.getInterviewEvaluationByApplicationId(target.getId());
+            if (evaluation == null) {
+                String fullView = "WAITLIST".equals(target.getStatus()) ? "waitlist" : "interview";
+                redirectJobs(resp, req, listPath, fullView, jobId, "error=evaluation_required");
+                return;
+            }
+            if (decisionReason.isEmpty()) {
+                decisionReason = trim(notes);
+            }
+            if (decisionReason.isEmpty()) {
+                String fullView = "WAITLIST".equals(target.getStatus()) ? "waitlist" : "interview";
+                redirectJobs(resp, req, listPath, fullView, jobId, "error=decision_reason_required");
+                return;
+            }
             if (!JobSelectionCapacity.hasVacancy(job, storage.getApplicationsByJobId(jobId), target.getId())) {
                 String fullView = "WAITLIST".equals(target.getStatus()) ? "waitlist" : "interview";
                 redirectJobs(resp, req, listPath, fullView, jobId, "error=capacity_reached");
@@ -101,6 +118,10 @@ public class SelectApplicantServlet extends HttpServlet {
             return;
         }
         target.setNotes(notes != null ? notes.trim() : "");
+        if ("select".equalsIgnoreCase(action) || "reject".equalsIgnoreCase(action)) {
+            target.setDecisionReason(decisionReason);
+            target.setApplicantFeedback(applicantFeedback);
+        }
         storage.saveApplication(target);
 
         if ("interview".equalsIgnoreCase(action)) {
@@ -133,5 +154,9 @@ public class SelectApplicantServlet extends HttpServlet {
         Job jobAfter = storage.getJobById(jobId);
         String pathAfter = jobAfter != null ? JobActivity.listPathFor(jobAfter) : listPath;
         redirectJobs(resp, req, pathAfter, view, jobId, extraQuery);
+    }
+
+    private String trim(String value) {
+        return value == null ? "" : value.trim();
     }
 }

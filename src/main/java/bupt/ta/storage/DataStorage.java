@@ -30,6 +30,7 @@ public class DataStorage {
     private static final String SITE_NOTIFICATIONS_FILE = "site-notifications.json";
     private static final String EMAIL_OTP_FILE = "email-otp.json";
     private static final String INTERVIEW_SLOTS_FILE = "interview-slots.json";
+    private static final String INTERVIEW_EVALUATIONS_FILE = "interview-evaluations.json";
     private static final String MO_MODULE_ASSIGNMENTS_FILE = "mo-module-assignments.json";
     private static final Map<Path, ReentrantReadWriteLock> LOCKS_BY_BASE_PATH = new ConcurrentHashMap<>();
 
@@ -555,6 +556,11 @@ public class DataStorage {
         return list != null ? list : new ArrayList<>();
     }
 
+    private List<InterviewEvaluation> loadInterviewEvaluationsUnlocked() throws IOException {
+        List<InterviewEvaluation> list = loadUnlocked(INTERVIEW_EVALUATIONS_FILE, new TypeToken<ArrayList<InterviewEvaluation>>(){}.getType());
+        return list != null ? list : new ArrayList<>();
+    }
+
     private List<SiteNotification> loadSiteNotificationsUnlocked() throws IOException {
         List<SiteNotification> list = loadUnlocked(SITE_NOTIFICATIONS_FILE, new TypeToken<ArrayList<SiteNotification>>(){}.getType());
         return list != null ? list : new ArrayList<>();
@@ -831,6 +837,69 @@ public class DataStorage {
             saveUnlocked(APPLICATIONS_FILE, apps);
         });
         return app;
+    }
+
+    // ---- Interview evaluations ----
+    public List<InterviewEvaluation> loadInterviewEvaluations() throws IOException {
+        return withReadLock(this::loadInterviewEvaluationsUnlocked);
+    }
+
+    public InterviewEvaluation getInterviewEvaluationByApplicationId(String applicationId) throws IOException {
+        if (applicationId == null || applicationId.trim().isEmpty()) {
+            return null;
+        }
+        return loadInterviewEvaluations().stream()
+                .filter(e -> Objects.equals(applicationId.trim(), e.getApplicationId()))
+                .findFirst()
+                .orElse(null);
+    }
+
+    public List<InterviewEvaluation> getInterviewEvaluationsByJobId(String jobId) throws IOException {
+        if (jobId == null || jobId.trim().isEmpty()) {
+            return new ArrayList<>();
+        }
+        return loadInterviewEvaluations().stream()
+                .filter(e -> Objects.equals(jobId.trim(), e.getJobId()))
+                .sorted(Comparator.comparingInt(InterviewEvaluation::getTotalScore).reversed()
+                        .thenComparing(InterviewEvaluation::getUpdatedAt, Comparator.nullsLast(String::compareTo)))
+                .collect(Collectors.toList());
+    }
+
+    public InterviewEvaluation saveInterviewEvaluation(InterviewEvaluation evaluation) throws IOException {
+        if (evaluation == null || evaluation.getApplicationId() == null || evaluation.getApplicationId().trim().isEmpty()) {
+            return evaluation;
+        }
+        withWriteLock(() -> {
+            List<InterviewEvaluation> all = loadInterviewEvaluationsUnlocked();
+            InterviewEvaluation existing = all.stream()
+                    .filter(e -> Objects.equals(e.getApplicationId(), evaluation.getApplicationId()))
+                    .findFirst()
+                    .orElse(null);
+            String now = java.time.LocalDateTime.now().toString();
+            if (existing != null) {
+                evaluation.setId(existing.getId());
+                if (evaluation.getCreatedAt() == null || evaluation.getCreatedAt().trim().isEmpty()) {
+                    evaluation.setCreatedAt(existing.getCreatedAt());
+                }
+                all.removeIf(e -> Objects.equals(e.getId(), existing.getId()));
+            } else if (evaluation.getId() == null || evaluation.getId().trim().isEmpty()) {
+                int maxSuffix = 0;
+                for (InterviewEvaluation e : all) {
+                    String id = e != null ? e.getId() : null;
+                    if (id != null && id.matches("^V\\d{5}$")) {
+                        maxSuffix = Math.max(maxSuffix, Integer.parseInt(id.substring(1)));
+                    }
+                }
+                evaluation.setId("V" + String.format("%05d", maxSuffix + 1));
+            }
+            if (evaluation.getCreatedAt() == null || evaluation.getCreatedAt().trim().isEmpty()) {
+                evaluation.setCreatedAt(now);
+            }
+            evaluation.setUpdatedAt(now);
+            all.add(evaluation);
+            saveUnlocked(INTERVIEW_EVALUATIONS_FILE, all);
+        });
+        return evaluation;
     }
 
     // ---- Interview slots ----

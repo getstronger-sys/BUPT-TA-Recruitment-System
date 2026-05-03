@@ -3,6 +3,7 @@ package bupt.ta.servlet;
 import bupt.ta.ai.AIMatchService;
 import bupt.ta.model.AssignedModule;
 import bupt.ta.model.Application;
+import bupt.ta.model.InterviewEvaluation;
 import bupt.ta.model.Job;
 import bupt.ta.model.TAProfile;
 import bupt.ta.storage.DataStorage;
@@ -38,6 +39,9 @@ public class MOJobsServlet extends HttpServlet {
                 .collect(Collectors.toList());
 
         List<Application> allApps = storage.loadApplications();
+        Map<String, InterviewEvaluation> evaluationByApplicationId = storage.loadInterviewEvaluations().stream()
+                .filter(e -> e != null && e.getApplicationId() != null)
+                .collect(Collectors.toMap(InterviewEvaluation::getApplicationId, e -> e, (a, b) -> a));
         // jobId -> applications for that job
         Map<String, List<Application>> appsByJob = allApps.stream().collect(Collectors.groupingBy(Application::getJobId));
 
@@ -88,6 +92,7 @@ public class MOJobsServlet extends HttpServlet {
         req.setAttribute("moPastJobsPage", Boolean.FALSE);
         req.setAttribute("moJobsBase", req.getContextPath() + JobActivity.PATH_ACTIVE);
         req.setAttribute("assignedModules", storage.loadAssignedModulesForMo(moId));
+        req.setAttribute("evaluationByApplicationId", evaluationByApplicationId);
         req.setAttribute("moJobPickList", enrichedAll);
         req.setAttribute("moJobListMode", jobListMode);
         req.setAttribute("moSelectedJobId", jobListMode ? "" : selectedJobId);

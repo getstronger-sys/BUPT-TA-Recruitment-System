@@ -4,6 +4,7 @@
 <%@ page import="bupt.ta.model.User" %>
 <%@ page import="bupt.ta.model.TAProfile" %>
 <%@ page import="bupt.ta.model.Application" %>
+<%@ page import="bupt.ta.model.InterviewEvaluation" %>
 <%@ page import="bupt.ta.model.Job" %>
 <%
     User user = (User) request.getAttribute("applicantUser");
@@ -15,6 +16,8 @@
     Integer otherObj = (Integer) request.getAttribute("otherCount");
     Integer interviewObj = (Integer) request.getAttribute("interviewCount");
     String llmApplicantInsight = (String) request.getAttribute("llmApplicantInsight");
+    java.util.Map<String, InterviewEvaluation> evaluationByApplicationId = (java.util.Map<String, InterviewEvaluation>) request.getAttribute("evaluationByApplicationId");
+    if (evaluationByApplicationId == null) evaluationByApplicationId = java.util.Collections.emptyMap();
     int selected = selectedObj != null ? selectedObj : 0;
     int pending = pendingObj != null ? pendingObj : 0;
     int interview = interviewObj != null ? interviewObj : 0;
@@ -73,6 +76,10 @@
     <% } %>
     <% } %>
     <% if (!hidePersonal) { %>
+    <% if ("1".equals(request.getParameter("evaluationSaved"))) { %><p class="success">Interview evaluation saved.</p><% } %>
+    <% String detailErr = request.getParameter("error");
+       if ("evaluation_status".equals(detailErr)) { %><p class="error">Only interview, waitlist, selected, or rejected applications can be evaluated.</p><% }
+       else if ("evaluation_invalid".equals(detailErr)) { %><p class="error">Please choose a valid recommendation.</p><% } %>
     <div class="detail-grid">
         <div class="detail-card">
             <h3>Basic Information</h3>
@@ -128,6 +135,7 @@
             <th>Module</th>
             <th>Applied At</th>
             <th>Status</th>
+            <th>Evaluation</th>
             <th>Notes</th>
         </tr>
         </thead>
@@ -139,18 +147,81 @@
             if ("SELECTED".equals(a.getStatus())) statusClass = "status-selected";
             else if ("INTERVIEW".equals(a.getStatus())) statusClass = "status-pending";
             else if ("REJECTED".equals(a.getStatus()) || "WITHDRAWN".equals(a.getStatus())) statusClass = "status-rejected";
+            InterviewEvaluation ev = evaluationByApplicationId.get(a.getId());
         %>
         <tr>
             <td><%= j != null ? j.getTitle() : a.getJobId() %></td>
             <td><%= j != null ? j.getModuleCode() : "-" %></td>
             <td><%= a.getAppliedAt() != null ? a.getAppliedAt() : "-" %></td>
             <td class="<%= statusClass %>"><%= a.getStatus() %></td>
-            <td><%= a.getNotes() != null && !a.getNotes().isEmpty() ? a.getNotes() : "-" %></td>
+            <td><% if (ev != null) { %><strong><%= ev.getTotalScore() %>/100</strong><br><span class="muted-inline"><%= escHtml(ev.getRecommendationLabel()) %></span><% } else { %><span class="muted-inline">Not evaluated</span><% } %></td>
+            <td>
+                <%= a.getNotes() != null && !a.getNotes().isEmpty() ? escHtml(a.getNotes()) : "-" %>
+                <% if (a.getDecisionReason() != null && !a.getDecisionReason().isEmpty()) { %>
+                <div class="muted-inline"><strong>Decision:</strong> <%= escHtml(a.getDecisionReason()) %></div>
+                <% } %>
+            </td>
         </tr>
         <% } %>
         </tbody>
     </table>
     </div>
+    <% if (!hidePersonal) { %>
+    <h2>Interview Evaluation</h2>
+    <div class="evaluation-card-grid">
+        <% for (Object[] row : appRows) {
+            Application a = (Application) row[0];
+            Job j = (Job) row[1];
+            boolean canEvaluate = "INTERVIEW".equals(a.getStatus()) || "WAITLIST".equals(a.getStatus()) || "SELECTED".equals(a.getStatus()) || "REJECTED".equals(a.getStatus());
+            InterviewEvaluation ev = evaluationByApplicationId.get(a.getId());
+            int tech = ev != null ? ev.getTechnicalScore() : 3;
+            int teach = ev != null ? ev.getTeachingScore() : 3;
+            int comm = ev != null ? ev.getCommunicationScore() : 3;
+            int avail = ev != null ? ev.getAvailabilityScore() : 3;
+            int resp = ev != null ? ev.getResponsibilityScore() : 3;
+            String rec = ev != null && ev.getRecommendation() != null ? ev.getRecommendation() : "HIRE";
+        %>
+        <section class="detail-card evaluation-card">
+            <h3><%= j != null ? escHtml(j.getTitle()) : escHtml(a.getJobId()) %></h3>
+            <p class="muted-inline">Application <code><%= escHtml(a.getId()) %></code> | Status <strong><%= escHtml(a.getStatus()) %></strong></p>
+            <% if (ev != null) { %>
+            <p><strong>Current score:</strong> <%= ev.getTotalScore() %>/100 | <strong>Recommendation:</strong> <%= escHtml(ev.getRecommendationLabel()) %></p>
+            <% } else { %>
+            <p class="muted-inline">No interview evaluation saved yet.</p>
+            <% } %>
+            <% if (canEvaluate) { %>
+            <form action="${pageContext.request.contextPath}/mo/interview-evaluation" method="post" class="form evaluation-form">
+                <%@ include file="/WEB-INF/jspf/csrf-hidden.jspf" %>
+                <input type="hidden" name="applicationId" value="<%= escHtml(a.getId()) %>">
+                <div class="evaluation-score-grid">
+                    <label>Technical <input type="number" name="technicalScore" min="1" max="5" value="<%= tech %>" required></label>
+                    <label>Teaching <input type="number" name="teachingScore" min="1" max="5" value="<%= teach %>" required></label>
+                    <label>Communication <input type="number" name="communicationScore" min="1" max="5" value="<%= comm %>" required></label>
+                    <label>Availability <input type="number" name="availabilityScore" min="1" max="5" value="<%= avail %>" required></label>
+                    <label>Responsibility <input type="number" name="responsibilityScore" min="1" max="5" value="<%= resp %>" required></label>
+                </div>
+                <label>Recommendation</label>
+                <select name="recommendation" required>
+                    <option value="STRONG_HIRE" <%= "STRONG_HIRE".equals(rec) ? "selected" : "" %>>Strong hire</option>
+                    <option value="HIRE" <%= "HIRE".equals(rec) ? "selected" : "" %>>Hire</option>
+                    <option value="WAITLIST" <%= "WAITLIST".equals(rec) ? "selected" : "" %>>Waitlist</option>
+                    <option value="REJECT" <%= "REJECT".equals(rec) ? "selected" : "" %>>Reject</option>
+                </select>
+                <label>Strengths</label>
+                <textarea name="strengths" rows="2"><%= ev != null && ev.getStrengths() != null ? escHtml(ev.getStrengths()) : "" %></textarea>
+                <label>Concerns / risks</label>
+                <textarea name="concerns" rows="2"><%= ev != null && ev.getConcerns() != null ? escHtml(ev.getConcerns()) : "" %></textarea>
+                <label>Internal notes</label>
+                <textarea name="internalNotes" rows="2"><%= ev != null && ev.getInternalNotes() != null ? escHtml(ev.getInternalNotes()) : "" %></textarea>
+                <button type="submit" class="btn btn-primary">Save evaluation</button>
+            </form>
+            <% } else { %>
+            <p class="muted-inline">Move this applicant to interview before recording an evaluation.</p>
+            <% } %>
+        </section>
+        <% } %>
+    </div>
+    <% } %>
         </main>
         <aside class="right-sidebar">
             <% if (!hidePersonal) { %>

@@ -247,6 +247,43 @@ public class DataStorageTest {
     }
 
     @Test
+    public void testInterviewEvaluationStorage() throws Exception {
+        Path tmp = Files.createTempDirectory("ta-test");
+        try {
+            DataStorage storage = new DataStorage(tmp.toString());
+            InterviewEvaluation evaluation = new InterviewEvaluation();
+            evaluation.setApplicationId("A00001");
+            evaluation.setJobId("J0001");
+            evaluation.setApplicantId("U001");
+            evaluation.setEvaluatorId("U003");
+            evaluation.setTechnicalScore(5);
+            evaluation.setTeachingScore(4);
+            evaluation.setCommunicationScore(4);
+            evaluation.setAvailabilityScore(3);
+            evaluation.setResponsibilityScore(5);
+            evaluation.setRecommendation("HIRE");
+            storage.saveInterviewEvaluation(evaluation);
+
+            assertNotNull(evaluation.getId());
+            assertEquals(84, evaluation.getTotalScore());
+            assertEquals("Hire", evaluation.getRecommendationLabel());
+            assertEquals(1, storage.getInterviewEvaluationsByJobId("J0001").size());
+            assertEquals("U001", storage.getInterviewEvaluationByApplicationId("A00001").getApplicantId());
+
+            evaluation.setRecommendation("STRONG_HIRE");
+            evaluation.setAvailabilityScore(5);
+            storage.saveInterviewEvaluation(evaluation);
+
+            List<InterviewEvaluation> saved = storage.loadInterviewEvaluations();
+            assertEquals("Saving the same application updates instead of duplicating", 1, saved.size());
+            assertEquals(92, saved.get(0).getTotalScore());
+            assertEquals("Strong hire", saved.get(0).getRecommendationLabel());
+        } finally {
+            deleteRecursive(tmp);
+        }
+    }
+
+    @Test
     public void testInterviewSlotIdDoesNotReuseAfterDelete() throws Exception {
         Path tmp = Files.createTempDirectory("ta-test");
         try {
