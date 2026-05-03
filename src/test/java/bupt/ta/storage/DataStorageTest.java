@@ -9,6 +9,7 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -278,6 +279,57 @@ public class DataStorageTest {
             assertEquals("Saving the same application updates instead of duplicating", 1, saved.size());
             assertEquals(92, saved.get(0).getTotalScore());
             assertEquals("Strong hire", saved.get(0).getRecommendationLabel());
+        } finally {
+            deleteRecursive(tmp);
+        }
+    }
+
+    @Test
+    public void testApplicationEventStorage() throws Exception {
+        Path tmp = Files.createTempDirectory("ta-test");
+        try {
+            DataStorage storage = new DataStorage(tmp.toString());
+
+            ApplicationEvent first = new ApplicationEvent();
+            first.setApplicationId("A00001");
+            first.setJobId("J0001");
+            first.setApplicantId("U001");
+            first.setActorRole("TA");
+            first.setEventType("SUBMITTED");
+            first.setTitle("Application submitted");
+            first.setCreatedAt("2026-05-01T10:00:00");
+            storage.addApplicationEvent(first);
+
+            ApplicationEvent second = new ApplicationEvent();
+            second.setApplicationId("A00001");
+            second.setJobId("J0001");
+            second.setApplicantId("U001");
+            second.setActorRole("MO");
+            second.setEventType("STATUS_CHANGED");
+            second.setFromStatus("PENDING");
+            second.setToStatus("INTERVIEW");
+            second.setTitle("Status changed");
+            second.setCreatedAt("2026-05-01T11:00:00");
+            storage.addApplicationEvent(second);
+
+            ApplicationEvent other = new ApplicationEvent();
+            other.setApplicationId("A00002");
+            other.setJobId("J0002");
+            other.setApplicantId("U002");
+            other.setEventType("SUBMITTED");
+            storage.addApplicationEvent(other);
+
+            assertEquals("EV000001", first.getId());
+            assertEquals("EV000002", second.getId());
+            List<ApplicationEvent> events = storage.getApplicationEventsByApplicationId("A00001");
+            assertEquals(2, events.size());
+            assertEquals("Application submitted", events.get(0).getTitle());
+            assertEquals("INTERVIEW", events.get(1).getToStatus());
+
+            Map<String, List<ApplicationEvent>> grouped = storage.getApplicationEventsByApplicationIds(Arrays.asList("A00001", "A00002", "A404"));
+            assertEquals(2, grouped.get("A00001").size());
+            assertEquals(1, grouped.get("A00002").size());
+            assertTrue(grouped.get("A404").isEmpty());
         } finally {
             deleteRecursive(tmp);
         }

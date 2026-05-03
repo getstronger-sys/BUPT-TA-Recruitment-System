@@ -3,6 +3,7 @@ package bupt.ta.servlet;
 import bupt.ta.model.Application;
 import bupt.ta.model.InterviewEvaluation;
 import bupt.ta.model.Job;
+import bupt.ta.service.ApplicationTimelineService;
 import bupt.ta.storage.DataStorage;
 
 import javax.servlet.ServletException;
@@ -20,6 +21,7 @@ import java.util.Set;
 public class MOInterviewEvaluationServlet extends HttpServlet {
     private static final Set<String> RECOMMENDATIONS = new HashSet<>(
             Arrays.asList("STRONG_HIRE", "HIRE", "WAITLIST", "REJECT"));
+    private final ApplicationTimelineService timelineService = new ApplicationTimelineService();
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
@@ -75,6 +77,11 @@ public class MOInterviewEvaluationServlet extends HttpServlet {
         evaluation.setConcerns(trim(req.getParameter("concerns")));
         evaluation.setInternalNotes(trim(req.getParameter("internalNotes")));
         storage.saveInterviewEvaluation(evaluation);
+        timelineService.record(storage, app, job, moId, evaluatorName, "MO",
+                ApplicationTimelineService.TYPE_EVALUATION_SAVED,
+                "Interview evaluation saved",
+                "Score " + evaluation.getTotalScore() + "/100, recommendation: " + evaluation.getRecommendationLabel(),
+                app.getStatus(), app.getStatus());
 
         redirectToApplicant(req, resp, app.getApplicantId(), null);
     }

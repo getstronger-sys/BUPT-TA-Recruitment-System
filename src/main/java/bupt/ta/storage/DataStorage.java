@@ -26,6 +26,7 @@ public class DataStorage {
     private static final String PROFILES_FILE = "profiles.json";
     private static final String JOBS_FILE = "jobs.json";
     private static final String APPLICATIONS_FILE = "applications.json";
+    private static final String APPLICATION_EVENTS_FILE = "application-events.json";
     private static final String SETTINGS_FILE = "settings.json";
     private static final String SITE_NOTIFICATIONS_FILE = "site-notifications.json";
     private static final String EMAIL_OTP_FILE = "email-otp.json";
@@ -551,6 +552,11 @@ public class DataStorage {
         return list != null ? list : new ArrayList<>();
     }
 
+    private List<ApplicationEvent> loadApplicationEventsUnlocked() throws IOException {
+        List<ApplicationEvent> list = loadUnlocked(APPLICATION_EVENTS_FILE, new TypeToken<ArrayList<ApplicationEvent>>(){}.getType());
+        return list != null ? list : new ArrayList<>();
+    }
+
     private List<InterviewSlot> loadInterviewSlotsUnlocked() throws IOException {
         List<InterviewSlot> list = loadUnlocked(INTERVIEW_SLOTS_FILE, new TypeToken<ArrayList<InterviewSlot>>(){}.getType());
         return list != null ? list : new ArrayList<>();
@@ -837,6 +843,63 @@ public class DataStorage {
             saveUnlocked(APPLICATIONS_FILE, apps);
         });
         return app;
+    }
+
+    // ---- Application timeline events ----
+    public List<ApplicationEvent> loadApplicationEvents() throws IOException {
+        return withReadLock(this::loadApplicationEventsUnlocked);
+    }
+
+    public List<ApplicationEvent> getApplicationEventsByApplicationId(String applicationId) throws IOException {
+        if (applicationId == null || applicationId.trim().isEmpty()) {
+            return new ArrayList<>();
+        }
+        return loadApplicationEvents().stream()
+                .filter(e -> Objects.equals(applicationId.trim(), e.getApplicationId()))
+                .sorted(Comparator.comparing(ApplicationEvent::getCreatedAt, Comparator.nullsLast(String::compareTo)))
+                .collect(Collectors.toList());
+    }
+
+    public Map<String, List<ApplicationEvent>> getApplicationEventsByApplicationIds(Collection<String> applicationIds) throws IOException {
+        if (applicationIds == null || applicationIds.isEmpty()) {
+            return new LinkedHashMap<>();
+        }
+        Set<String> idSet = applicationIds.stream()
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.toSet());
+        Map<String, List<ApplicationEvent>> grouped = loadApplicationEvents().stream()
+                .filter(e -> idSet.contains(e.getApplicationId()))
+                .sorted(Comparator.comparing(ApplicationEvent::getCreatedAt, Comparator.nullsLast(String::compareTo)))
+                .collect(Collectors.groupingBy(ApplicationEvent::getApplicationId, LinkedHashMap::new, Collectors.toList()));
+        for (String id : idSet) {
+            grouped.putIfAbsent(id, new ArrayList<>());
+        }
+        return grouped;
+    }
+
+    public ApplicationEvent addApplicationEvent(ApplicationEvent event) throws IOException {
+        if (event == null || event.getApplicationId() == null || event.getApplicationId().trim().isEmpty()) {
+            return event;
+        }
+        withWriteLock(() -> {
+            List<ApplicationEvent> all = loadApplicationEventsUnlocked();
+            int maxSuffix = 0;
+            for (ApplicationEvent existing : all) {
+                String id = existing != null ? existing.getId() : null;
+                if (id != null && id.matches("^EV\\d{6}$")) {
+                    maxSuffix = Math.max(maxSuffix, Integer.parseInt(id.substring(2)));
+                }
+            }
+            event.setId("EV" + String.format("%06d", maxSuffix + 1));
+            if (event.getCreatedAt() == null || event.getCreatedAt().trim().isEmpty()) {
+                event.setCreatedAt(java.time.LocalDateTime.now().toString());
+            }
+            all.add(event);
+            saveUnlocked(APPLICATION_EVENTS_FILE, all);
+        });
+        return event;
     }
 
     // ---- Interview evaluations ----

@@ -3,6 +3,7 @@
 <%@ page import="java.util.List" %>
 <%@ page import="java.util.Map" %>
 <%@ page import="bupt.ta.model.Application" %>
+<%@ page import="bupt.ta.model.ApplicationEvent" %>
 <%@ page import="bupt.ta.model.Job" %>
 <%@ page import="bupt.ta.util.JobActivity" %>
 <%!
@@ -40,6 +41,8 @@
     if (applications == null) applications = java.util.Collections.emptyList();
     Map<String, Integer> slotCountByJobId = (Map<String, Integer>) request.getAttribute("slotCountByJobId");
     if (slotCountByJobId == null) slotCountByJobId = java.util.Collections.emptyMap();
+    Map<String, List<ApplicationEvent>> eventsByApplicationId = (Map<String, List<ApplicationEvent>>) request.getAttribute("eventsByApplicationId");
+    if (eventsByApplicationId == null) eventsByApplicationId = java.util.Collections.emptyMap();
     Integer pointsObj = (Integer) request.getAttribute("points");
     int points = pointsObj != null ? pointsObj : 0;
     Integer selectedObj = (Integer) request.getAttribute("selectedCount");
@@ -112,6 +115,7 @@
                     <th class="col-progress">Progress</th>
                     <th class="col-status">Status</th>
                     <th class="col-notice">Interview</th>
+                    <th class="col-notice">Timeline</th>
                     <th class="col-action">Action</th>
                 </tr>
                 <% for (Object[] row : applications) {
@@ -134,6 +138,9 @@
                     String timeN = a.getInterviewTime() != null ? a.getInterviewTime() : "";
                     String locN = a.getInterviewLocation() != null ? a.getInterviewLocation() : "";
                     String assessN = a.getInterviewAssessment() != null ? a.getInterviewAssessment() : "";
+                    List<ApplicationEvent> events = eventsByApplicationId.get(a.getId());
+                    if (events == null) events = java.util.Collections.emptyList();
+                    String timelineTplId = "ta-timeline-" + a.getId().replaceAll("[^A-Za-z0-9]", "_");
                 %>
                 <tr>
                     <td class="col-job"><%= escHtml(jobTitle) %></td>
@@ -188,6 +195,32 @@
                         <span class="muted-inline">&mdash;</span>
                         <% } %>
                     </td>
+                    <td class="col-notice">
+                        <button type="button" class="btn btn-secondary btn-sm ta-timeline-btn" data-template="<%= timelineTplId %>" data-dialog-title="Application timeline">View timeline</button>
+                        <template id="<%= timelineTplId %>">
+                            <div class="quick-detail-sheet ta-timeline-sheet">
+                                <p class="quick-detail-name"><%= escHtml(jobTitle) %></p>
+                                <% if (events.isEmpty()) { %>
+                                <p class="muted-inline">No timeline events yet.</p>
+                                <% } else { %>
+                                <ol class="timeline-list">
+                                    <% for (ApplicationEvent ev : events) { %>
+                                    <li>
+                                        <strong><%= escHtml(ev.getTitle() != null && !ev.getTitle().isEmpty() ? ev.getTitle() : ev.getEventType()) %></strong>
+                                        <div class="muted-inline"><%= escHtml(formatAppliedAt(ev.getCreatedAt())) %> | <%= escHtml(ev.getActorRole() != null && !ev.getActorRole().isEmpty() ? ev.getActorRole() : "SYSTEM") %><% if (ev.getActorName() != null && !ev.getActorName().isEmpty()) { %> - <%= escHtml(ev.getActorName()) %><% } %></div>
+                                        <% if (ev.getFromStatus() != null && !ev.getFromStatus().isEmpty() && ev.getToStatus() != null && !ev.getToStatus().isEmpty() && !ev.getFromStatus().equals(ev.getToStatus())) { %>
+                                        <div class="muted-inline"><%= escHtml(ev.getFromStatus()) %> &rarr; <%= escHtml(ev.getToStatus()) %></div>
+                                        <% } %>
+                                        <% if (ev.getDetail() != null && !ev.getDetail().isEmpty()) { %>
+                                        <p class="pre-wrap"><%= escHtml(ev.getDetail()) %></p>
+                                        <% } %>
+                                    </li>
+                                    <% } %>
+                                </ol>
+                                <% } %>
+                            </div>
+                        </template>
+                    </td>
                     <td class="col-action">
                         <% if ("PENDING".equals(a.getStatus()) || "INTERVIEW".equals(a.getStatus())) { %>
                         <% if (jobInactive) { %>
@@ -204,7 +237,7 @@
                 </tr>
                 <% }
                    if (applications.isEmpty()) { %>
-                <tr><td colspan="8">No applications yet. <a href="${pageContext.request.contextPath}/ta/jobs">Find jobs</a> to apply.</td></tr>
+                <tr><td colspan="9">No applications yet. <a href="${pageContext.request.contextPath}/ta/jobs">Find jobs</a> to apply.</td></tr>
                 <% } %>
             </table>
             </div>
@@ -227,7 +260,7 @@
 <dialog id="taNoticeDialog" class="applicant-quick-dialog">
     <div class="applicant-quick-dialog-inner">
         <div class="applicant-quick-dialog-head">
-            <h3>Interview notice</h3>
+            <h3>Application detail</h3>
             <button type="button" class="dialog-close-btn" aria-label="Close">&times;</button>
         </div>
         <div class="applicant-quick-dialog-body ta-notice-dialog-body"></div>
@@ -241,10 +274,13 @@
     var closeBtn = dialog.querySelector('.dialog-close-btn');
     if (closeBtn) closeBtn.addEventListener('click', function () { dialog.close(); });
     dialog.addEventListener('click', function (e) { if (e.target === dialog) dialog.close(); });
-    document.querySelectorAll('.ta-notice-btn').forEach(function (btn) {
+    document.querySelectorAll('.ta-notice-btn, .ta-timeline-btn').forEach(function (btn) {
         btn.addEventListener('click', function () {
             var id = btn.getAttribute('data-template');
             var tpl = id ? document.getElementById(id) : null;
+            var title = btn.getAttribute('data-dialog-title') || (btn.classList.contains('ta-notice-btn') ? 'Interview notice' : 'Application timeline');
+            var titleEl = dialog.querySelector('.applicant-quick-dialog-head h3');
+            if (titleEl) titleEl.textContent = title;
             if (body) body.innerHTML = '';
             if (tpl && tpl.content && body) body.appendChild(tpl.content.cloneNode(true));
             dialog.showModal();

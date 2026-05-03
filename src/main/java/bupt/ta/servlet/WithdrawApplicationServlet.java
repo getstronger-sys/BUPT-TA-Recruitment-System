@@ -4,6 +4,7 @@ import bupt.ta.ai.AIMatchService;
 import bupt.ta.model.Application;
 import bupt.ta.model.Job;
 import bupt.ta.model.TAProfile;
+import bupt.ta.service.ApplicationTimelineService;
 import bupt.ta.service.StudentNotificationService;
 import bupt.ta.storage.DataStorage;
 import bupt.ta.util.JobSelectionCapacity;
@@ -19,6 +20,7 @@ import java.util.stream.Collectors;
 public class WithdrawApplicationServlet extends HttpServlet {
 
     private final AIMatchService aiService = new AIMatchService();
+    private final ApplicationTimelineService timelineService = new ApplicationTimelineService();
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
@@ -50,8 +52,14 @@ public class WithdrawApplicationServlet extends HttpServlet {
 
         boolean wasSelected = "SELECTED".equals(target.getStatus());
         Job job = storage.getJobById(target.getJobId());
+        String fromStatus = target.getStatus();
         target.setStatus("WITHDRAWN");
         storage.saveApplication(target);
+        timelineService.record(storage, target, job, applicantId, target.getApplicantName(), "TA",
+                ApplicationTimelineService.TYPE_WITHDRAWN,
+                "Application withdrawn",
+                "Applicant withdrew this application.",
+                fromStatus, target.getStatus());
         StudentNotificationService.notifyWithdrawn(storage, target, job);
         if (wasSelected && job != null && job.isAutoFillFromWaitlist()) {
             autoPromoteFromWaitlist(storage, job);
@@ -84,6 +92,11 @@ public class WithdrawApplicationServlet extends HttpServlet {
         String note = next.getNotes() != null && !next.getNotes().trim().isEmpty() ? next.getNotes().trim() + " " : "";
         next.setNotes((note + "Auto-promoted from waitlist after a selected TA withdrew.").trim());
         storage.saveApplication(next);
+        timelineService.record(storage, next, job, "SYSTEM", "System", "SYSTEM",
+                ApplicationTimelineService.TYPE_AUTO_PROMOTED,
+                "Auto-promoted from waitlist",
+                "Selected automatically after a vacancy opened.",
+                "WAITLIST", next.getStatus());
         StudentNotificationService.notifyAutoPromotedFromWaitlist(storage, next, job);
     }
 }

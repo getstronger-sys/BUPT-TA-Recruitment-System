@@ -4,6 +4,7 @@
 <%@ page import="bupt.ta.model.User" %>
 <%@ page import="bupt.ta.model.TAProfile" %>
 <%@ page import="bupt.ta.model.Application" %>
+<%@ page import="bupt.ta.model.ApplicationEvent" %>
 <%@ page import="bupt.ta.model.InterviewEvaluation" %>
 <%@ page import="bupt.ta.model.Job" %>
 <%
@@ -18,6 +19,8 @@
     String llmApplicantInsight = (String) request.getAttribute("llmApplicantInsight");
     java.util.Map<String, InterviewEvaluation> evaluationByApplicationId = (java.util.Map<String, InterviewEvaluation>) request.getAttribute("evaluationByApplicationId");
     if (evaluationByApplicationId == null) evaluationByApplicationId = java.util.Collections.emptyMap();
+    java.util.Map<String, List<ApplicationEvent>> eventsByApplicationId = (java.util.Map<String, List<ApplicationEvent>>) request.getAttribute("eventsByApplicationId");
+    if (eventsByApplicationId == null) eventsByApplicationId = java.util.Collections.emptyMap();
     int selected = selectedObj != null ? selectedObj : 0;
     int pending = pendingObj != null ? pendingObj : 0;
     int interview = interviewObj != null ? interviewObj : 0;
@@ -217,6 +220,38 @@
             </form>
             <% } else { %>
             <p class="muted-inline">Move this applicant to interview before recording an evaluation.</p>
+            <% } %>
+        </section>
+        <% } %>
+    </div>
+    <h2>Application Timeline</h2>
+    <div class="evaluation-card-grid">
+        <% for (Object[] row : appRows) {
+            Application a = (Application) row[0];
+            Job j = (Job) row[1];
+            List<ApplicationEvent> events = eventsByApplicationId.get(a.getId());
+            if (events == null) events = java.util.Collections.emptyList();
+        %>
+        <section class="detail-card evaluation-card">
+            <h3><%= j != null ? escHtml(j.getTitle()) : escHtml(a.getJobId()) %></h3>
+            <p class="muted-inline">Application <code><%= escHtml(a.getId()) %></code></p>
+            <% if (events.isEmpty()) { %>
+            <p class="muted-inline">No timeline events recorded yet.</p>
+            <% } else { %>
+            <ol class="timeline-list">
+                <% for (ApplicationEvent ev : events) { %>
+                <li>
+                    <strong><%= escHtml(ev.getTitle() != null && !ev.getTitle().isEmpty() ? ev.getTitle() : ev.getEventType()) %></strong>
+                    <div class="muted-inline"><%= escHtml(ev.getCreatedAt() != null ? ev.getCreatedAt().replace("T", " ").replaceFirst("\\..*$", "") : "-") %> | <%= escHtml(ev.getActorRole() != null && !ev.getActorRole().isEmpty() ? ev.getActorRole() : "SYSTEM") %><% if (ev.getActorName() != null && !ev.getActorName().isEmpty()) { %> - <%= escHtml(ev.getActorName()) %><% } %></div>
+                    <% if (ev.getFromStatus() != null && !ev.getFromStatus().isEmpty() && ev.getToStatus() != null && !ev.getToStatus().isEmpty() && !ev.getFromStatus().equals(ev.getToStatus())) { %>
+                    <div class="muted-inline"><%= escHtml(ev.getFromStatus()) %> &rarr; <%= escHtml(ev.getToStatus()) %></div>
+                    <% } %>
+                    <% if (ev.getDetail() != null && !ev.getDetail().isEmpty()) { %>
+                    <p class="pre-wrap"><%= escHtml(ev.getDetail()) %></p>
+                    <% } %>
+                </li>
+                <% } %>
+            </ol>
             <% } %>
         </section>
         <% } %>

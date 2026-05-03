@@ -2,6 +2,7 @@ package bupt.ta.servlet;
 
 import bupt.ta.model.Application;
 import bupt.ta.model.Job;
+import bupt.ta.service.ApplicationTimelineService;
 import bupt.ta.service.StudentNotificationService;
 import bupt.ta.storage.DataStorage;
 import bupt.ta.util.JobActivity;
@@ -21,10 +22,12 @@ import java.util.Set;
  * Batch operations for MO: mark PENDING as INTERVIEW, or send in-app interview notice to INTERVIEW applicants.
  */
 public class MOBatchApplicantServlet extends HttpServlet {
+    private final ApplicationTimelineService timelineService = new ApplicationTimelineService();
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         String moId = (String) req.getSession().getAttribute("userId");
+        String moName = (String) req.getSession().getAttribute("realName");
         String action = req.getParameter("action");
         String returnJobId = trim(req.getParameter("returnJobId"));
         String[] ids = req.getParameterValues("applicationId");
@@ -57,8 +60,11 @@ public class MOBatchApplicantServlet extends HttpServlet {
                 if (JobActivity.isInactive(job)) continue;
                 if (!returnJobId.isEmpty() && !returnJobId.equals(target.getJobId())) continue;
                 if (!"PENDING".equals(target.getStatus())) continue;
+                String fromStatus = target.getStatus();
                 target.setStatus("INTERVIEW");
                 storage.saveApplication(target);
+                timelineService.recordStatusChange(storage, target, job, moId, moName, "MO",
+                        fromStatus, target.getStatus(), "Batch moved to interview stage.");
                 StudentNotificationService.notifyInterviewInvite(storage, target, job);
             }
             String jid = resolveReturnJobId(storage, idSet, returnJobId, moId);
@@ -84,6 +90,11 @@ public class MOBatchApplicantServlet extends HttpServlet {
                 target.setInterviewLocation(location);
                 target.setInterviewAssessment(assessment);
                 storage.saveApplication(target);
+                timelineService.record(storage, target, job, moId, moName, "MO",
+                        ApplicationTimelineService.TYPE_INTERVIEW_NOTICE,
+                        "Interview notice sent",
+                        "Time: " + (time.isEmpty() ? "TBD" : time) + "; Location: " + (location.isEmpty() ? "TBD" : location),
+                        target.getStatus(), target.getStatus());
                 StudentNotificationService.notifyInterviewDetails(storage, target, job);
             }
             String jid = resolveReturnJobId(storage, idSet, returnJobId, moId);

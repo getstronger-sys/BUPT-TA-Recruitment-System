@@ -3055,6 +3055,30 @@ tr:hover { background: #f8f7ff; }
     text-decoration: none;
 }
 
+.timeline-list {
+    list-style: none;
+    margin: 12px 0 0;
+    padding: 0;
+    display: grid;
+    gap: 10px;
+}
+
+.timeline-list li {
+    border-left: 3px solid #2f6fdd;
+    background: #f8fbff;
+    padding: 10px 12px;
+    border-radius: 6px;
+}
+
+.timeline-list li strong {
+    display: block;
+    margin-bottom: 3px;
+}
+
+.timeline-list li p {
+    margin: 6px 0 0;
+}
+
 /* TA Home only: styled jump links (Browse positions, View all, Quick links row) */
 .ta-dash-stats { margin-top: 8px; }
 .ta-home-dashboard .ta-dash-stat-link,
