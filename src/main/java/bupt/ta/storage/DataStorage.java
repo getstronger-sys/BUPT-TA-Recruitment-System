@@ -9,6 +9,9 @@ import com.google.gson.reflect.TypeToken;
 import javax.servlet.ServletContext;
 import java.io.*;
 import java.lang.reflect.Type;
+import java.security.MessageDigest;
+import java.security.SecureRandom;
+import java.util.Base64;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.*;
@@ -33,6 +36,9 @@ public class DataStorage {
     private static final String INTERVIEW_SLOTS_FILE = "interview-slots.json";
     private static final String INTERVIEW_EVALUATIONS_FILE = "interview-evaluations.json";
     private static final String MO_MODULE_ASSIGNMENTS_FILE = "mo-module-assignments.json";
+    private static final String REMEMBER_ME_TOKENS_FILE = "remember-me-tokens.json";
+    private static final int REMEMBER_ME_DAYS = 30;
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
     private static final Map<Path, ReentrantReadWriteLock> LOCKS_BY_BASE_PATH = new ConcurrentHashMap<>();
 
     private final Path basePath;
@@ -664,6 +670,103 @@ public class DataStorage {
             saveUnlocked(USERS_FILE, users);
         });
         return user;
+    }
+
+    // ---- Remember-me tokens (persistent login) ----
+
+    public String issueRememberMeToken(String userId) throws IOException {
+        lock.writeLock().lock();
+        try {
+            return issueRememberMeTokenUnlocked(userId);
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    private String issueRememberMeTokenUnlocked(String userId) throws IOException {
+        List<RememberMeRecord> list = loadRememberMeRecordsUnlocked();
+        long now = System.currentTimeMillis();
+        long ttlMillis = REMEMBER_ME_DAYS * 24L * 60L * 60L * 1000L;
+        list.removeIf(r -> r != null && userId.equals(r.getUserId()));
+        list.removeIf(r -> r != null && r.getExpiresAtMillis() <= now);
+        byte[] raw = new byte[32];
+        SECURE_RANDOM.nextBytes(raw);
+        String rawToken = Base64.getUrlEncoder().withoutPadding().encodeToString(raw);
+        String hash = sha256Hex(rawToken);
+        list.add(new RememberMeRecord(hash, userId, now + ttlMillis));
+        saveUnlocked(REMEMBER_ME_TOKENS_FILE, list);
+        return rawToken;
+    }
+
+    public User validateRememberMeToken(String rawToken) throws IOException {
+        if (rawToken == null || rawToken.trim().isEmpty()) {
+            return null;
+        }
+        return withReadLock(() -> validateRememberMeTokenUnlocked(rawToken.trim()));
+    }
+
+    private User validateRememberMeTokenUnlocked(String rawToken) throws IOException {
+        List<RememberMeRecord> list = loadRememberMeRecordsUnlocked();
+        long now = System.currentTimeMillis();
+        String hash = sha256Hex(rawToken);
+        RememberMeRecord match = null;
+        for (RememberMeRecord r : list) {
+            if (r != null && hash.equals(r.getTokenHash()) && r.getExpiresAtMillis() > now) {
+                match = r;
+                break;
+            }
+        }
+        if (match == null) {
+            return null;
+        }
+        return findUserById(match.getUserId());
+    }
+
+    public void revokeRememberMeToken(String rawToken) throws IOException {
+        if (rawToken == null || rawToken.trim().isEmpty()) {
+            return;
+        }
+        withWriteLock(() -> {
+            List<RememberMeRecord> list = loadRememberMeRecordsUnlocked();
+            String hash = sha256Hex(rawToken.trim());
+            boolean removed = list.removeIf(r -> r != null && hash.equals(r.getTokenHash()));
+            if (removed) {
+                saveUnlocked(REMEMBER_ME_TOKENS_FILE, list);
+            }
+        });
+    }
+
+    public void revokeAllRememberMeTokensForUser(String userId) throws IOException {
+        if (userId == null) {
+            return;
+        }
+        withWriteLock(() -> {
+            List<RememberMeRecord> list = loadRememberMeRecordsUnlocked();
+            boolean changed = list.removeIf(r -> r != null && userId.equals(r.getUserId()));
+            if (changed) {
+                saveUnlocked(REMEMBER_ME_TOKENS_FILE, list);
+            }
+        });
+    }
+
+    private List<RememberMeRecord> loadRememberMeRecordsUnlocked() throws IOException {
+        List<RememberMeRecord> list = loadUnlocked(REMEMBER_ME_TOKENS_FILE, new TypeToken<ArrayList<RememberMeRecord>>() {
+        }.getType());
+        return list != null ? list : new ArrayList<>();
+    }
+
+    private static String sha256Hex(String input) {
+        try {
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
+            byte[] digest = md.digest(input.getBytes(StandardCharsets.UTF_8));
+            StringBuilder sb = new StringBuilder(digest.length * 2);
+            for (byte b : digest) {
+                sb.append(String.format("%02x", b));
+            }
+            return sb.toString();
+        } catch (Exception e) {
+            throw new IllegalStateException("SHA-256 not available", e);
+        }
     }
 
     // ---- TA Profiles ----
