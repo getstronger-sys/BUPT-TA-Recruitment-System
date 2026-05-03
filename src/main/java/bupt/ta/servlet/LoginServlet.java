@@ -3,6 +3,7 @@ package bupt.ta.servlet;
 import bupt.ta.model.User;
 import bupt.ta.storage.DataStorage;
 import bupt.ta.util.PasswordHasher;
+import bupt.ta.util.RememberMeCookie;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.*;
@@ -39,6 +40,15 @@ public class LoginServlet extends HttpServlet {
                 session.setAttribute("role", user.getRole());
                 session.setAttribute("realName", user.getRealName());
                 session.setAttribute("justLoggedIn", Boolean.TRUE);
+
+                boolean remember = "1".equals(req.getParameter("remember"));
+                if (remember) {
+                    String token = storage.issueRememberMeToken(user.getId());
+                    RememberMeCookie.setToken(resp, req.getContextPath(), req.isSecure(), token);
+                } else {
+                    storage.revokeAllRememberMeTokensForUser(user.getId());
+                    RememberMeCookie.clear(resp, req.getContextPath(), req.isSecure());
+                }
 
                 String redirect = req.getContextPath() + "/dashboard.jsp";
                 resp.sendRedirect(redirect);
