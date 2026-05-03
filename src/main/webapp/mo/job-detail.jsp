@@ -1,6 +1,8 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ include file="/WEB-INF/jspf/html-esc.jspf" %>
 <%@ page import="bupt.ta.model.Job" %>
+<%@ page import="bupt.ta.model.Application" %>
+<%@ page import="bupt.ta.model.InterviewEvaluation" %>
 <%@ page import="bupt.ta.model.WorkArrangementItem" %>
 <%@ page import="bupt.ta.service.InterviewBookingService.SlotSummary" %>
 <%@ page import="bupt.ta.util.WorkQuotaPlanner" %>
@@ -37,6 +39,10 @@
     WorkQuotaPlanner.Recommendation quotaRec = WorkQuotaPlanner.recommend(job.getWorkArrangements(), plannedRecruits);
     List<SlotSummary> slotSummaries = (List<SlotSummary>) request.getAttribute("slotSummaries");
     if (slotSummaries == null) slotSummaries = new ArrayList<>();
+    List<Application> candidateRanking = (List<Application>) request.getAttribute("candidateRanking");
+    if (candidateRanking == null) candidateRanking = new ArrayList<>();
+    Map<String, InterviewEvaluation> evaluationByApplicationId = (Map<String, InterviewEvaluation>) request.getAttribute("evaluationByApplicationId");
+    if (evaluationByApplicationId == null) evaluationByApplicationId = java.util.Collections.emptyMap();
     List<String[]> weekMilestones = new ArrayList<>();
     String timelineRaw = job.getExamTimeline() != null ? job.getExamTimeline() : "";
     Matcher weekMatcher = Pattern.compile("(?:Week|W)\\s*(\\d{1,3})\\s*[:\\-–.]?\\s*([^;\\n]+)?", Pattern.CASE_INSENSITIVE).matcher(timelineRaw);
@@ -142,6 +148,44 @@
                 <span class="muted-inline">Type: <%= "MODULE_TA".equals(job.getJobType()) ? "Module TA" : "INVIGILATION".equals(job.getJobType()) ? "Invigilation" : "Other" %></span>
                 <% } %>
             </p>
+
+            <section class="ta-job-detail__section" aria-labelledby="mo-job-decision-title">
+                <h2 id="mo-job-decision-title" class="ta-job-detail__heading">Candidate decision board</h2>
+                <p class="ta-job-detail__lede muted-inline">Interviewed candidates with saved evaluations rise to the top; use this board before final selection.</p>
+                <% if (candidateRanking.isEmpty()) { %>
+                <p class="section-empty">No applications for this posting yet.</p>
+                <% } else { %>
+                <div class="table-scroll-wrap">
+                <table class="admin-table">
+                    <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Applicant</th>
+                        <th>Status</th>
+                        <th>Evaluation</th>
+                        <th>Recommendation</th>
+                        <th>Decision reason</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <% for (int ci = 0; ci < candidateRanking.size(); ci++) {
+                        Application app = candidateRanking.get(ci);
+                        InterviewEvaluation ev = evaluationByApplicationId.get(app.getId());
+                    %>
+                    <tr>
+                        <td><%= ci + 1 %></td>
+                        <td><a href="<%= moCtx %>/mo/applicant-detail?applicantId=<%= java.net.URLEncoder.encode(app.getApplicantId(), "UTF-8") %>"><%= escHtml(app.getApplicantName() != null ? app.getApplicantName() : app.getApplicantId()) %></a></td>
+                        <td><%= escHtml(app.getStatus()) %></td>
+                        <td><% if (ev != null) { %><strong><%= ev.getTotalScore() %>/100</strong><% } else { %><span class="muted-inline">Not evaluated</span><% } %></td>
+                        <td><%= ev != null ? escHtml(ev.getRecommendationLabel()) : "-" %></td>
+                        <td class="pre-wrap"><%= app.getDecisionReason() != null && !app.getDecisionReason().isEmpty() ? escHtml(app.getDecisionReason()) : "-" %></td>
+                    </tr>
+                    <% } %>
+                    </tbody>
+                </table>
+                </div>
+                <% } %>
+            </section>
 
             <div class="ta-job-detail">
 

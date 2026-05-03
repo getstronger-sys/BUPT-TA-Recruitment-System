@@ -2,8 +2,10 @@ package bupt.ta.servlet;
 
 import bupt.ta.model.AdminSettings;
 import bupt.ta.model.Application;
+import bupt.ta.model.InterviewEvaluation;
 import bupt.ta.model.Job;
 import bupt.ta.service.AdminService;
+import bupt.ta.service.ApplicationTimelineService;
 import bupt.ta.service.StudentNotificationService;
 import bupt.ta.storage.DataStorage;
 import bupt.ta.util.JobActivity;
@@ -19,6 +21,7 @@ import java.util.List;
 public class SelectApplicantServlet extends HttpServlet {
 
     private final AdminService adminService = new AdminService();
+    private final ApplicationTimelineService timelineService = new ApplicationTimelineService();
 
     private static void redirectJobs(HttpServletResponse resp, HttpServletRequest req, String listPath, String view, String jobId, String extraQuery) throws IOException {
         String ctx = req.getContextPath();
@@ -38,7 +41,10 @@ public class SelectApplicantServlet extends HttpServlet {
         String appId = req.getParameter("applicationId");
         String action = req.getParameter("action");  // interview, waitlist, select or reject
         String notes = req.getParameter("notes");
+        String decisionReason = trim(req.getParameter("decisionReason"));
+        String applicantFeedback = trim(req.getParameter("applicantFeedback"));
         String moId = (String) req.getSession().getAttribute("userId");
+        String moName = (String) req.getSession().getAttribute("realName");
 
         if (appId == null || appId.trim().isEmpty()) {
             redirectJobs(resp, req, JobActivity.PATH_ACTIVE, "pending", null, "error=invalid");
@@ -66,6 +72,7 @@ public class SelectApplicantServlet extends HttpServlet {
             return;
         }
 
+        String fromStatus = target.getStatus();
         if ("interview".equalsIgnoreCase(action)) {
             if (!"PENDING".equals(target.getStatus())) {
                 redirectJobs(resp, req, listPath, "pending", jobId, "error=not_pending");
@@ -81,6 +88,20 @@ public class SelectApplicantServlet extends HttpServlet {
         } else if ("select".equalsIgnoreCase(action)) {
             if (!"INTERVIEW".equals(target.getStatus()) && !"WAITLIST".equals(target.getStatus())) {
                 redirectJobs(resp, req, listPath, "interview", jobId, "error=not_interview");
+                return;
+            }
+            InterviewEvaluation evaluation = storage.getInterviewEvaluationByApplicationId(target.getId());
+            if (evaluation == null) {
+                String fullView = "WAITLIST".equals(target.getStatus()) ? "waitlist" : "interview";
+                redirectJobs(resp, req, listPath, fullView, jobId, "error=evaluation_required");
+                return;
+            }
+            if (decisionReason.isEmpty()) {
+                decisionReason = trim(notes);
+            }
+            if (decisionReason.isEmpty()) {
+                String fullView = "WAITLIST".equals(target.getStatus()) ? "waitlist" : "interview";
+                redirectJobs(resp, req, listPath, fullView, jobId, "error=decision_reason_required");
                 return;
             }
             if (!JobSelectionCapacity.hasVacancy(job, storage.getApplicationsByJobId(jobId), target.getId())) {
@@ -101,7 +122,22 @@ public class SelectApplicantServlet extends HttpServlet {
             return;
         }
         target.setNotes(notes != null ? notes.trim() : "");
+        if ("select".equalsIgnoreCase(action) || "reject".equalsIgnoreCase(action)) {
+            target.setDecisionReason(decisionReason);
+            target.setApplicantFeedback(applicantFeedback);
+        }
         storage.saveApplication(target);
+        if ("select".equalsIgnoreCase(action) || "reject".equalsIgnoreCase(action)) {
+            timelineService.record(storage, target, job, moId, moName, "MO",
+                    ApplicationTimelineService.TYPE_DECISION_RECORDED,
+                    "Decision recorded",
+                    decisionReason.isEmpty() ? target.getStatus() : decisionReason,
+                    fromStatus, target.getStatus());
+        } else {
+            timelineService.recordStatusChange(storage, target, job, moId, moName, "MO",
+                    fromStatus, target.getStatus(),
+                    notes != null && !notes.trim().isEmpty() ? notes.trim() : "Moved by module organiser.");
+        }
 
         if ("interview".equalsIgnoreCase(action)) {
             StudentNotificationService.notifyInterviewInvite(storage, target, job);
@@ -133,5 +169,9 @@ public class SelectApplicantServlet extends HttpServlet {
         Job jobAfter = storage.getJobById(jobId);
         String pathAfter = jobAfter != null ? JobActivity.listPathFor(jobAfter) : listPath;
         redirectJobs(resp, req, pathAfter, view, jobId, extraQuery);
+    }
+
+    private String trim(String value) {
+        return value == null ? "" : value.trim();
     }
 }

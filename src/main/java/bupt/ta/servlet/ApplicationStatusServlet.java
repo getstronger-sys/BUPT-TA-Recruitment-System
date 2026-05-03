@@ -1,6 +1,7 @@
 package bupt.ta.servlet;
 
 import bupt.ta.model.Application;
+import bupt.ta.model.ApplicationEvent;
 import bupt.ta.model.InterviewSlot;
 import bupt.ta.model.Job;
 import bupt.ta.service.AdminService;
@@ -33,6 +34,7 @@ public class ApplicationStatusServlet extends HttpServlet {
         }
 
         List<Object[]> enriched = new ArrayList<>();
+        List<String> applicationIds = new ArrayList<>();
         int selectedCount = 0;
         int pendingCount = 0;
         int interviewCount = 0;
@@ -42,6 +44,7 @@ public class ApplicationStatusServlet extends HttpServlet {
         for (Application a : applications) {
             Job j = jobMap.get(a.getJobId());
             enriched.add(new Object[]{a, j});
+            applicationIds.add(a.getId());
             if ("SELECTED".equals(a.getStatus())) selectedCount++;
             else if ("PENDING".equals(a.getStatus())) pendingCount++;
             else if ("INTERVIEW".equals(a.getStatus())) interviewCount++;
@@ -52,6 +55,7 @@ public class ApplicationStatusServlet extends HttpServlet {
 
         int points = selectedCount * 100 + pendingCount * 20 + interviewCount * 40 + waitlistCount * 30;
         req.setAttribute("applications", enriched);
+        req.setAttribute("eventsByApplicationId", storage.getApplicationEventsByApplicationIds(applicationIds));
         req.setAttribute("selectedCount", selectedCount);
         req.setAttribute("pendingCount", pendingCount);
         req.setAttribute("interviewCount", interviewCount);

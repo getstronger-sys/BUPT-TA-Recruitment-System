@@ -271,6 +271,15 @@
     </servlet-mapping>
 
     <servlet>
+        <servlet-name>MOInterviewEvaluationServlet</servlet-name>
+        <servlet-class>bupt.ta.servlet.MOInterviewEvaluationServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>MOInterviewEvaluationServlet</servlet-name>
+        <url-pattern>/mo/interview-evaluation</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
         <servlet-name>SelectApplicantServlet</servlet-name>
         <servlet-class>bupt.ta.servlet.SelectApplicantServlet</servlet-class>
     </servlet>

@@ -9,6 +9,7 @@
 <%@ page import="bupt.ta.model.AssignedModule" %>
 <%@ page import="bupt.ta.model.Job" %>
 <%@ page import="bupt.ta.model.Application" %>
+<%@ page import="bupt.ta.model.InterviewEvaluation" %>
 <%@ page import="bupt.ta.ai.AIMatchService" %>
 <%@ page import="bupt.ta.util.WorkQuotaPlanner" %>
 <%@ page import="bupt.ta.util.JobActivity" %>
@@ -33,6 +34,8 @@
    String moCtx = request.getContextPath();
    List<AssignedModule> assignedModules = (List<AssignedModule>) request.getAttribute("assignedModules");
    if (assignedModules == null) assignedModules = java.util.Collections.emptyList();
+   java.util.Map<String, InterviewEvaluation> evaluationByApplicationId = (java.util.Map<String, InterviewEvaluation>) request.getAttribute("evaluationByApplicationId");
+   if (evaluationByApplicationId == null) evaluationByApplicationId = java.util.Collections.emptyMap();
    request.setAttribute("moNavActive", moPastJobsPage ? "past" : "jobs");
 %>
 <!DOCTYPE html>
@@ -68,6 +71,8 @@
                    if ("not_pending".equals(err)) errMsg = "Only pending applications can be moved to interview.";
                    else if ("not_interview".equals(err)) errMsg = "Only interview-stage applications can be selected.";
                    else if ("capacity_reached".equals(err)) errMsg = "Planned recruit slots are already full for this posting.";
+                   else if ("evaluation_required".equals(err)) errMsg = "Save an interview evaluation before selecting this applicant.";
+                   else if ("decision_reason_required".equals(err)) errMsg = "Selection requires a decision reason.";
                    else if ("not_applicant".equals(err)) errMsg = "This action is not allowed for the current status.";
                    else if ("batch_empty".equals(err)) errMsg = "Select at least one row.";
                    else if ("invalid_action".equals(err)) errMsg = "Invalid action.";
@@ -345,6 +350,7 @@
                     </p><% } %>
                     <% for (AIMatchService.ApplicantRecommendation rec : pendingRecs) {
                         Application a = rec.application;
+                        InterviewEvaluation ev = evaluationByApplicationId.get(a.getId());
                         String appliedText = a.getAppliedAt() != null ? a.getAppliedAt().replace("T", " ").replaceFirst("\\..*$", "") : "-";
                         String applicantName = a.getApplicantName() != null ? a.getApplicantName() : a.getApplicantId();
                         boolean hasProfile = rec.profile != null;
@@ -522,6 +528,7 @@
                             </div>
                             <div class="applicant-score-area">
                                 <span class="match-badge" title="<%= rec.matchResult.explanation %>"><%= (int)rec.matchResult.score %>% match</span>
+                                <% if (ev != null) { %><span class="match-badge evaluation-badge"><%= ev.getTotalScore() %>/100 eval</span><% } %>
                                 <span class="status-pill status-pill-interview">INTERVIEW</span>
                             </div>
                         </div>
@@ -565,6 +572,8 @@
                                     <%@ include file="/WEB-INF/jspf/csrf-hidden.jspf" %>
                                     <input type="hidden" name="applicationId" value="<%= a.getId() %>">
                                     <input type="text" name="notes" placeholder="Optional notes" class="note-input">
+                                    <input type="text" name="decisionReason" placeholder="Selection reason (required if selected)" class="note-input">
+                                    <input type="text" name="applicantFeedback" placeholder="TA-visible feedback (optional)" class="note-input">
                                     <div class="decision-buttons decision-buttons-inline">
                                         <button type="submit" name="action" value="select" class="btn btn-success decision-btn">Select</button>
                                         <button type="submit" name="action" value="reject" class="btn btn-danger decision-btn">Reject</button>
@@ -579,6 +588,7 @@
                     <% if (!waitlistRecs.isEmpty()) { %>
                     <% for (AIMatchService.ApplicantRecommendation rec : waitlistRecs) {
                         Application a = rec.application;
+                        InterviewEvaluation ev = evaluationByApplicationId.get(a.getId());
                         String appliedText = a.getAppliedAt() != null ? a.getAppliedAt().replace("T", " ").replaceFirst("\\..*$", "") : "-";
                         String applicantName = a.getApplicantName() != null ? a.getApplicantName() : a.getApplicantId();
                         boolean hasProfile = rec.profile != null;
@@ -607,6 +617,7 @@
                             </div>
                             <div class="applicant-score-area">
                                 <span class="match-badge" title="<%= rec.matchResult.explanation %>"><%= (int)rec.matchResult.score %>% match</span>
+                                <% if (ev != null) { %><span class="match-badge evaluation-badge"><%= ev.getTotalScore() %>/100 eval</span><% } %>
                                 <span class="status-pill status-pill-pending">WAITLIST</span>
                             </div>
                         </div>
@@ -641,6 +652,8 @@
                                     <%@ include file="/WEB-INF/jspf/csrf-hidden.jspf" %>
                                     <input type="hidden" name="applicationId" value="<%= a.getId() %>">
                                     <input type="text" name="notes" placeholder="Optional notes" class="note-input">
+                                    <input type="text" name="decisionReason" placeholder="Selection reason (required if selected)" class="note-input">
+                                    <input type="text" name="applicantFeedback" placeholder="TA-visible feedback (optional)" class="note-input">
                                     <div class="decision-buttons decision-buttons-inline">
                                         <button type="submit" name="action" value="select" class="btn btn-success decision-btn">Select</button>
                                         <button type="submit" name="action" value="reject" class="btn btn-danger decision-btn">Reject</button>
@@ -654,6 +667,7 @@
                     <% } else if ("withdrawn".equals(moView)) { %>
                     <% for (AIMatchService.ApplicantRecommendation rec : withdrawnRecs) {
                         Application a = rec.application;
+                        InterviewEvaluation ev = evaluationByApplicationId.get(a.getId());
                         String appliedText = a.getAppliedAt() != null ? a.getAppliedAt().replace("T", " ").replaceFirst("\\..*$", "") : "-";
                         String applicantName = a.getApplicantName() != null ? a.getApplicantName() : a.getApplicantId();
                     %>
@@ -710,6 +724,7 @@
                             </div>
                             <div class="applicant-score-area">
                                 <span class="match-badge" title="<%= rec.matchResult.explanation %>"><%= (int)rec.matchResult.score %>% match</span>
+                                <% if (ev != null) { %><span class="match-badge evaluation-badge"><%= ev.getTotalScore() %>/100 eval</span><% } %>
                                 <span class="<%= statusPillClass %>"><%= a.getStatus() %></span>
                             </div>
                         </div>
@@ -744,6 +759,8 @@
                                 </div>
                                 <div class="decision-summary">
                                     <p><strong>Notes:</strong> <%= noteText %></p>
+                                    <% if (a.getDecisionReason() != null && !a.getDecisionReason().isEmpty()) { %><p><strong>Decision reason:</strong> <%= escHtml(a.getDecisionReason()) %></p><% } %>
+                                    <% if (a.getApplicantFeedback() != null && !a.getApplicantFeedback().isEmpty()) { %><p><strong>TA feedback:</strong> <%= escHtml(a.getApplicantFeedback()) %></p><% } %>
                                 </div>
                             </div>
                         </div>

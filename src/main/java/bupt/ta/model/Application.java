@@ -19,6 +19,10 @@ public class Application {
     private String interviewBookedAt;
     /** TA-selected preferred role/slot for this job, e.g. TA-1, TA-2. */
     private String preferredRole;
+    /** MO decision reason captured when selecting/rejecting after interview. */
+    private String decisionReason;
+    /** Optional feedback visible to the applicant on their application page. */
+    private String applicantFeedback;
 
     public Application() {
         this.status = "PENDING";
@@ -51,4 +55,8 @@ public class Application {
     public void setInterviewBookedAt(String interviewBookedAt) { this.interviewBookedAt = interviewBookedAt; }
     public String getPreferredRole() { return preferredRole; }
     public void setPreferredRole(String preferredRole) { this.preferredRole = preferredRole; }
+    public String getDecisionReason() { return decisionReason; }
+    public void setDecisionReason(String decisionReason) { this.decisionReason = decisionReason; }
+    public String getApplicantFeedback() { return applicantFeedback; }
+    public void setApplicantFeedback(String applicantFeedback) { this.applicantFeedback = applicantFeedback; }
 }

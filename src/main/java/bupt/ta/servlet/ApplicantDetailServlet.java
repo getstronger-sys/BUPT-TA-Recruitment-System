@@ -3,6 +3,8 @@ package bupt.ta.servlet;
 import bupt.ta.ai.AIMatchService;
 import bupt.ta.llm.LlmMatchInsightService;
 import bupt.ta.model.Application;
+import bupt.ta.model.ApplicationEvent;
+import bupt.ta.model.InterviewEvaluation;
 import bupt.ta.model.Job;
 import bupt.ta.model.TAProfile;
 import bupt.ta.model.User;
@@ -46,6 +48,12 @@ public class ApplicantDetailServlet extends HttpServlet {
         }
 
         Map<String, Job> jobMap = moJobs.stream().collect(Collectors.toMap(Job::getId, j -> j, (a, b) -> a));
+        Map<String, InterviewEvaluation> evaluationByApplicationId = storage.loadInterviewEvaluations().stream()
+                .filter(e -> e != null && e.getApplicationId() != null)
+                .collect(Collectors.toMap(InterviewEvaluation::getApplicationId, e -> e, (a, b) -> a));
+        List<String> applicationIds = relatedApps.stream()
+                .map(Application::getId)
+                .collect(Collectors.toList());
         List<Object[]> rows = new ArrayList<>();
         int selected = 0;
         int pending = 0;
@@ -81,6 +89,8 @@ public class ApplicantDetailServlet extends HttpServlet {
         req.setAttribute("applicantUser", user);
         req.setAttribute("applicantProfile", profile);
         req.setAttribute("appRows", rows);
+        req.setAttribute("evaluationByApplicationId", evaluationByApplicationId);
+        req.setAttribute("eventsByApplicationId", storage.getApplicationEventsByApplicationIds(applicationIds));
         req.setAttribute("selectedCount", selected);
         req.setAttribute("pendingCount", pending);
         req.setAttribute("interviewCount", interview);

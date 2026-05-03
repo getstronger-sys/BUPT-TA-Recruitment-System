@@ -5,6 +5,7 @@ import bupt.ta.model.Application;
 import bupt.ta.model.Job;
 import bupt.ta.model.User;
 import bupt.ta.service.AdminService;
+import bupt.ta.service.ApplicationTimelineService;
 import bupt.ta.service.StudentNotificationService;
 import bupt.ta.storage.DataStorage;
 import bupt.ta.util.JobWorkloadEstimator;
@@ -18,6 +19,7 @@ import java.nio.charset.StandardCharsets;
 public class ApplyJobServlet extends HttpServlet {
 
     private final AdminService adminService = new AdminService();
+    private final ApplicationTimelineService timelineService = new ApplicationTimelineService();
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
@@ -85,6 +87,11 @@ public class ApplyJobServlet extends HttpServlet {
         app.setApplicantName(applicantName);
         app.setPreferredRole(preferredRole);
         storage.addApplication(app);
+        timelineService.record(storage, app, job, applicantId, applicantName, "TA",
+                ApplicationTimelineService.TYPE_SUBMITTED,
+                "Application submitted",
+                "Preferred role: " + preferredRole,
+                "", app.getStatus());
         StudentNotificationService.notifyApplicationSubmitted(storage, app, job);
 
         resp.sendRedirect(req.getContextPath() + "/ta/applications?success=1");
