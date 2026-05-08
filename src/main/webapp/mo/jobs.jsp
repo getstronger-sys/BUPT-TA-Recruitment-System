@@ -493,6 +493,7 @@
                     <% } %>
                     <% for (AIMatchService.ApplicantRecommendation rec : interviewRecs) {
                         Application a = rec.application;
+                        InterviewEvaluation ev = evaluationByApplicationId.get(a.getId());
                         String appliedText = a.getAppliedAt() != null ? a.getAppliedAt().replace("T", " ").replaceFirst("\\..*$", "") : "-";
                         String applicantName = a.getApplicantName() != null ? a.getApplicantName() : a.getApplicantId();
                         boolean hasProfile = rec.profile != null;
@@ -687,6 +688,7 @@
                     <% } else { %>
                     <% for (AIMatchService.ApplicantRecommendation rec : outcomeRecs) {
                         Application a = rec.application;
+                        InterviewEvaluation ev = evaluationByApplicationId.get(a.getId());
                         String appliedText = a.getAppliedAt() != null ? a.getAppliedAt().replace("T", " ").replaceFirst("\\..*$", "") : "-";
                         String applicantName = a.getApplicantName() != null ? a.getApplicantName() : a.getApplicantId();
                         boolean hasProfile = rec.profile != null;
