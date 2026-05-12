@@ -1,6 +1,7 @@
 package bupt.ta.servlet;
 
 import bupt.ta.ai.AIMatchService;
+import bupt.ta.llm.DeepSeekClient;
 import bupt.ta.llm.LlmMatchInsightService;
 import bupt.ta.model.Job;
 import bupt.ta.model.TAProfile;
@@ -40,7 +41,8 @@ public class TAJobDetailServlet extends HttpServlet {
         AIMatchService.MatchResult match = aiService.matchSkills(profile, job);
         boolean saved = profile != null && profile.getSavedJobIds().contains(job.getId());
 
-        String llmInsight = new LlmMatchInsightService().buildInsight(profile, job, match);
+        DeepSeekClient client = DeepSeekClient.fromAdminSettings(storage.loadAiApiSettings());
+        String llmInsight = new LlmMatchInsightService(client).buildInsight(profile, job, match);
         req.setAttribute("llmMatchInsight", llmInsight);
 
         req.setAttribute("job", job);

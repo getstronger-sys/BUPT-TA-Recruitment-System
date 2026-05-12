@@ -74,7 +74,7 @@ public class CVUploadServlet extends HttpServlet {
             if (plain == null || plain.trim().isEmpty()) {
                 aiStatus = AI_STATUS_NO_TEXT;
             } else {
-                DeepSeekClient ds = new DeepSeekClient();
+                DeepSeekClient ds = DeepSeekClient.fromAdminSettings(storage.loadAiApiSettings());
                 if (!ds.isConfigured()) {
                     aiStatus = AI_STATUS_DISABLED;
                 } else {

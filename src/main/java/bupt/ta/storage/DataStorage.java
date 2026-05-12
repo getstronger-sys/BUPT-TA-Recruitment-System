@@ -36,6 +36,7 @@ public class DataStorage {
     private static final String INTERVIEW_SLOTS_FILE = "interview-slots.json";
     private static final String INTERVIEW_EVALUATIONS_FILE = "interview-evaluations.json";
     private static final String MO_MODULE_ASSIGNMENTS_FILE = "mo-module-assignments.json";
+    private static final String AI_API_SETTINGS_FILE = "ai-api-settings.json";
     private static final String REMEMBER_ME_TOKENS_FILE = "remember-me-tokens.json";
     private static final int REMEMBER_ME_DAYS = 30;
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
@@ -1141,6 +1142,21 @@ public class DataStorage {
 
     public void saveAdminSettings(AdminSettings settings) throws IOException {
         save(SETTINGS_FILE, settings != null ? settings : new AdminSettings());
+    }
+
+    // ---- AI API settings ----
+
+    /**
+     * Loads the admin-managed LLM API settings, or default values when the file is missing/empty.
+     * Never returns {@code null}.
+     */
+    public AiApiSettings loadAiApiSettings() throws IOException {
+        AiApiSettings settings = load(AI_API_SETTINGS_FILE, AiApiSettings.class);
+        return settings != null ? settings : new AiApiSettings();
+    }
+
+    public void saveAiApiSettings(AiApiSettings settings) throws IOException {
+        save(AI_API_SETTINGS_FILE, settings != null ? settings : new AiApiSettings());
     }
 
     // ---- MO module assignments ----

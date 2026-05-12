@@ -1,6 +1,7 @@
 package bupt.ta.servlet;
 
 import bupt.ta.ai.AIMatchService;
+import bupt.ta.llm.DeepSeekClient;
 import bupt.ta.llm.LlmMatchInsightService;
 import bupt.ta.model.Application;
 import bupt.ta.model.ApplicationEvent;
@@ -80,7 +81,8 @@ public class ApplicantDetailServlet extends HttpServlet {
         }
         if (insightJob != null && profile != null) {
             AIMatchService.MatchResult match = aiService.matchSkills(profile, insightJob);
-            String moInsight = new LlmMatchInsightService().buildInsight(profile, insightJob, match);
+            DeepSeekClient client = DeepSeekClient.fromAdminSettings(storage.loadAiApiSettings());
+            String moInsight = new LlmMatchInsightService(client).buildInsight(profile, insightJob, match);
             req.setAttribute("llmApplicantInsight", moInsight);
         }
 

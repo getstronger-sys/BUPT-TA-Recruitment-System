@@ -1,6 +1,7 @@
 package bupt.ta.servlet;
 
 import bupt.ta.ai.AIMatchService;
+import bupt.ta.llm.DeepSeekClient;
 import bupt.ta.llm.LlmApplicantSummaryService;
 import bupt.ta.model.Application;
 import bupt.ta.model.Job;
@@ -22,7 +23,6 @@ import java.util.List;
 public class MOApplicantSummaryServlet extends HttpServlet {
 
     private final AIMatchService aiService = new AIMatchService();
-    private final LlmApplicantSummaryService summaryService = new LlmApplicantSummaryService();
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
@@ -76,6 +76,8 @@ public class MOApplicantSummaryServlet extends HttpServlet {
         double avgWorkload = selectedApplicants == 0 ? 0 : (selectedTotal * 1.0 / selectedApplicants);
         boolean balanced = currentWorkload <= avgWorkload;
 
+        DeepSeekClient client = DeepSeekClient.fromAdminSettings(storage.loadAiApiSettings());
+        LlmApplicantSummaryService summaryService = new LlmApplicantSummaryService(client);
         List<String> lines = summaryService.buildSummaryLines(profile, job, match, currentWorkload, balanced);
 
         JsonObject data = new JsonObject();
