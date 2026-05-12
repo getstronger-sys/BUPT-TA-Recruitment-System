@@ -61,17 +61,13 @@
         <main class="main-panel admin-main">
             <p class="breadcrumb-line"><a href="${pageContext.request.contextPath}/admin/users">&larr; Back to user directory</a></p>
             <h1>MO Detail: <%= escHtml(displayName) %></h1>
-            <p class="ta-page-lead">Read-only history for one module organiser, including account record, posting content, workload risks, and all applications received by this MO.</p>
+            <p class="ta-page-lead">Read-only traceability for this module organiser (postings, risks, applications). Only <strong>Assigned modules for this term</strong> can be edited below; everything else is for auditing.</p>
             <% if ("1".equals(request.getParameter("assignedUpdated"))) { %>
             <p class="success">Assigned modules updated successfully.</p>
             <% } %>
             <% if (assignError != null && !assignError.trim().isEmpty()) { %>
             <p class="error"><%= escHtml(assignError) %></p>
             <% } %>
-            <div class="context-card">
-                <strong>Admin governance view</strong>
-                <p>This page is mainly read-only for traceability (posting history, application counts, risk flags, and statuses), while <strong>Assigned modules for this term</strong> can be updated below.</p>
-            </div>
 
             <div class="stats-row admin-stat-grid">
                 <div class="stat-card">
@@ -108,34 +104,39 @@
                 </div>
             </div>
 
-            <div class="detail-grid admin-detail-grid">
-                <section class="detail-card">
-                    <h3>Account record</h3>
-                    <dl class="admin-kv-list">
-                        <dt>User ID</dt><dd><code><%= escHtml(user.getId()) %></code></dd>
-                        <dt>Role</dt><dd>MO</dd>
-                        <dt>Username</dt><dd><%= escHtml(user.getUsername() != null ? user.getUsername() : "-") %></dd>
-                        <dt>Real name</dt><dd><%= escHtml(user.getRealName() != null && !user.getRealName().isEmpty() ? user.getRealName() : "-") %></dd>
-                        <dt>Email</dt><dd><%= escHtml(user.getEmail() != null && !user.getEmail().isEmpty() ? user.getEmail() : "-") %></dd>
-                    </dl>
-                </section>
-
-                <section class="detail-card">
-                    <h3>Recruitment summary</h3>
-                    <div class="admin-chip-grid">
-                        <span class="admin-chip">Pending: <strong><%= report.getPendingCount() %></strong></span>
-                        <span class="admin-chip">Interview: <strong><%= report.getInterviewCount() %></strong></span>
-                        <span class="admin-chip">Waitlist: <strong><%= report.getWaitlistCount() %></strong></span>
-                        <span class="admin-chip">Selected: <strong><%= report.getSelectedCount() %></strong></span>
-                        <span class="admin-chip">Rejected: <strong><%= report.getRejectedCount() %></strong></span>
-                        <span class="admin-chip">Withdrawn: <strong><%= report.getWithdrawnCount() %></strong></span>
-                        <span class="admin-chip">Auto-closed: <strong><%= report.getAutoClosedCount() %></strong></span>
-                    </div>
-                </section>
+            <div class="admin-metric-strip" role="region" aria-label="Application status counts">
+                <span class="admin-metric-strip__item">Pending <strong><%= report.getPendingCount() %></strong></span>
+                <span class="admin-metric-strip__item">Interview <strong><%= report.getInterviewCount() %></strong></span>
+                <span class="admin-metric-strip__item">Waitlist <strong><%= report.getWaitlistCount() %></strong></span>
+                <span class="admin-metric-strip__item">Selected <strong><%= report.getSelectedCount() %></strong></span>
+                <span class="admin-metric-strip__item">Rejected <strong><%= report.getRejectedCount() %></strong></span>
+                <span class="admin-metric-strip__item">Withdrawn <strong><%= report.getWithdrawnCount() %></strong></span>
+                <span class="admin-metric-strip__item">Auto-closed <strong><%= report.getAutoClosedCount() %></strong></span>
             </div>
 
-            <section class="detail-card">
-                <h3>Assigned modules for this term</h3>
+            <details class="detail-card admin-detail-card--account admin-section-collapse">
+                <summary class="admin-section-collapse__summary">
+                    <span class="admin-section-collapse__chev" aria-hidden="true"></span>
+                    <span class="admin-section-collapse__title">Account record</span>
+                </summary>
+                <div class="admin-section-collapse__body">
+                <dl class="admin-kv-list">
+                    <dt>User ID</dt><dd><code><%= escHtml(user.getId()) %></code></dd>
+                    <dt>Role</dt><dd>MO</dd>
+                    <dt>Username</dt><dd><%= escHtml(user.getUsername() != null ? user.getUsername() : "-") %></dd>
+                    <dt>Real name</dt><dd><%= escHtml(user.getRealName() != null && !user.getRealName().isEmpty() ? user.getRealName() : "-") %></dd>
+                    <dt>Email</dt><dd><%= escHtml(user.getEmail() != null && !user.getEmail().isEmpty() ? user.getEmail() : "-") %></dd>
+                </dl>
+                </div>
+            </details>
+
+            <details class="detail-card admin-section-collapse"
+                <% if ("1".equals(request.getParameter("assignedUpdated")) || (assignError != null && !assignError.trim().isEmpty())) { %>open<% } %>>
+                <summary class="admin-section-collapse__summary">
+                    <span class="admin-section-collapse__chev" aria-hidden="true"></span>
+                    <span class="admin-section-collapse__title">Assigned modules for this term</span>
+                </summary>
+                <div class="admin-section-collapse__body">
                 <p class="muted-inline">MO can only post jobs for these module codes. One line per module, format: <code>MODULE_CODE | Module Name</code>.</p>
                 <form action="${pageContext.request.contextPath}/admin/mo-detail" method="post" class="form">
                     <%@ include file="/WEB-INF/jspf/csrf-hidden.jspf" %>
@@ -184,10 +185,17 @@
                     <textarea name="assignedModulesText" rows="6" class="module-editor__raw" placeholder="EBU6304 | Software Engineering&#10;EBU6202 | Data Structures and Algorithms"><%= escHtml(assignedModulesText.toString()) %></textarea>
                     <button type="submit" class="btn btn-primary">Save assigned modules</button>
                 </form>
-            </section>
+                </div>
+            </details>
 
-            <section class="detail-card">
-                <h3>Posted jobs summary</h3>
+            <details class="detail-card admin-section-collapse">
+                <summary class="admin-section-collapse__summary">
+                    <span class="admin-section-collapse__chev" aria-hidden="true"></span>
+                    <span class="admin-section-collapse__title">Posted jobs summary</span>
+                    <span class="admin-section-collapse__meta"><%= report.getTotalJobs() %> job(s)</span>
+                </summary>
+                <div class="admin-section-collapse__body">
+                <p class="admin-section-hint muted-inline">Overview table; expand a row in <strong>Posting details</strong> below for full job text and work arrangements.</p>
                 <% if (report.getJobRows().isEmpty()) { %>
                 <p class="section-empty section-empty--card">This MO has not posted any jobs.</p>
                 <% } else { %>
@@ -241,10 +249,17 @@
                     </table>
                 </div>
                 <% } %>
-            </section>
+                </div>
+            </details>
 
-            <section class="detail-card">
-                <h3>Posting details</h3>
+            <details class="detail-card admin-section-collapse">
+                <summary class="admin-section-collapse__summary">
+                    <span class="admin-section-collapse__chev" aria-hidden="true"></span>
+                    <span class="admin-section-collapse__title">Posting details</span>
+                    <span class="admin-section-collapse__meta"><%= report.getJobRows().size() %> posting(s)</span>
+                </summary>
+                <div class="admin-section-collapse__body">
+                <p class="admin-section-hint muted-inline">Each job is collapsed by default—click the bar to show description, responsibilities, and arrangements.</p>
                 <% if (report.getJobRows().isEmpty()) { %>
                 <p class="section-empty section-empty--card">No posting detail is available because this MO has no jobs.</p>
                 <% } else { %>
@@ -252,17 +267,19 @@
                     <% for (AdminService.MOJobDetailRow row : report.getJobRows()) {
                            Job job = row.getJob();
                     %>
-                    <article class="detail-card admin-posting-card">
-                        <div class="admin-posting-head">
-                            <div>
-                                <h3><%= escHtml(job.getTitle() != null ? job.getTitle() : job.getId()) %></h3>
-                                <p class="muted-inline"><%= escHtml(job.getModuleCode() != null ? job.getModuleCode() : "-") %> | Created <%= escHtml(job.getCreatedAt() != null && !job.getCreatedAt().isEmpty() ? job.getCreatedAt() : "-") %></p>
-                            </div>
+                    <details class="admin-job-expand">
+                        <summary class="admin-job-expand__summary">
+                            <span class="admin-job-expand__chev" aria-hidden="true"></span>
+                            <span class="admin-job-expand__lead">
+                                <span class="admin-job-expand__title"><%= escHtml(job.getTitle() != null ? job.getTitle() : job.getId()) %></span>
+                                <span class="admin-job-expand__meta"><%= escHtml(job.getModuleCode() != null ? job.getModuleCode() : "-") %> · Created <%= escHtml(job.getCreatedAt() != null && !job.getCreatedAt().isEmpty() ? job.getCreatedAt() : "-") %></span>
+                            </span>
                             <span class="status-pill <%= "OPEN".equalsIgnoreCase(job.getStatus()) ? "status-pill-pending" : "status-pill-rejected" %>"><%= escHtml(job.getStatus() != null ? job.getStatus() : "-") %></span>
-                        </div>
-                        <div class="detail-grid">
-                            <div class="detail-card">
-                                <h3>Core fields</h3>
+                        </summary>
+                        <div class="admin-job-expand__body">
+                        <div class="admin-posting-subgrid">
+                            <div class="admin-kv-panel">
+                                <h4 class="admin-kv-panel__title">Core fields</h4>
                                 <dl class="admin-kv-list">
                                     <dt>Job ID</dt><dd><code><%= escHtml(job.getId()) %></code></dd>
                                     <dt>Job type</dt><dd><%= escHtml(job.getJobType() != null && !job.getJobType().isEmpty() ? job.getJobType() : "-") %></dd>
@@ -274,8 +291,8 @@
                                     <dt>Planned recruits</dt><dd><%= job.getTaSlots() > 0 ? job.getTaSlots() : 0 %></dd>
                                 </dl>
                             </div>
-                            <div class="detail-card">
-                                <h3>Recruitment planning</h3>
+                            <div class="admin-kv-panel">
+                                <h4 class="admin-kv-panel__title">Recruitment planning</h4>
                                 <dl class="admin-kv-list">
                                     <dt>Required skills</dt><dd><%= job.getRequiredSkills() != null && !job.getRequiredSkills().isEmpty() ? escHtml(String.join(", ", job.getRequiredSkills())) : "-" %></dd>
                                     <dt>Estimated interview time</dt><dd class="pre-wrap"><%= escHtml(job.getInterviewSchedule() != null && !job.getInterviewSchedule().isEmpty() ? job.getInterviewSchedule() : "-") %></dd>
@@ -332,14 +349,22 @@
                             </div>
                             <% } %>
                         </div>
-                    </article>
+                        </div>
+                    </details>
                     <% } %>
                 </div>
                 <% } %>
-            </section>
+                </div>
+            </details>
 
-            <section class="detail-card">
-                <h3>Application history across MO postings</h3>
+            <details class="detail-card admin-section-collapse">
+                <summary class="admin-section-collapse__summary">
+                    <span class="admin-section-collapse__chev" aria-hidden="true"></span>
+                    <span class="admin-section-collapse__title">Application history across MO postings</span>
+                    <span class="admin-section-collapse__meta"><%= report.getApplicationRows().size() %> application(s)</span>
+                </summary>
+                <div class="admin-section-collapse__body">
+                <p class="admin-section-hint muted-inline">Scroll horizontally on narrow screens; applicant names link to TA detail.</p>
                 <% if (report.getApplicationRows().isEmpty()) { %>
                 <p class="section-empty section-empty--card">No applications have been submitted to this MO's jobs.</p>
                 <% } else { %>
@@ -394,7 +419,8 @@
                     </table>
                 </div>
                 <% } %>
-            </section>
+                </div>
+            </details>
         </main>
         <aside class="right-sidebar">
             <div class="widget-card">

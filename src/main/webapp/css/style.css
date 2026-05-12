@@ -749,6 +749,9 @@ a { color: #1f56a7; }
 .stat-icon {
     width: 44px;
     height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+    flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -3198,6 +3201,118 @@ tr:hover { background: #f8f7ff; }
     margin-top: 8px;
 }
 
+/* MO detail (and similar): four KPI tiles in one row when space allows */
+.admin-main .stats-row.admin-stat-grid {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+
+.admin-metric-strip {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 14px;
+    margin: 4px 0 18px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    border: 1px solid #d2e3f5;
+    background: linear-gradient(180deg, #f7fbff 0%, #f3f8fd 100%);
+    font-size: 0.88rem;
+    color: #35557c;
+}
+
+.admin-metric-strip__item strong {
+    color: #123b7a;
+    font-weight: 700;
+    margin-left: 2px;
+}
+
+.admin-section-hint {
+    margin: -4px 0 12px;
+    font-size: 0.88rem;
+    max-width: 52em;
+}
+
+/* MO detail: foldable major sections (detail-card + details) */
+.detail-card.admin-section-collapse {
+    padding: 0;
+    overflow: hidden;
+}
+
+.admin-section-collapse > .admin-section-collapse__summary {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 14px;
+    padding: 14px;
+    cursor: pointer;
+    background: #fbfdff;
+    border-bottom: 1px solid transparent;
+    user-select: none;
+}
+
+.admin-section-collapse > .admin-section-collapse__summary::-webkit-details-marker {
+    display: none;
+}
+
+.admin-section-collapse[open] > .admin-section-collapse__summary {
+    border-bottom-color: #d6e4f2;
+    background: #f5f9ff;
+}
+
+.admin-section-collapse > .admin-section-collapse__summary:focus {
+    outline: 2px solid #1452a3;
+    outline-offset: -2px;
+}
+
+.admin-section-collapse__chev {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.35rem;
+    height: 1.35rem;
+    flex-shrink: 0;
+    color: #1452a3;
+    font-size: 0.9rem;
+    line-height: 1;
+    transition: transform 0.15s ease;
+}
+
+.admin-section-collapse__chev::before {
+    content: "\25B8";
+    display: block;
+    transform: translateY(1px);
+}
+
+.admin-section-collapse[open] > .admin-section-collapse__summary .admin-section-collapse__chev {
+    transform: rotate(90deg);
+}
+
+.admin-section-collapse__title {
+    flex: 1 1 160px;
+    min-width: 0;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #123b7a;
+}
+
+.admin-section-collapse__meta {
+    flex-shrink: 0;
+    font-size: 0.82rem;
+    color: #667f9f;
+    font-weight: 600;
+}
+
+.admin-section-collapse__body {
+    padding: 14px;
+    border-top: 1px solid #e8f0fa;
+    background: #fbfdff;
+}
+
+.admin-detail-card--account {
+    max-width: 720px;
+}
+
 .admin-detail-grid {
     margin-top: 10px;
 }
@@ -3350,11 +3465,120 @@ tr:hover { background: #f8f7ff; }
 
 .admin-posting-stack {
     display: grid;
-    gap: 18px;
+    gap: 10px;
 }
 
 .admin-posting-card {
     margin: 0;
+}
+
+/* Collapsible job blocks on MO admin detail — avoids nested detail-cards */
+.admin-job-expand {
+    border: 1px solid #cfe0f5;
+    border-radius: 10px;
+    background: #fff;
+    overflow: hidden;
+}
+
+.admin-job-expand__summary {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 14px;
+    padding: 12px 14px;
+    cursor: pointer;
+    background: #f7fbff;
+    border-bottom: 1px solid transparent;
+    user-select: none;
+}
+
+.admin-job-expand__summary::-webkit-details-marker {
+    display: none;
+}
+
+.admin-job-expand[open] > .admin-job-expand__summary {
+    border-bottom-color: #d2e3f5;
+    background: #eef6ff;
+}
+
+.admin-job-expand__summary:focus {
+    outline: 2px solid #1452a3;
+    outline-offset: 2px;
+}
+
+.admin-job-expand__chev {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.25rem;
+    height: 1.25rem;
+    flex-shrink: 0;
+    color: #1452a3;
+    font-size: 0.85rem;
+    line-height: 1;
+    transition: transform 0.15s ease;
+}
+
+.admin-job-expand__chev::before {
+    content: "\25B8";
+    display: block;
+    transform: translateY(1px);
+}
+
+.admin-job-expand[open] .admin-job-expand__chev {
+    transform: rotate(90deg);
+}
+
+.admin-job-expand__lead {
+    flex: 1 1 220px;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.admin-job-expand__title {
+    font-weight: 700;
+    color: #083b84;
+    font-size: 1rem;
+}
+
+.admin-job-expand__meta {
+    font-size: 0.82rem;
+    color: #667f9f;
+}
+
+.admin-job-expand__body {
+    padding: 14px;
+    background: #fbfdff;
+}
+
+.admin-posting-subgrid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+@media (max-width: 900px) {
+    .admin-posting-subgrid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.admin-kv-panel {
+    border: 1px solid #e3ecf7;
+    border-radius: 10px;
+    background: #fff;
+    padding: 12px;
+}
+
+.admin-kv-panel__title {
+    margin: 0 0 10px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #123b7a;
 }
 
 .admin-posting-head {
