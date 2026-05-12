@@ -14,7 +14,6 @@
     request.setAttribute("taNavActive", "jobs");
     Job job = (Job) request.getAttribute("job");
     AIMatchService.MatchResult match = (AIMatchService.MatchResult) request.getAttribute("match");
-    String llmMatchInsight = (String) request.getAttribute("llmMatchInsight");
     if (job == null) {
         response.sendRedirect(request.getContextPath() + "/ta/jobs?error=job_not_found");
         return;
@@ -109,13 +108,14 @@
                 <% if (match.matched != null && !match.matched.isEmpty()) { %> · Matched: <%= escHtml(String.join(", ", match.matched)) %><% } %>
             </p>
             <% } %>
-            <% if (llmMatchInsight != null && !llmMatchInsight.trim().isEmpty()) { %>
-            <div class="llm-insight-card context-card">
+            <div class="llm-insight-card context-card" data-match-insight data-job-id="<%= escHtml(job.getId()) %>">
                 <strong>AI match insight (DeepSeek)</strong>
-                <p class="pre-wrap llm-insight-body"><%= escHtml(llmMatchInsight) %></p>
-                <p class="muted-inline llm-insight-disclaimer">Rule-based score above is unchanged; this text is an additional narrative. Verify facts before decisions.</p>
+                <p class="muted-inline">Click to generate a short narrative about strengths, gaps, and practical fit. The rule-based score above is not affected.</p>
+                <div class="ai-summary-actions">
+                    <button type="button" class="btn btn-secondary btn-sm match-insight-btn">Generate AI insight</button>
+                </div>
+                <div class="match-insight-result"></div>
             </div>
-            <% } %>
 
             <div class="ta-job-detail">
 
@@ -330,5 +330,50 @@
         </aside>
     </div>
 </div>
+<script>
+(function () {
+    function escapeHtml(text) {
+        return String(text == null ? "" : text)
+            .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+    }
+
+    var card = document.querySelector("[data-match-insight]");
+    if (!card) return;
+    var btn = card.querySelector(".match-insight-btn");
+    var resultBox = card.querySelector(".match-insight-result");
+    var jobId = card.getAttribute("data-job-id");
+
+    btn.addEventListener("click", function () {
+        if (!jobId) return;
+        var oldText = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = "Generating...";
+        resultBox.innerHTML = "<p class='muted-inline'>Calling AI, this may take up to 30 seconds...</p>";
+
+        var url = "${pageContext.request.contextPath}/ta/match-insight?jobId=" + encodeURIComponent(jobId);
+        fetch(url, { method: "GET", credentials: "same-origin" })
+            .then(function (resp) {
+                return resp.json().then(function (data) { return { ok: resp.ok, body: data }; });
+            })
+            .then(function (res) {
+                if (!res.ok || !res.body || !res.body.ok) {
+                    var msg = (res.body && res.body.error) ? res.body.error : "Failed to generate insight";
+                    throw new Error(msg);
+                }
+                resultBox.innerHTML =
+                    "<p class='pre-wrap llm-insight-body'>" + escapeHtml(res.body.insight) + "</p>" +
+                    "<p class='muted-inline llm-insight-disclaimer'>Narrative only; verify facts before decisions.</p>";
+                btn.textContent = "Regenerate AI insight";
+                btn.disabled = false;
+            })
+            .catch(function (err) {
+                resultBox.innerHTML = "<p class='error'>AI insight failed: " + escapeHtml(err.message || "Unknown error") + "</p>";
+                btn.textContent = oldText;
+                btn.disabled = false;
+            });
+    });
+})();
+</script>
 </body>
 </html>

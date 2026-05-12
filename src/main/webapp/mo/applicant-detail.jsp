@@ -16,7 +16,6 @@
     Integer pendingObj = (Integer) request.getAttribute("pendingCount");
     Integer otherObj = (Integer) request.getAttribute("otherCount");
     Integer interviewObj = (Integer) request.getAttribute("interviewCount");
-    String llmApplicantInsight = (String) request.getAttribute("llmApplicantInsight");
     java.util.Map<String, InterviewEvaluation> evaluationByApplicationId = (java.util.Map<String, InterviewEvaluation>) request.getAttribute("evaluationByApplicationId");
     if (evaluationByApplicationId == null) evaluationByApplicationId = java.util.Collections.emptyMap();
     java.util.Map<String, List<ApplicationEvent>> eventsByApplicationId = (java.util.Map<String, List<ApplicationEvent>>) request.getAttribute("eventsByApplicationId");
@@ -70,11 +69,14 @@
         <strong>Review Tip</strong>
         <p>Check skills fit, availability and previous application status together for a balanced selection.</p>
     </div>
-    <% if (llmApplicantInsight != null && !llmApplicantInsight.trim().isEmpty()) { %>
-    <div class="llm-insight-card context-card">
+    <% if (user != null) { %>
+    <div class="llm-insight-card context-card" data-applicant-insight data-applicant-id="<%= escHtml(user.getId()) %>">
         <strong>AI applicant insight (DeepSeek)</strong>
-        <p class="pre-wrap llm-insight-body"><%= escHtml(llmApplicantInsight) %></p>
-        <p class="muted-inline llm-insight-disclaimer">Narrative only; verify against profile and interview.</p>
+        <p class="muted-inline">Click to generate a short narrative comparing this applicant to their most recent application to your jobs.</p>
+        <div class="ai-summary-actions">
+            <button type="button" class="btn btn-secondary btn-sm applicant-insight-btn">Generate AI insight</button>
+        </div>
+        <div class="applicant-insight-result"></div>
     </div>
     <% } %>
     <% } %>
@@ -270,5 +272,50 @@
         </aside>
     </div>
 </div>
+<script>
+(function () {
+    function escapeHtml(text) {
+        return String(text == null ? "" : text)
+            .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+    }
+
+    var card = document.querySelector("[data-applicant-insight]");
+    if (!card) return;
+    var btn = card.querySelector(".applicant-insight-btn");
+    var resultBox = card.querySelector(".applicant-insight-result");
+    var applicantId = card.getAttribute("data-applicant-id");
+
+    btn.addEventListener("click", function () {
+        if (!applicantId) return;
+        var oldText = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = "Generating...";
+        resultBox.innerHTML = "<p class='muted-inline'>Calling AI, this may take up to 30 seconds...</p>";
+
+        var url = "${pageContext.request.contextPath}/mo/match-insight?applicantId=" + encodeURIComponent(applicantId);
+        fetch(url, { method: "GET", credentials: "same-origin" })
+            .then(function (resp) {
+                return resp.json().then(function (data) { return { ok: resp.ok, body: data }; });
+            })
+            .then(function (res) {
+                if (!res.ok || !res.body || !res.body.ok) {
+                    var msg = (res.body && res.body.error) ? res.body.error : "Failed to generate insight";
+                    throw new Error(msg);
+                }
+                resultBox.innerHTML =
+                    "<p class='pre-wrap llm-insight-body'>" + escapeHtml(res.body.insight) + "</p>" +
+                    "<p class='muted-inline llm-insight-disclaimer'>Narrative only; verify against profile and interview.</p>";
+                btn.textContent = "Regenerate AI insight";
+                btn.disabled = false;
+            })
+            .catch(function (err) {
+                resultBox.innerHTML = "<p class='error'>AI insight failed: " + escapeHtml(err.message || "Unknown error") + "</p>";
+                btn.textContent = oldText;
+                btn.disabled = false;
+            });
+    });
+})();
+</script>
 </body>
 </html>
