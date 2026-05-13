@@ -16,7 +16,6 @@
     Integer pendingObj = (Integer) request.getAttribute("pendingCount");
     Integer otherObj = (Integer) request.getAttribute("otherCount");
     Integer interviewObj = (Integer) request.getAttribute("interviewCount");
-    String llmApplicantInsight = (String) request.getAttribute("llmApplicantInsight");
     java.util.Map<String, InterviewEvaluation> evaluationByApplicationId = (java.util.Map<String, InterviewEvaluation>) request.getAttribute("evaluationByApplicationId");
     if (evaluationByApplicationId == null) evaluationByApplicationId = java.util.Collections.emptyMap();
     java.util.Map<String, List<ApplicationEvent>> eventsByApplicationId = (java.util.Map<String, List<ApplicationEvent>>) request.getAttribute("eventsByApplicationId");
@@ -70,11 +69,14 @@
         <strong>Review Tip</strong>
         <p>Check skills fit, availability and previous application status together for a balanced selection.</p>
     </div>
-    <% if (llmApplicantInsight != null && !llmApplicantInsight.trim().isEmpty()) { %>
-    <div class="llm-insight-card context-card">
+    <% if (user != null && Boolean.TRUE.equals(request.getAttribute("llmEnabled"))) { %>
+    <div class="llm-insight-card context-card" data-applicant-insight data-applicant-id="<%= escHtml(user.getId()) %>">
         <strong>AI applicant insight (DeepSeek)</strong>
-        <p class="pre-wrap llm-insight-body"><%= escHtml(llmApplicantInsight) %></p>
-        <p class="muted-inline llm-insight-disclaimer">Narrative only; verify against profile and interview.</p>
+        <p class="muted-inline">Click to generate a short narrative comparing this applicant to their most recent application to your jobs.</p>
+        <div class="ai-summary-actions">
+            <button type="button" class="btn btn-secondary btn-sm applicant-insight-btn">Generate AI insight</button>
+        </div>
+        <div class="applicant-insight-result"></div>
     </div>
     <% } %>
     <% } %>
@@ -270,5 +272,60 @@
         </aside>
     </div>
 </div>
+<script src="${pageContext.request.contextPath}/js/llm-stream.js"></script>
+<script>
+(function () {
+    function escapeHtml(text) {
+        return String(text == null ? "" : text)
+            .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+    }
+
+    var card = document.querySelector("[data-applicant-insight]");
+    if (!card) return;
+    var btn = card.querySelector(".applicant-insight-btn");
+    var resultBox = card.querySelector(".applicant-insight-result");
+    var applicantId = card.getAttribute("data-applicant-id");
+
+    function renderInsight(text, showDisclaimer) {
+        var html = "<p class='pre-wrap llm-insight-body'></p>";
+        if (showDisclaimer) {
+            html += "<p class='muted-inline llm-insight-disclaimer'>Narrative only; verify against profile and interview.</p>";
+        }
+        resultBox.innerHTML = html;
+        resultBox.querySelector(".llm-insight-body").textContent = text;
+    }
+
+    btn.addEventListener("click", function () {
+        if (!applicantId) return;
+        var oldText = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = "Generating...";
+        resultBox.innerHTML = "<p class='muted-inline'>Calling AI, this may take up to 30 seconds...</p>";
+
+        var url = "${pageContext.request.contextPath}/mo/match-insight?applicantId=" + encodeURIComponent(applicantId);
+        LlmStream.call(url, {
+            onChunk: function (accumulated) {
+                renderInsight(accumulated, false);
+            },
+            onDone: function (accumulated) {
+                renderInsight(accumulated, true);
+                btn.textContent = "Regenerate AI insight";
+                btn.disabled = false;
+            },
+            onJson: function (body) {
+                renderInsight(body.insight || "", true);
+                btn.textContent = "Regenerate AI insight";
+                btn.disabled = false;
+            },
+            onError: function (msg) {
+                resultBox.innerHTML = "<p class='error'>AI insight failed: " + escapeHtml(msg || "Unknown error") + "</p>";
+                btn.textContent = oldText;
+                btn.disabled = false;
+            }
+        });
+    });
+})();
+</script>
 </body>
 </html>

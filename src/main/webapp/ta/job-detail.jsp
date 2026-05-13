@@ -14,7 +14,6 @@
     request.setAttribute("taNavActive", "jobs");
     Job job = (Job) request.getAttribute("job");
     AIMatchService.MatchResult match = (AIMatchService.MatchResult) request.getAttribute("match");
-    String llmMatchInsight = (String) request.getAttribute("llmMatchInsight");
     if (job == null) {
         response.sendRedirect(request.getContextPath() + "/ta/jobs?error=job_not_found");
         return;
@@ -109,11 +108,14 @@
                 <% if (match.matched != null && !match.matched.isEmpty()) { %> · Matched: <%= escHtml(String.join(", ", match.matched)) %><% } %>
             </p>
             <% } %>
-            <% if (llmMatchInsight != null && !llmMatchInsight.trim().isEmpty()) { %>
-            <div class="llm-insight-card context-card">
+            <% if (Boolean.TRUE.equals(request.getAttribute("llmEnabled"))) { %>
+            <div class="llm-insight-card context-card" data-match-insight data-job-id="<%= escHtml(job.getId()) %>">
                 <strong>AI match insight (DeepSeek)</strong>
-                <p class="pre-wrap llm-insight-body"><%= escHtml(llmMatchInsight) %></p>
-                <p class="muted-inline llm-insight-disclaimer">Rule-based score above is unchanged; this text is an additional narrative. Verify facts before decisions.</p>
+                <p class="muted-inline">Click to generate a short narrative about strengths, gaps, and practical fit. The rule-based score above is not affected.</p>
+                <div class="ai-summary-actions">
+                    <button type="button" class="btn btn-secondary btn-sm match-insight-btn">Generate AI insight</button>
+                </div>
+                <div class="match-insight-result"></div>
             </div>
             <% } %>
 
@@ -330,5 +332,60 @@
         </aside>
     </div>
 </div>
+<script src="${pageContext.request.contextPath}/js/llm-stream.js"></script>
+<script>
+(function () {
+    function escapeHtml(text) {
+        return String(text == null ? "" : text)
+            .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+    }
+
+    var card = document.querySelector("[data-match-insight]");
+    if (!card) return;
+    var btn = card.querySelector(".match-insight-btn");
+    var resultBox = card.querySelector(".match-insight-result");
+    var jobId = card.getAttribute("data-job-id");
+
+    function renderInsight(text, showDisclaimer) {
+        var html = "<p class='pre-wrap llm-insight-body'></p>";
+        if (showDisclaimer) {
+            html += "<p class='muted-inline llm-insight-disclaimer'>Narrative only; verify facts before decisions.</p>";
+        }
+        resultBox.innerHTML = html;
+        resultBox.querySelector(".llm-insight-body").textContent = text;
+    }
+
+    btn.addEventListener("click", function () {
+        if (!jobId) return;
+        var oldText = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = "Generating...";
+        resultBox.innerHTML = "<p class='muted-inline'>Calling AI, this may take up to 30 seconds...</p>";
+
+        var url = "${pageContext.request.contextPath}/ta/match-insight?jobId=" + encodeURIComponent(jobId);
+        LlmStream.call(url, {
+            onChunk: function (accumulated) {
+                renderInsight(accumulated, false);
+            },
+            onDone: function (accumulated) {
+                renderInsight(accumulated, true);
+                btn.textContent = "Regenerate AI insight";
+                btn.disabled = false;
+            },
+            onJson: function (body) {
+                renderInsight(body.insight || "", true);
+                btn.textContent = "Regenerate AI insight";
+                btn.disabled = false;
+            },
+            onError: function (msg) {
+                resultBox.innerHTML = "<p class='error'>AI insight failed: " + escapeHtml(msg || "Unknown error") + "</p>";
+                btn.textContent = oldText;
+                btn.disabled = false;
+            }
+        });
+    });
+})();
+</script>
 </body>
 </html>

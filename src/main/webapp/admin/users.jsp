@@ -29,6 +29,8 @@
                 <div class="icon-dot">D</div>
                 <div class="icon-dot">W</div>
                 <div class="icon-dot">M</div>
+                <div class="icon-dot">E</div>
+                <div class="icon-dot">A</div>
                 <div class="icon-dot active">U</div>
             </div>
             <aside class="side-nav">
@@ -36,6 +38,7 @@
                 <a href="${pageContext.request.contextPath}/admin/workload">Workload</a>
                 <a href="${pageContext.request.contextPath}/admin/monitoring">Monitoring</a>
                 <a href="${pageContext.request.contextPath}/admin/email">Email</a>
+                <a href="${pageContext.request.contextPath}/admin/ai-api">AI API</a>
                 <a class="active" href="${pageContext.request.contextPath}/admin/users">Users</a>
             </aside>
         </div>

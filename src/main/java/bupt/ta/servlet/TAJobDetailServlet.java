@@ -1,7 +1,6 @@
 package bupt.ta.servlet;
 
 import bupt.ta.ai.AIMatchService;
-import bupt.ta.llm.LlmMatchInsightService;
 import bupt.ta.model.Job;
 import bupt.ta.model.TAProfile;
 import bupt.ta.storage.DataStorage;
@@ -40,12 +39,10 @@ public class TAJobDetailServlet extends HttpServlet {
         AIMatchService.MatchResult match = aiService.matchSkills(profile, job);
         boolean saved = profile != null && profile.getSavedJobIds().contains(job.getId());
 
-        String llmInsight = new LlmMatchInsightService().buildInsight(profile, job, match);
-        req.setAttribute("llmMatchInsight", llmInsight);
-
         req.setAttribute("job", job);
         req.setAttribute("match", match);
         req.setAttribute("saved", saved);
+        req.setAttribute("llmEnabled", storage.loadAiApiSettings().isEffectivelyConfigured());
         req.getRequestDispatcher("/ta/job-detail.jsp").forward(req, resp);
     }
 }
