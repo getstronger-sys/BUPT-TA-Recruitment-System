@@ -23,6 +23,7 @@ public class EmailOtpService {
     private final SecureRandom random = new SecureRandom();
     private final EmailNotificationService emailService = new EmailNotificationService();
 
+    /** Result of {@link #requestOtp}. */
     public static class OtpRequestResult {
         private final boolean success;
         private final String detail;
@@ -36,6 +37,7 @@ public class EmailOtpService {
         public String getDetail() { return detail; }
     }
 
+    /** Result of {@link #verifyOtp}. */
     public static class OtpVerifyResult {
         private final boolean success;
         private final String detail;

@@ -11,6 +11,12 @@ public final class InterviewNoticeTimeSupport {
     private InterviewNoticeTimeSupport() {
     }
 
+    /**
+     * @param dateRaw ISO date from the MO notice form
+     * @param timeRaw time (HH:mm)
+     * @return canonical notice time stored on the application
+     * @throws IllegalArgumentException when fields are missing or invalid
+     */
     public static String normalizeFromForm(String dateRaw, String timeRaw) {
         String date = trim(dateRaw);
         String time = trim(timeRaw);

@@ -20,14 +20,23 @@ public class StudentNotificationService {
     private static final EmailNotificationService EMAIL_SERVICE = new EmailNotificationService();
     private static final Logger LOGGER = Logger.getLogger(StudentNotificationService.class.getName());
 
+    /** {@link SiteNotification#getKind()} for a new submission. */
     public static final String KIND_APPLICATION_SUBMITTED = "APPLICATION_SUBMITTED";
+    /** Applicant moved to interview stage. */
     public static final String KIND_STATUS_INTERVIEW = "STATUS_INTERVIEW";
+    /** Applicant placed on waitlist. */
     public static final String KIND_STATUS_WAITLIST = "STATUS_WAITLIST";
+    /** Applicant selected for the role. */
     public static final String KIND_STATUS_SELECTED = "STATUS_SELECTED";
+    /** Applicant not selected. */
     public static final String KIND_STATUS_REJECTED = "STATUS_REJECTED";
+    /** Interview time/location details sent. */
     public static final String KIND_INTERVIEW_DETAILS = "INTERVIEW_DETAILS";
+    /** Application auto-closed due to workload cap. */
     public static final String KIND_AUTO_CLOSED = "AUTO_CLOSED";
+    /** Applicant withdrew. */
     public static final String KIND_WITHDRAWN = "WITHDRAWN";
+    /** Promoted from waitlist to selected. */
     public static final String KIND_AUTO_PROMOTED = "AUTO_PROMOTED";
 
     private static String jobLabel(Job job, String jobId) {

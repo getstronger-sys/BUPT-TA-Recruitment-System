@@ -8,20 +8,45 @@ import bupt.ta.storage.DataStorage;
 import java.io.IOException;
 
 /**
- * Small helper for writing application audit timeline events consistently.
+ * Helper for writing application audit timeline events consistently.
+ * Event type constants match values stored in {@link ApplicationEvent#getEventType()}.
  */
 public class ApplicationTimelineService {
+    /** Application submitted by TA. */
     public static final String TYPE_SUBMITTED = "SUBMITTED";
+    /** Status transition recorded on an application. */
     public static final String TYPE_STATUS_CHANGED = "STATUS_CHANGED";
+    /** Interview notice sent to applicant. */
     public static final String TYPE_INTERVIEW_NOTICE = "INTERVIEW_NOTICE";
+    /** TA booked an interview slot. */
     public static final String TYPE_INTERVIEW_BOOKED = "INTERVIEW_BOOKED";
+    /** TA cancelled a booked interview slot. */
     public static final String TYPE_INTERVIEW_CANCELLED = "INTERVIEW_CANCELLED";
+    /** MO saved interview evaluation. */
     public static final String TYPE_EVALUATION_SAVED = "EVALUATION_SAVED";
+    /** Final select/reject decision recorded. */
     public static final String TYPE_DECISION_RECORDED = "DECISION_RECORDED";
+    /** TA withdrew the application. */
     public static final String TYPE_WITHDRAWN = "WITHDRAWN";
+    /** Waitlisted applicant auto-promoted to selected. */
     public static final String TYPE_AUTO_PROMOTED = "AUTO_PROMOTED";
 
-    /** Appends one timeline event for an application. */
+    /**
+     * Appends one timeline event for an application.
+     *
+     * @param storage     persistence
+     * @param app         application record
+     * @param job         related job (unused, reserved for callers)
+     * @param actorUserId acting user id
+     * @param actorName   acting user display name
+     * @param actorRole   TA, MO, ADMIN, or SYSTEM
+     * @param eventType   {@link #TYPE_SUBMITTED} and related constants
+     * @param title       short event title
+     * @param detail      optional longer detail
+     * @param fromStatus  previous status (may be empty)
+     * @param toStatus    new status (may be empty)
+     * @throws IOException if persistence fails
+     */
     public void record(DataStorage storage, Application app, Job job,
                        String actorUserId, String actorName, String actorRole,
                        String eventType, String title, String detail,
@@ -44,7 +69,11 @@ public class ApplicationTimelineService {
         storage.addApplicationEvent(event);
     }
 
-    /** Records a {@link #TYPE_STATUS_CHANGED} timeline event. */
+    /**
+     * Records a {@link #TYPE_STATUS_CHANGED} timeline event.
+     *
+     * @throws IOException if persistence fails
+     */
     public void recordStatusChange(DataStorage storage, Application app, Job job,
                                    String actorUserId, String actorName, String actorRole,
                                    String fromStatus, String toStatus, String detail) throws IOException {

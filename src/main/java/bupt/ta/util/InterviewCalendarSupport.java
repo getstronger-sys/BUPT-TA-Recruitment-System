@@ -192,6 +192,11 @@ public final class InterviewCalendarSupport {
         return ics.toString();
     }
 
+    /**
+     * @param application application used for a unique suffix
+     * @param job         job posting (module code or title preferred)
+     * @return safe {@code .ics} download filename
+     */
     public static String buildFilename(Application application, Job job) {
         String base = job != null && job.getModuleCode() != null && !job.getModuleCode().trim().isEmpty()
                 ? job.getModuleCode().trim()

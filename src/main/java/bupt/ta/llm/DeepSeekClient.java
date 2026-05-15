@@ -84,11 +84,10 @@ public final class DeepSeekClient {
     }
 
     /**
-     * Build a client strictly from admin-managed settings. When {@code settings} is null,
-     * disabled or missing the key, the returned client reports {@link #isConfigured()} ==
-     * false and refuses to send requests. The {@code provider} field is treated as a
-     * free-form label and does not gate calls, so an admin can repoint Base URL / Model at
-     * any OpenAI-compatible endpoint (DeepSeek, OpenAI, Moonshot, Ollama, ...).
+     * Builds a client from admin-managed settings.
+     *
+     * @param settings admin LLM settings (may be null)
+     * @return client that is disabled when settings are null or lack an API key
      */
     public static DeepSeekClient fromAdminSettings(AiApiSettings settings) {
         if (settings == null) {
@@ -103,7 +102,7 @@ public final class DeepSeekClient {
     }
 
     /**
-     * @return true if a non-blank API key is configured and the client is enabled
+     * @return {@code true} when enabled and a non-blank API key is configured
      */
     public boolean isConfigured() {
         return enabled && !apiKey.isEmpty();
@@ -135,10 +134,13 @@ public final class DeepSeekClient {
     }
 
     /**
-     * Single user message, optional system prompt.
+     * Single user message with optional system prompt.
      *
+     * @param systemPrompt optional system role content (may be null)
+     * @param userMessage  required user message
+     * @return assistant reply text
      * @throws IllegalStateException if not configured
-     * @throws IOException          HTTP or API errors
+     * @throws IOException          on HTTP or API errors
      */
     public String chat(String systemPrompt, String userMessage) throws IOException {
         Objects.requireNonNull(userMessage, "userMessage");
@@ -157,7 +159,12 @@ public final class DeepSeekClient {
     }
 
     /**
-     * Full control over the messages array (e.g. multi-turn).
+     * Sends a chat completion request with full control over the messages array.
+     *
+     * @param messages OpenAI-format message array (roles and content)
+     * @return assistant reply text from the first choice
+     * @throws IllegalStateException if not configured
+     * @throws IOException          on HTTP or API errors
      */
     public String chatCompletions(JsonArray messages) throws IOException {
         if (!isConfigured()) {

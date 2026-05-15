@@ -100,7 +100,9 @@ public class AIMatchService {
     }
 
     /**
-     * Identify missing skills for an applicant regarding a job.
+     * @param profile applicant profile (may be null)
+     * @param job     job posting
+     * @return required skills not found on the profile
      */
     public List<String> getMissingSkills(TAProfile profile, Job job) {
         return matchSkills(profile, job).missing;

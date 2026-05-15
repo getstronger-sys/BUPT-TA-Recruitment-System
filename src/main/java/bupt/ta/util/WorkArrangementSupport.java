@@ -190,6 +190,10 @@ public final class WorkArrangementSupport {
         job.setTaAllocationPlan(plan.toString());
     }
 
+    /**
+     * @param item work arrangement row
+     * @return hours field for form repopulation
+     */
     public static String durationHoursInputValue(WorkArrangementItem item) {
         if (item == null) {
             return "";
@@ -197,21 +201,36 @@ public final class WorkArrangementSupport {
         return durationHoursInputValue(item.getResolvedSessionDuration());
     }
 
+    /**
+     * @param raw stored duration text
+     * @return decimal hours for the form, or empty when unparseable
+     */
     public static String durationHoursInputValue(String raw) {
         Double hours = parseDurationHours(raw);
         return hours == null ? "" : formatDecimal(hours);
     }
 
+    /**
+     * @param raw combined specific time text (e.g. {@code Wednesday 14:00})
+     * @return weekday portion for the form, or empty
+     */
     public static String specificDayInputValue(String raw) {
         ParsedSpecificTime parsed = parseSpecificTime(raw);
         return parsed == null ? "" : parsed.day;
     }
 
+    /**
+     * @param raw combined specific time text
+     * @return time portion (HH:mm) for the form, or empty
+     */
     public static String specificTimeInputValue(String raw) {
         ParsedSpecificTime parsed = parseSpecificTime(raw);
         return parsed == null ? "" : parsed.time;
     }
 
+    /**
+     * @return weekday labels for the MO work-arrangement form
+     */
     public static String[] weekdays() {
         return WEEKDAYS.clone();
     }
