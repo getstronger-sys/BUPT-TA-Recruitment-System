@@ -39,6 +39,9 @@ public final class WorkArrangementSupport {
 
     /**
      * Parses work-arrangement rows from the MO posting / edit form (same field names as post-job.jsp).
+     *
+     * @param req servlet request with {@code wa*} parameters
+     * @return parsed rows (may be empty)
      */
     public static List<WorkArrangementItem> parseWorkRowsFromRequest(HttpServletRequest req) {
         String[] names = req.getParameterValues("waWorkName");
@@ -100,7 +103,8 @@ public final class WorkArrangementSupport {
     }
 
     /**
-     * @return null if valid, otherwise a short English message for the MO
+     * @param items rows to validate (mutates duration fields when normalising)
+     * @return {@code null} if valid, otherwise a short English message for the MO
      */
     public static String validateWorkRowsForPosting(List<WorkArrangementItem> items) {
         if (items.isEmpty()) {
@@ -140,6 +144,9 @@ public final class WorkArrangementSupport {
 
     /**
      * Sets {@link Job#setTaSlots}, {@link Job#setWorkArrangements}, workingHours, workload, taAllocationPlan from items.
+     *
+     * @param job   job to update in place
+     * @param items validated work arrangement rows
      */
     public static void applyDerivedFields(Job job, List<WorkArrangementItem> items) {
         int sum = items.stream().mapToInt(WorkArrangementItem::getTaCount).sum();
@@ -183,6 +190,10 @@ public final class WorkArrangementSupport {
         job.setTaAllocationPlan(plan.toString());
     }
 
+    /**
+     * @param item work arrangement row
+     * @return hours field for form repopulation
+     */
     public static String durationHoursInputValue(WorkArrangementItem item) {
         if (item == null) {
             return "";
@@ -190,21 +201,36 @@ public final class WorkArrangementSupport {
         return durationHoursInputValue(item.getResolvedSessionDuration());
     }
 
+    /**
+     * @param raw stored duration text
+     * @return decimal hours for the form, or empty when unparseable
+     */
     public static String durationHoursInputValue(String raw) {
         Double hours = parseDurationHours(raw);
         return hours == null ? "" : formatDecimal(hours);
     }
 
+    /**
+     * @param raw combined specific time text (e.g. {@code Wednesday 14:00})
+     * @return weekday portion for the form, or empty
+     */
     public static String specificDayInputValue(String raw) {
         ParsedSpecificTime parsed = parseSpecificTime(raw);
         return parsed == null ? "" : parsed.day;
     }
 
+    /**
+     * @param raw combined specific time text
+     * @return time portion (HH:mm) for the form, or empty
+     */
     public static String specificTimeInputValue(String raw) {
         ParsedSpecificTime parsed = parseSpecificTime(raw);
         return parsed == null ? "" : parsed.time;
     }
 
+    /**
+     * @return weekday labels for the MO work-arrangement form
+     */
     public static String[] weekdays() {
         return WEEKDAYS.clone();
     }

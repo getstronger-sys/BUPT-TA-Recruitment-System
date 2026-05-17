@@ -10,6 +10,10 @@ import java.io.IOException;
  */
 public class SecurityHeadersFilter implements Filter {
 
+    /**
+     * {@inheritDoc}
+     * <p>Adds CSP, frame denial, and related security response headers.
+     */
     @Override
     public void doFilter(ServletRequest req, ServletResponse resp, FilterChain chain)
             throws IOException, ServletException {

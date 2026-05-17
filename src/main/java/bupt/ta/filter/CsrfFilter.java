@@ -22,6 +22,10 @@ public class CsrfFilter implements Filter {
 
     private static final Set<String> SAFE_METHODS = new HashSet<>(Arrays.asList("GET", "HEAD", "OPTIONS", "TRACE"));
 
+    /**
+     * {@inheritDoc}
+     * <p>Validates CSRF tokens on unsafe HTTP methods and multipart uploads.
+     */
     @Override
     public void doFilter(ServletRequest req, ServletResponse resp, FilterChain chain)
             throws IOException, ServletException {

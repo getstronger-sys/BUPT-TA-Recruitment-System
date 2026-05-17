@@ -16,6 +16,13 @@ public final class InterviewScheduleSupport {
     private InterviewScheduleSupport() {
     }
 
+    /**
+     * @param dateRaw  ISO date from the form
+     * @param startRaw start time (HH:mm)
+     * @param endRaw   end time (HH:mm)
+     * @return canonical schedule text stored on {@link bupt.ta.model.Job}
+     * @throws IllegalArgumentException when fields are missing or invalid
+     */
     public static String normalizeFromForm(String dateRaw, String startRaw, String endRaw) {
         String date = trim(dateRaw);
         String start = trim(startRaw);
@@ -47,16 +54,28 @@ public final class InterviewScheduleSupport {
         return parsedDate + " " + parsedStart + "-" + parsedEnd;
     }
 
+    /**
+     * @param raw stored interview schedule text
+     * @return date portion for form repopulation, or empty
+     */
     public static String dateInputValue(String raw) {
         Matcher m = matcher(raw);
         return m != null ? m.group(1) : "";
     }
 
+    /**
+     * @param raw stored interview schedule text
+     * @return start time for form repopulation, or empty
+     */
     public static String startTimeInputValue(String raw) {
         Matcher m = matcher(raw);
         return m != null ? m.group(2) : "";
     }
 
+    /**
+     * @param raw stored interview schedule text
+     * @return end time for form repopulation, or empty
+     */
     public static String endTimeInputValue(String raw) {
         Matcher m = matcher(raw);
         return m != null && m.group(3) != null ? m.group(3) : "";

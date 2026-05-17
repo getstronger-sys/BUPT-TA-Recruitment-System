@@ -23,6 +23,10 @@ public class RememberMeFilter implements Filter {
         session.setAttribute("realName", user.getRealName());
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>Restores session attributes from a valid remember-me cookie when needed.
+     */
     @Override
     public void doFilter(ServletRequest req, ServletResponse resp, FilterChain chain)
             throws IOException, ServletException {

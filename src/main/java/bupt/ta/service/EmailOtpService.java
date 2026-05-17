@@ -23,6 +23,7 @@ public class EmailOtpService {
     private final SecureRandom random = new SecureRandom();
     private final EmailNotificationService emailService = new EmailNotificationService();
 
+    /** Result of {@link #requestOtp}. */
     public static class OtpRequestResult {
         private final boolean success;
         private final String detail;
@@ -36,6 +37,7 @@ public class EmailOtpService {
         public String getDetail() { return detail; }
     }
 
+    /** Result of {@link #verifyOtp}. */
     public static class OtpVerifyResult {
         private final boolean success;
         private final String detail;
@@ -51,6 +53,13 @@ public class EmailOtpService {
 
     /**
      * Generates an OTP, persists it, and sends it via email (HTML + text).
+     *
+     * @param storage         persistence
+     * @param email           recipient address
+     * @param purpose         logical purpose (e.g. REGISTER, RESET_PASSWORD)
+     * @param adminSettings   optional admin SMTP settings
+     * @return success flag and detail message
+     * @throws IOException if persistence fails
      */
     public OtpRequestResult requestOtp(DataStorage storage, String email, String purpose, AdminSettings adminSettings) throws IOException {
         if (storage == null) return new OtpRequestResult(false, "Storage not available.");
@@ -78,7 +87,14 @@ public class EmailOtpService {
     }
 
     /**
-     * Verifies an OTP for an email + purpose. On success, marks the latest record as consumed.
+     * Verifies an OTP for an email and purpose. On success, marks the latest record as consumed.
+     *
+     * @param storage persistence
+     * @param email   address the code was sent to
+     * @param purpose logical purpose matching the request
+     * @param code    user-entered verification code
+     * @return success flag and detail message
+     * @throws IOException if persistence fails
      */
     public OtpVerifyResult verifyOtp(DataStorage storage, String email, String purpose, String code) throws IOException {
         if (storage == null) return new OtpVerifyResult(false, "Storage not available.");
