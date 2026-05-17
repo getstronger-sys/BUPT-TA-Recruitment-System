@@ -33,7 +33,7 @@
 <div class="container">
     <div class="nav top-nav">
         <span class="brand">BUPT Teaching Assistant Recruitment System</span>
-        <div class="user user-inline-actions"><span><%= session.getAttribute("realName") %> |</span><form action="${pageContext.request.contextPath}/logout" method="post" class="inline-form logout-form"><%@ include file="/WEB-INF/jspf/csrf-hidden.jspf" %><button type="submit" class="logout-button">Logout</button></form></div>
+        <div class="user user-inline-actions"><span><%= escHtml(session.getAttribute("realName")) %> |</span><form action="${pageContext.request.contextPath}/logout" method="post" class="inline-form logout-form"><%@ include file="/WEB-INF/jspf/csrf-hidden.jspf" %><button type="submit" class="logout-button">Logout</button></form></div>
     </div>
     <div class="page-layout">
         <div class="left-nav-wrap">
@@ -66,7 +66,7 @@
             <p class="success">Admin settings saved.</p>
             <% } %>
             <% if (request.getParameter("autoClosed") != null) { %>
-            <p class="success">Pending applications auto-closed after applying the workload rule: <strong><%= request.getParameter("autoClosed") %></strong>.</p>
+            <p class="success">Pending applications auto-closed after applying the workload rule: <strong><%= escHtml(request.getParameter("autoClosed")) %></strong>.</p>
             <% } %>
             <% if (adminDashErr != null) { %>
             <p class="error"><%= escHtml(adminDashErr) %></p>

@@ -53,7 +53,7 @@
 <div class="container">
     <div class="nav top-nav">
         <span class="brand">BUPT Teaching Assistant Recruitment System</span>
-        <div class="user user-inline-actions"><span><%= session.getAttribute("realName") %> |</span><form action="${pageContext.request.contextPath}/logout" method="post" class="inline-form logout-form"><%@ include file="/WEB-INF/jspf/csrf-hidden.jspf" %><button type="submit" class="logout-button">Logout</button></form></div>
+        <div class="user user-inline-actions"><span><%= escHtml(session.getAttribute("realName")) %> |</span><form action="${pageContext.request.contextPath}/logout" method="post" class="inline-form logout-form"><%@ include file="/WEB-INF/jspf/csrf-hidden.jspf" %><button type="submit" class="logout-button">Logout</button></form></div>
     </div>
     <div class="page-layout">
         <div class="left-nav-wrap">
@@ -84,9 +84,9 @@
                     <span class="ta-panel__meta">Refine the list below</span>
                 </div>
             <form action="${pageContext.request.contextPath}/ta/jobs" method="get" class="search-form search-form--ta">
-                <input type="text" name="keyword" placeholder="Keyword (title, module)" value="<%= request.getParameter("keyword") != null ? request.getParameter("keyword") : "" %>">
-                <input type="text" name="moduleCode" placeholder="Module code" value="<%= request.getParameter("moduleCode") != null ? request.getParameter("moduleCode") : "" %>">
-                <input type="text" name="skill" placeholder="Required skill" value="<%= request.getParameter("skill") != null ? request.getParameter("skill") : "" %>">
+                <input type="text" name="keyword" placeholder="Keyword (title, module)" value="<%= escHtml(request.getParameter("keyword")) %>">
+                <input type="text" name="moduleCode" placeholder="Module code" value="<%= escHtml(request.getParameter("moduleCode")) %>">
+                <input type="text" name="skill" placeholder="Required skill" value="<%= escHtml(request.getParameter("skill")) %>">
                 <select name="jobType">
                     <option value="">All types</option>
                     <option value="MODULE_TA" <%= "MODULE_TA".equals(request.getParameter("jobType")) ? "selected" : "" %>>Module TA</option>

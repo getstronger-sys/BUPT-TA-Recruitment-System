@@ -1,5 +1,6 @@
 <%-- Legacy page: AdminWorkloadServlet forwards to admin/workload-v2.jsp. Kept for reference only. --%>
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ include file="/WEB-INF/jspf/html-esc.jspf" %>
 <%@ page import="java.util.List" %>
 <% List<Object[]> workloadRows = (List<Object[]>) request.getAttribute("workloadRows"); if (workloadRows == null) workloadRows = java.util.Collections.emptyList();
    Double avgWorkload = (Double) request.getAttribute("avgWorkload"); if (avgWorkload == null) avgWorkload = 0.0;
@@ -16,7 +17,7 @@
 <div class="container">
     <div class="nav top-nav">
         <span class="brand">BUPT Teaching Assistant Recruitment System</span>
-        <div class="user user-inline-actions"><span><%= session.getAttribute("realName") %> |</span><form action="${pageContext.request.contextPath}/logout" method="post" class="inline-form logout-form"><%@ include file="/WEB-INF/jspf/csrf-hidden.jspf" %><button type="submit" class="logout-button">Logout</button></form></div>
+        <div class="user user-inline-actions"><span><%= escHtml(session.getAttribute("realName")) %> |</span><form action="${pageContext.request.contextPath}/logout" method="post" class="inline-form logout-form"><%@ include file="/WEB-INF/jspf/csrf-hidden.jspf" %><button type="submit" class="logout-button">Logout</button></form></div>
     </div>
     <div class="page-layout">
         <div class="left-nav-wrap">
@@ -59,11 +60,11 @@
             boolean overloaded = row.length > 4 && Boolean.TRUE.equals(row[4]);
         %>
         <tr class="<%= overloaded ? "workload-high" : "" %>">
-            <td><%= name %></td>
-            <td><%= userId %></td>
+            <td><%= escHtml(name) %></td>
+            <td><%= escHtml(userId) %></td>
             <td><strong><%= count %></strong></td>
             <td><% if (overloaded) { %><span class="balance-warn" title="Above average - consider workload when assigning">High</span><% } else { %><span class="balance-ok">Balanced</span><% } %></td>
-            <td><%= jobTitles != null ? String.join(", ", jobTitles) : "" %></td>
+            <td><%= escHtml(jobTitles != null ? String.join(", ", jobTitles) : "") %></td>
         </tr>
         <% }
            if (workloadRows.isEmpty()) { %>
