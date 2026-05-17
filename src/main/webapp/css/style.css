@@ -58,6 +58,19 @@ a { color: #1f56a7; }
     font-size: 1em;
 }
 .form button[type="submit"]:hover { filter: brightness(1.05); }
+.form button[type="submit"]:disabled,
+.form button[type="submit"][disabled],
+.btn:disabled,
+.btn[disabled] {
+    opacity: 0.55;
+    cursor: not-allowed;
+    filter: grayscale(0.15);
+    box-shadow: none;
+}
+.btn:disabled,
+.btn[disabled] {
+    pointer-events: none;
+}
 .error { color: #a4374c; background: #ffe4ea; padding: 10px; border-radius: 8px; }
 .success { color: #165f4d; background: #ddf9f2; padding: 10px; border-radius: 8px; }
 

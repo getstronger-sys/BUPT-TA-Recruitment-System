@@ -4,4 +4,7 @@
         if (s == null) return "";
         return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;");
     }
+    static String escHtml(Object value) {
+        return value == null ? "" : escHtml(String.valueOf(value));
+    }
 %>
