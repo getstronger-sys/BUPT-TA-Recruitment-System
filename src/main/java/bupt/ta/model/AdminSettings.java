@@ -54,6 +54,9 @@ public class AdminSettings {
         this.autoClosePendingWhenLimitReached = autoClosePendingWhenLimitReached;
     }
 
+    /**
+     * @return {@code true} when either hour-based or job-count workload cap is active
+     */
     public boolean hasWorkloadLimit() {
         return usesHourWorkloadLimit() || maxSelectedJobsPerTa > 0;
     }

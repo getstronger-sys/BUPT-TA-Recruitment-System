@@ -9,8 +9,16 @@ import javax.servlet.ServletException;
 import javax.servlet.http.*;
 import java.io.IOException;
 
+/**
+ * Authenticates users and establishes a session; optionally issues a remember-me cookie.
+ */
 public class LoginServlet extends HttpServlet {
 
+    /**
+     * Validates credentials, creates a session, and optionally sets a remember-me cookie.
+     *
+     * @throws IOException if persistence fails
+     */
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         String username = req.getParameter("username");

@@ -24,6 +24,10 @@ public final class WorkQuotaPlanner {
 
     /**
      * Greedy LPT-style allocation: sort units by descending hours, assign each to the TA with least total hours so far.
+     *
+     * @param rows            structured work arrangement rows
+     * @param plannedRecruits number of TAs to recruit (at least 1 used internally)
+     * @return per-TA hour quotas and summary statistics
      */
     public static Recommendation recommend(List<WorkArrangementItem> rows, int plannedRecruits) {
         // at least one slot to avoid divide-by-zero

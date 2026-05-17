@@ -25,6 +25,7 @@ public class InterviewBookingService {
     private static final DateTimeFormatter INPUT_DATE_TIME = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm", Locale.ROOT);
     private static final int DEFAULT_DURATION_MINUTES = 45;
 
+    /** Interview slot with current bookings and remaining capacity. */
     public static final class SlotSummary {
         private final InterviewSlot slot;
         private final List<Application> bookedApplications;
@@ -42,6 +43,7 @@ public class InterviewBookingService {
         public boolean isFull() { return getBookedCount() >= getCapacity(); }
     }
 
+    /** Success or failure from a booking action with a user-facing message. */
     public static final class ActionResult {
         private final boolean success;
         private final String detail;
@@ -51,10 +53,20 @@ public class InterviewBookingService {
             this.detail = detail;
         }
 
+        /** @return whether the action succeeded */
         public boolean isSuccess() { return success; }
+        /** @return user-facing outcome message */
         public String getDetail() { return detail; }
     }
 
+    /**
+     * Builds slot summaries including booked applicants for one job.
+     *
+     * @param storage persistence
+     * @param jobId   job posting id
+     * @return slot summaries with booking lists
+     * @throws IOException if data cannot be read
+     */
     public List<SlotSummary> buildSlotSummaries(DataStorage storage, String jobId) throws IOException {
         List<InterviewSlot> slots = storage.getInterviewSlotsByJobId(jobId);
         List<Application> apps = storage.getApplicationsByJobId(jobId);
@@ -70,6 +82,11 @@ public class InterviewBookingService {
         return out;
     }
 
+    /**
+     * Creates an interview slot for an MO-owned job posting.
+     *
+     * @return success flag and user-facing detail message
+     */
     public ActionResult createSlot(DataStorage storage, String moId, String jobId,
                                    String startsAtRaw, String durationRaw, String location,
                                    String notes, String capacityRaw) throws IOException {
@@ -105,6 +122,11 @@ public class InterviewBookingService {
         return new ActionResult(true, "Interview slot created.");
     }
 
+    /**
+     * Deletes an interview slot that has no bookings.
+     *
+     * @return success flag and user-facing detail message
+     */
     public ActionResult deleteSlot(DataStorage storage, String moId, String jobId, String slotId) throws IOException {
         InterviewSlot slot = storage.getInterviewSlotById(slotId);
         Job job = storage.getJobById(jobId);
@@ -122,6 +144,11 @@ public class InterviewBookingService {
         return new ActionResult(true, "Interview slot deleted.");
     }
 
+    /**
+     * Books an interview slot for a TA application.
+     *
+     * @return success flag and user-facing detail message
+     */
     public ActionResult bookSlot(DataStorage storage, String applicantId, String applicationId, String slotId) throws IOException {
         Application application = findApplicationForApplicant(storage, applicantId, applicationId);
         if (application == null) {
@@ -178,6 +205,11 @@ public class InterviewBookingService {
         return new ActionResult(true, "Interview slot booked.");
     }
 
+    /**
+     * Clears the booked interview slot from a TA application.
+     *
+     * @return success flag and user-facing detail message
+     */
     public ActionResult cancelBooking(DataStorage storage, String applicantId, String applicationId) throws IOException {
         Application application = findApplicationForApplicant(storage, applicantId, applicationId);
         if (application == null) {
