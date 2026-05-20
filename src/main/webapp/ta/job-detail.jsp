@@ -118,7 +118,7 @@
             </header>
             <% if (Boolean.TRUE.equals(request.getAttribute("llmEnabled"))) { %>
             <div class="ta-panel ta-panel--tip ta-job-llm-panel llm-insight-card" data-match-insight data-job-id="<%= escHtml(job.getId()) %>">
-                <strong class="ta-panel__title">AI match insight (DeepSeek)</strong>
+                <strong class="ta-panel__title">AI match insight</strong>
                 <p class="ta-panel__body muted-inline">Optional narrative on strengths, gaps, and practical fit. The rule-based score in the header is unchanged.</p>
                 <div class="ai-summary-actions">
                     <button type="button" class="btn btn-secondary btn-sm match-insight-btn">Generate AI insight</button>
