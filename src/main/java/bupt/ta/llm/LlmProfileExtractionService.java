@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * Calls DeepSeek to extract structured profile fields from CV plain text.
+ * Calls the configured LLM to extract structured profile fields from CV plain text.
  * When the model returns a non-empty value for a field, it overwrites the existing profile value.
  */
 public final class LlmProfileExtractionService {
@@ -92,7 +92,7 @@ public final class LlmProfileExtractionService {
         try {
             return JsonParser.parseString(json).getAsJsonObject();
         } catch (Exception e) {
-            throw new IOException("DeepSeek did not return valid JSON: " + raw, e);
+            throw new IOException("LLM did not return valid JSON: " + raw, e);
         }
     }
 

@@ -1,7 +1,7 @@
 package bupt.ta.model;
 
 /**
- * Admin-managed LLM (DeepSeek-compatible) API settings.
+ * Admin-managed LLM (OpenAI-compatible) API settings.
  * Persisted to {@code data/ai-api-settings.json}; consumed by {@link bupt.ta.llm.DeepSeekClient}
  * via {@link bupt.ta.llm.DeepSeekClient#fromAdminSettings(AiApiSettings)}.
  *
@@ -77,7 +77,7 @@ public class AiApiSettings {
      * @return true if a real call is allowed: enabled and key present. The {@code provider}
      *         field is treated as a free-form label and is not validated here, because the
      *         underlying HTTP client speaks the OpenAI-compatible protocol that several
-     *         vendors (DeepSeek, OpenAI, Moonshot, Ollama, ...) already support.
+     *         vendors (MIMO, DeepSeek, OpenAI, Moonshot, Ollama, ...) already support.
      */
     public boolean isEffectivelyConfigured() {
         if (!apiEnabled) {

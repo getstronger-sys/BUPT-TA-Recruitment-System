@@ -65,7 +65,7 @@ Use **Admin → Monitoring** or **Workload** to demo policy conflicts. MO **Sele
 ```powershell
 cd ta-recruitment-system
 copy ai.env.example ai.env
-# Edit ai.env and set TA_AI_API_KEY if you want LLM features
+# Edit ai.env and set an LLM API key if you want LLM features
 .\run-with-ai.ps1
 ```
 
@@ -112,6 +112,8 @@ Requires JDK 11+ configured as `JAVA_HOME`.
 
 1. Keep `ai.env.example` in Git as a template.
 2. Copy to `ai.env` locally (never commit `ai.env`).
+- The runtime accepts `TA_AI_*`, generic `LLM_*`, and provider-specific variables such as `MIMO_*`, `OPENAI_*`, and `DEEPSEEK_*`.
+- Base URLs may be entered either as the provider root or with `/v1`; the app normalises them before calling `/v1/chat/completions`.
 3. Set `TA_AI_API_KEY` and related variables in `ai.env`, **or** configure keys in **Admin → AI API** after first login.
 4. At runtime the app prefers **Admin → AI API** settings; if no key is saved there, it **falls back to `TA_AI_*` environment variables** (loaded by `run-with-ai.ps1` or your shell).
 
@@ -123,6 +125,16 @@ $env:TA_AI_PROVIDER="deepseek"
 $env:TA_AI_BASE_URL="https://api.deepseek.com"
 $env:TA_AI_MODEL="deepseek-chat"
 $env:TA_AI_API_KEY="YOUR_REAL_KEY"
+mvnw.cmd package cargo:run
+```
+
+MIMO-compatible example:
+
+```powershell
+$env:LLM_ENABLED="true"
+$env:MIMO_BASE_URL="https://token-plan-cn.xiaomimimo.com/v1"
+$env:LLM_MODEL="mimo-v2.5-pro"
+$env:MIMO_API_KEY="YOUR_REAL_KEY"
 mvnw.cmd package cargo:run
 ```
 

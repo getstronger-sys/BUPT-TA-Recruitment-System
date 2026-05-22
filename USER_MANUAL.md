@@ -9,7 +9,7 @@
 
 ### Method 1: One-click run with AI env (Windows, recommended)
 
-1. Copy `ai.env.example` to `ai.env` and optionally set `TA_AI_API_KEY`.
+1. Copy `ai.env.example` to `ai.env` and optionally set an OpenAI-compatible LLM API key.
 2. Run `run-with-ai.ps1` or `run.cmd`.
 3. Open **http://localhost:8080/ta-recruitment/**
 
@@ -103,7 +103,7 @@
 
 ## Admin - AI API & email
 
-- **AI API** (`admin/ai-api-settings.jsp`): DeepSeek URL, model, API key for team demos.
+- **AI API** (`admin/ai-api-settings.jsp`): OpenAI-compatible provider URL, model, API key for team demos.
 - **Email** (`admin/email-settings.jsp`): SMTP for notifications (optional).
 
 ---

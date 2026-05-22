@@ -8,7 +8,7 @@ import java.io.IOException;
 import java.util.function.Consumer;
 
 /**
- * Optional DeepSeek-generated narrative on top of rule-based {@link AIMatchService.MatchResult}.
+ * Optional LLM-generated narrative on top of rule-based {@link AIMatchService.MatchResult}.
  */
 public final class LlmMatchInsightService {
 

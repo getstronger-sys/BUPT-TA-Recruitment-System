@@ -72,7 +72,7 @@
     </div>
     <% if (user != null && Boolean.TRUE.equals(request.getAttribute("llmEnabled"))) { %>
     <div class="llm-insight-card context-card" data-applicant-insight data-applicant-id="<%= escHtml(user.getId()) %>">
-        <strong>AI applicant insight (DeepSeek)</strong>
+        <strong>AI applicant insight</strong>
         <p class="muted-inline">Click to generate a short narrative comparing this applicant to their most recent application to your jobs.</p>
         <div class="ai-summary-actions">
             <button type="button" class="btn btn-secondary btn-sm applicant-insight-btn">Generate AI insight</button>

@@ -15,16 +15,18 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.function.Consumer;
 
 /**
- * DeepSeek Chat API (OpenAI-compatible: POST /v1/chat/completions).
+ * OpenAI-compatible chat API client (POST /v1/chat/completions).
  * <p>
  * Configuration resolution (highest priority first):
  * <ol>
  *   <li>Admin-managed JSON ({@code data/ai-api-settings.json}) when enabled and a key is set.</li>
- *   <li>Environment variables / JVM properties ({@code TA_AI_*}, {@code DEEPSEEK_*}) via
+ *   <li>Environment variables / JVM properties ({@code TA_AI_*}, {@code LLM_*},
+ *       {@code MIMO_*}, {@code OPENAI_*}, {@code DEEPSEEK_*}) via
  *       {@link #fromRuntimeSettings(AiApiSettings)} — used when admin settings are empty so
  *       local {@code ai.env} + {@code run-with-ai.ps1} work without re-entering the key in Admin UI.</li>
  *   <li>No-arg {@link #DeepSeekClient()} for tests and CLI (env only).</li>
@@ -35,6 +37,7 @@ public final class DeepSeekClient {
 
     public static final String DEFAULT_BASE_URL = "https://api.deepseek.com";
     public static final String DEFAULT_MODEL = "deepseek-chat";
+    private static final String CHAT_COMPLETIONS_PATH = "/v1/chat/completions";
 
     private final boolean enabled;
     private final String apiKey;
@@ -43,23 +46,16 @@ public final class DeepSeekClient {
     private final HttpClient httpClient;
 
     /**
-     * Environment-driven construction. Reads {@code TA_AI_*} / {@code DEEPSEEK_*} env vars and
-     * JVM system properties. Used by integration tests and stand-alone CLIs.
+     * Environment-driven construction. Reads {@code TA_AI_*}, generic {@code LLM_*},
+     * provider-specific env vars, and matching JVM system properties.
+     * Used by integration tests and stand-alone CLIs.
      */
     public DeepSeekClient() {
         this(
                 isEnabledFromEnv(),
                 resolveApiKey(),
-                firstNonBlank(
-                        envOrProperty("TA_AI_BASE_URL", "TA_AI_BASE_URL"),
-                        envOrProperty("DEEPSEEK_API_BASE", "DEEPSEEK_API_BASE"),
-                        System.getProperty("deepseek.api.base"),
-                        DEFAULT_BASE_URL),
-                firstNonBlank(
-                        envOrProperty("TA_AI_MODEL", "TA_AI_MODEL"),
-                        envOrProperty("DEEPSEEK_MODEL", "DEEPSEEK_MODEL"),
-                        System.getProperty("deepseek.api.model"),
-                        DEFAULT_MODEL)
+                resolveBaseUrl(),
+                resolveModel()
         );
     }
 
@@ -77,8 +73,7 @@ public final class DeepSeekClient {
     public DeepSeekClient(boolean enabled, String apiKey, String baseUrl, String model) {
         this.enabled = enabled;
         this.apiKey = apiKey != null ? apiKey.trim() : "";
-        this.baseUrl = trimTrailingSlash(baseUrl != null && !baseUrl.trim().isEmpty()
-                ? baseUrl.trim() : DEFAULT_BASE_URL);
+        this.baseUrl = normalizeBaseUrl(baseUrl);
         this.model = model != null && !model.trim().isEmpty() ? model.trim() : DEFAULT_MODEL;
         this.httpClient = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(30))
@@ -102,8 +97,8 @@ public final class DeepSeekClient {
     }
 
     /**
-     * Resolve admin settings, falling back to {@code TA_AI_*} / {@code DEEPSEEK_*} environment
-     * variables when admin has no API key. This is the entry point for all servlet LLM calls.
+     * Resolve admin settings, falling back to environment variables when admin has no API key.
+     * This is the entry point for all servlet LLM calls.
      */
     public static DeepSeekClient fromRuntimeSettings(AiApiSettings stored) {
         return fromAdminSettings(mergeWithEnvFallback(stored));
@@ -136,21 +131,16 @@ public final class DeepSeekClient {
             merged.setApiKey(envKey);
         }
         if (merged.getBaseUrl() == null || merged.getBaseUrl().trim().isEmpty()) {
-            merged.setBaseUrl(firstNonBlank(
-                    envOrProperty("TA_AI_BASE_URL", "TA_AI_BASE_URL"),
-                    envOrProperty("DEEPSEEK_API_BASE", "DEEPSEEK_API_BASE"),
-                    System.getProperty("deepseek.api.base"),
-                    DEFAULT_BASE_URL));
+            merged.setBaseUrl(resolveBaseUrl());
         }
         if (merged.getModel() == null || merged.getModel().trim().isEmpty()) {
-            merged.setModel(firstNonBlank(
-                    envOrProperty("TA_AI_MODEL", "TA_AI_MODEL"),
-                    envOrProperty("DEEPSEEK_MODEL", "DEEPSEEK_MODEL"),
-                    System.getProperty("deepseek.api.model"),
-                    DEFAULT_MODEL));
+            merged.setModel(resolveModel());
         }
-        if (merged.getProvider() == null || merged.getProvider().trim().isEmpty()) {
-            merged.setProvider(firstNonBlank(envOrProperty("TA_AI_PROVIDER", "TA_AI_PROVIDER"), "deepseek"));
+        String envProvider = resolveProviderLabel();
+        String currentProvider = merged.getProvider() != null ? merged.getProvider().trim() : "";
+        if (currentProvider.isEmpty()
+                || ("deepseek".equalsIgnoreCase(currentProvider) && !"deepseek".equalsIgnoreCase(envProvider))) {
+            merged.setProvider(envProvider);
         }
         return merged;
     }
@@ -174,32 +164,101 @@ public final class DeepSeekClient {
     }
 
     private static boolean isEnabledFromEnv() {
-        String enabled = envOrProperty("TA_AI_ENABLED", "TA_AI_ENABLED");
+        String enabled = firstNonBlank(
+                envOrProperty("TA_AI_ENABLED", "TA_AI_ENABLED"),
+                envOrProperty("LLM_ENABLED", "LLM_ENABLED"),
+                envOrProperty("MIMO_ENABLED", "MIMO_ENABLED"),
+                envOrProperty("OPENAI_ENABLED", "OPENAI_ENABLED"),
+                envOrProperty("DEEPSEEK_ENABLED", "DEEPSEEK_ENABLED")
+        );
         if (!enabled.isEmpty()
                 && ("false".equalsIgnoreCase(enabled) || "0".equals(enabled) || "off".equalsIgnoreCase(enabled))) {
             return false;
         }
-        return isProviderAccepted(envOrProperty("TA_AI_PROVIDER", "TA_AI_PROVIDER"));
+        return true;
     }
 
-    private static boolean isProviderAccepted(String provider) {
-        if (provider == null) {
-            return true;
+    private static String resolveBaseUrl() {
+        return firstNonBlank(
+                envOrProperty("TA_AI_BASE_URL", "TA_AI_BASE_URL"),
+                envOrProperty("LLM_BASE_URL", "LLM_BASE_URL"),
+                envOrProperty("MIMO_BASE_URL", "MIMO_BASE_URL"),
+                envOrProperty("OPENAI_BASE_URL", "OPENAI_BASE_URL"),
+                envOrProperty("DEEPSEEK_API_BASE", "DEEPSEEK_API_BASE"),
+                System.getProperty("llm.api.base"),
+                System.getProperty("mimo.api.base"),
+                System.getProperty("openai.api.base"),
+                System.getProperty("deepseek.api.base"),
+                DEFAULT_BASE_URL);
+    }
+
+    private static String resolveModel() {
+        return firstNonBlank(
+                envOrProperty("TA_AI_MODEL", "TA_AI_MODEL"),
+                envOrProperty("LLM_MODEL", "LLM_MODEL"),
+                envOrProperty("MIMO_MODEL", "MIMO_MODEL"),
+                envOrProperty("OPENAI_MODEL", "OPENAI_MODEL"),
+                envOrProperty("DEEPSEEK_MODEL", "DEEPSEEK_MODEL"),
+                System.getProperty("llm.api.model"),
+                System.getProperty("mimo.api.model"),
+                System.getProperty("openai.api.model"),
+                System.getProperty("deepseek.api.model"),
+                DEFAULT_MODEL);
+    }
+
+    private static String resolveProviderLabel() {
+        String explicit = firstNonBlank(
+                envOrProperty("TA_AI_PROVIDER", "TA_AI_PROVIDER"),
+                envOrProperty("LLM_PROVIDER", "LLM_PROVIDER"),
+                envOrProperty("MIMO_PROVIDER", "MIMO_PROVIDER"),
+                envOrProperty("OPENAI_PROVIDER", "OPENAI_PROVIDER"),
+                envOrProperty("DEEPSEEK_PROVIDER", "DEEPSEEK_PROVIDER")
+        );
+        if (!explicit.isEmpty()) {
+            return explicit;
         }
-        String trimmed = provider.trim();
-        return trimmed.isEmpty() || "deepseek".equalsIgnoreCase(trimmed);
+        if (hasAnySetting("MIMO_API_KEY", "MIMO_BASE_URL", "MIMO_MODEL",
+                "mimo.api.key", "mimo.api.base", "mimo.api.model")) {
+            return "mimo";
+        }
+        if (hasAnySetting("OPENAI_API_KEY", "OPENAI_BASE_URL", "OPENAI_MODEL",
+                "openai.api.key", "openai.api.base", "openai.api.model")) {
+            return "openai";
+        }
+        return "deepseek";
     }
 
     private static String resolveApiKey() {
         return firstNonBlank(
                 envOrProperty("TA_AI_API_KEY", "TA_AI_API_KEY"),
+                envOrProperty("LLM_API_KEY", "LLM_API_KEY"),
+                envOrProperty("MIMO_API_KEY", "MIMO_API_KEY"),
+                envOrProperty("OPENAI_API_KEY", "OPENAI_API_KEY"),
                 envOrProperty("DEEPSEEK_API_KEY", "DEEPSEEK_API_KEY"),
+                System.getProperty("llm.api.key"),
+                System.getProperty("mimo.api.key"),
+                System.getProperty("openai.api.key"),
                 System.getProperty("deepseek.api.key")
         );
     }
 
     private static String envOrProperty(String envName, String propertyName) {
         return firstNonBlank(System.getenv(envName), System.getProperty(propertyName));
+    }
+
+    private static boolean hasAnySetting(String... names) {
+        if (names == null) {
+            return false;
+        }
+        for (String name : names) {
+            if (name == null || name.trim().isEmpty()) {
+                continue;
+            }
+            if (!firstNonBlank(System.getenv(name), System.getProperty(name)).isEmpty()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -237,14 +296,14 @@ public final class DeepSeekClient {
      */
     public String chatCompletions(JsonArray messages) throws IOException {
         if (!isConfigured()) {
-            throw new IllegalStateException("DEEPSEEK_API_KEY is not set; cannot call DeepSeek API.");
+            throw new IllegalStateException("LLM API key is not set; cannot call the chat API.");
         }
         JsonObject body = new JsonObject();
         body.addProperty("model", model);
         body.add("messages", messages);
         body.addProperty("temperature", 0.3);
 
-        String url = baseUrl + "/v1/chat/completions";
+        String url = chatCompletionsUrl();
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(url))
                 .timeout(Duration.ofMinutes(2))
@@ -258,25 +317,25 @@ public final class DeepSeekClient {
             response = httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new IOException("DeepSeek request interrupted", e);
+            throw new IOException("LLM request interrupted", e);
         }
 
         if (response.statusCode() < 200 || response.statusCode() >= 300) {
-            throw new IOException("DeepSeek HTTP " + response.statusCode() + ": " + response.body());
+            throw new IOException("LLM HTTP " + response.statusCode() + ": " + response.body());
         }
 
         JsonObject root = JsonParser.parseString(response.body()).getAsJsonObject();
         if (root.has("error")) {
-            throw new IOException("DeepSeek API error: " + root.get("error"));
+            throw new IOException("LLM API error: " + root.get("error"));
         }
         JsonArray choices = root.getAsJsonArray("choices");
         if (choices == null || choices.size() == 0) {
-            throw new IOException("DeepSeek empty choices: " + response.body());
+            throw new IOException("LLM empty choices: " + response.body());
         }
         JsonObject first = choices.get(0).getAsJsonObject();
         JsonObject msg = first.getAsJsonObject("message");
         if (msg == null || !msg.has("content")) {
-            throw new IOException("DeepSeek unexpected response: " + response.body());
+            throw new IOException("LLM unexpected response: " + response.body());
         }
         return msg.get("content").getAsString();
     }
@@ -294,7 +353,7 @@ public final class DeepSeekClient {
         Objects.requireNonNull(userMessage, "userMessage");
         Objects.requireNonNull(onChunk, "onChunk");
         if (!isConfigured()) {
-            throw new IllegalStateException("DEEPSEEK_API_KEY is not set; cannot call DeepSeek API.");
+            throw new IllegalStateException("LLM API key is not set; cannot call the chat API.");
         }
 
         JsonArray messages = new JsonArray();
@@ -315,7 +374,7 @@ public final class DeepSeekClient {
         body.addProperty("temperature", 0.3);
         body.addProperty("stream", true);
 
-        String url = baseUrl + "/v1/chat/completions";
+        String url = chatCompletionsUrl();
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(url))
                 .timeout(Duration.ofMinutes(2))
@@ -330,11 +389,11 @@ public final class DeepSeekClient {
             response = httpClient.send(request, HttpResponse.BodyHandlers.ofInputStream());
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new IOException("DeepSeek streaming request interrupted", e);
+            throw new IOException("LLM streaming request interrupted", e);
         }
 
         if (response.statusCode() < 200 || response.statusCode() >= 300) {
-            throw new IOException("DeepSeek HTTP " + response.statusCode() + " on streaming request");
+            throw new IOException("LLM HTTP " + response.statusCode() + " on streaming request");
         }
 
         StringBuilder fullText = new StringBuilder();
@@ -366,7 +425,7 @@ public final class DeepSeekClient {
         try {
             JsonObject root = JsonParser.parseString(jsonPayload).getAsJsonObject();
             if (root.has("error")) {
-                throw new IOException("DeepSeek API error: " + root.get("error"));
+                throw new IOException("LLM API error: " + root.get("error"));
             }
             JsonArray choices = root.getAsJsonArray("choices");
             if (choices == null || choices.size() == 0) {
@@ -382,8 +441,24 @@ public final class DeepSeekClient {
             }
             return delta.get("content").getAsString();
         } catch (IllegalStateException | com.google.gson.JsonSyntaxException e) {
-            throw new IOException("Failed to parse DeepSeek SSE payload: " + jsonPayload, e);
+            throw new IOException("Failed to parse LLM SSE payload: " + jsonPayload, e);
         }
+    }
+
+    static String normalizeBaseUrl(String rawBaseUrl) {
+        String normalized = trimTrailingSlash(rawBaseUrl != null && !rawBaseUrl.trim().isEmpty()
+                ? rawBaseUrl.trim() : DEFAULT_BASE_URL);
+        String lower = normalized.toLowerCase(Locale.ROOT);
+        if (lower.endsWith(CHAT_COMPLETIONS_PATH)) {
+            normalized = normalized.substring(0, normalized.length() - CHAT_COMPLETIONS_PATH.length());
+        } else if (lower.endsWith("/v1")) {
+            normalized = normalized.substring(0, normalized.length() - "/v1".length());
+        }
+        return trimTrailingSlash(normalized);
+    }
+
+    String chatCompletionsUrl() {
+        return baseUrl + CHAT_COMPLETIONS_PATH;
     }
 
     private static String trimTrailingSlash(String u) {
