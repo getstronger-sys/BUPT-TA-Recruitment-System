@@ -57,7 +57,7 @@ public class ApplicationStatusServlet extends HttpServlet {
             else if (AdminService.STATUS_AUTO_CLOSED.equals(a.getStatus())) autoClosedCount++;
         }
 
-        int points = selectedCount * 100 + pendingCount * 20 + interviewCount * 40 + waitlistCount * 30;
+        int points = selectedCount * 100 + pendingCount * 25 + interviewCount * 60 + waitlistCount * 90;
         req.setAttribute("applications", enriched);
         req.setAttribute("eventsByApplicationId", ApplicationTimelineService.filterForApplicantView(
                 storage.getApplicationEventsByApplicationIds(applicationIds)));
