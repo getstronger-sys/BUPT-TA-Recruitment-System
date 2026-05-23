@@ -6,6 +6,7 @@ import bupt.ta.model.Job;
 import bupt.ta.service.ApplicationTimelineService;
 import bupt.ta.storage.DataStorage;
 import bupt.ta.util.JobActivity;
+import bupt.ta.util.MoJobsRedirectParams;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -139,6 +140,7 @@ public class MOInterviewEvaluationServlet extends HttpServlet {
         } else {
             url.append("&error=").append(URLEncoder.encode(error, StandardCharsets.UTF_8));
         }
+        MoJobsRedirectParams.appendExpandApp(url, returnView, trim(req.getParameter("applicationId")));
         resp.sendRedirect(url.toString());
     }
 

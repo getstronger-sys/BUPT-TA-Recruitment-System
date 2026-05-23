@@ -10,6 +10,7 @@ import bupt.ta.service.StudentNotificationService;
 import bupt.ta.storage.DataStorage;
 import bupt.ta.util.JobActivity;
 import bupt.ta.util.JobSelectionCapacity;
+import bupt.ta.util.MoJobsRedirectParams;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.*;
@@ -26,7 +27,8 @@ public class SelectApplicantServlet extends HttpServlet {
     private final AdminService adminService = new AdminService();
     private final ApplicationTimelineService timelineService = new ApplicationTimelineService();
 
-    private static void redirectJobs(HttpServletResponse resp, HttpServletRequest req, String listPath, String view, String jobId, String extraQuery) throws IOException {
+    private static void redirectJobs(HttpServletResponse resp, HttpServletRequest req, String listPath, String view,
+                                     String jobId, String extraQuery, String expandAppId) throws IOException {
         String ctx = req.getContextPath();
         StringBuilder b = new StringBuilder(ctx).append(listPath).append("?");
         if (jobId != null && !jobId.trim().isEmpty()) {
@@ -36,6 +38,7 @@ public class SelectApplicantServlet extends HttpServlet {
         if (extraQuery != null && !extraQuery.isEmpty()) {
             b.append("&").append(extraQuery);
         }
+        MoJobsRedirectParams.appendExpandApp(b, view, expandAppId);
         resp.sendRedirect(b.toString());
     }
 
@@ -50,7 +53,7 @@ public class SelectApplicantServlet extends HttpServlet {
         String moName = (String) req.getSession().getAttribute("realName");
 
         if (appId == null || appId.trim().isEmpty()) {
-            redirectJobs(resp, req, JobActivity.PATH_ACTIVE, "pending", null, "error=invalid");
+            redirectJobs(resp, req, JobActivity.PATH_ACTIVE, "pending", null, "error=invalid", null);
             return;
         }
 
@@ -59,7 +62,7 @@ public class SelectApplicantServlet extends HttpServlet {
         Application target = apps.stream().filter(a -> a.getId().equals(appId)).findFirst().orElse(null);
 
         if (target == null) {
-            redirectJobs(resp, req, JobActivity.PATH_ACTIVE, "pending", null, "error=not_found");
+            redirectJobs(resp, req, JobActivity.PATH_ACTIVE, "pending", null, "error=not_found", null);
             return;
         }
 
@@ -67,66 +70,66 @@ public class SelectApplicantServlet extends HttpServlet {
         Job job = storage.getJobById(jobId);
         String listPath = job != null ? JobActivity.listPathFor(job) : JobActivity.PATH_ACTIVE;
         if (job == null || !moId.equals(job.getPostedBy())) {
-            redirectJobs(resp, req, listPath, "pending", jobId, "error=forbidden");
+            redirectJobs(resp, req, listPath, "pending", jobId, "error=forbidden", null);
             return;
         }
         if (JobActivity.isInactive(job)) {
-            redirectJobs(resp, req, JobActivity.PATH_INACTIVE, "pending", jobId, "error=job_inactive");
+            redirectJobs(resp, req, JobActivity.PATH_INACTIVE, "pending", jobId, "error=job_inactive", null);
             return;
         }
 
         String fromStatus = target.getStatus();
         if ("interview".equalsIgnoreCase(action)) {
             if (!"PENDING".equals(target.getStatus())) {
-                redirectJobs(resp, req, listPath, "pending", jobId, "error=not_pending");
+                redirectJobs(resp, req, listPath, "pending", jobId, "error=not_pending", null);
                 return;
             }
             target.setStatus("INTERVIEW");
         } else if ("waitlist".equalsIgnoreCase(action)) {
             if (!"INTERVIEW".equals(target.getStatus())) {
-                redirectJobs(resp, req, listPath, "interview", jobId, "error=not_interview");
+                redirectJobs(resp, req, listPath, "interview", jobId, "error=not_interview", appId);
                 return;
             }
             if (storage.getInterviewEvaluationByApplicationId(target.getId()) == null) {
-                redirectJobs(resp, req, listPath, "interview", jobId, "error=evaluation_required");
+                redirectJobs(resp, req, listPath, "interview", jobId, "error=evaluation_required", appId);
                 return;
             }
             target.setStatus("WAITLIST");
         } else if ("select".equalsIgnoreCase(action)) {
             if (!"WAITLIST".equals(target.getStatus())) {
-                redirectJobs(resp, req, listPath, viewForStatus(target.getStatus()), jobId, "error=not_waitlist");
+                redirectJobs(resp, req, listPath, viewForStatus(target.getStatus()), jobId, "error=not_waitlist", null);
                 return;
             }
             InterviewEvaluation evaluation = storage.getInterviewEvaluationByApplicationId(target.getId());
             if (evaluation == null) {
-                redirectJobs(resp, req, listPath, "waitlist", jobId, "error=evaluation_required");
+                redirectJobs(resp, req, listPath, "waitlist", jobId, "error=evaluation_required", null);
                 return;
             }
             if (decisionReason.isEmpty()) {
                 decisionReason = trim(notes);
             }
             if (decisionReason.isEmpty()) {
-                redirectJobs(resp, req, listPath, "waitlist", jobId, "error=decision_reason_required");
+                redirectJobs(resp, req, listPath, "waitlist", jobId, "error=decision_reason_required", null);
                 return;
             }
             if (!JobSelectionCapacity.hasVacancy(job, storage.getApplicationsByJobId(jobId), target.getId())) {
-                redirectJobs(resp, req, listPath, "waitlist", jobId, "error=capacity_reached");
+                redirectJobs(resp, req, listPath, "waitlist", jobId, "error=capacity_reached", null);
                 return;
             }
             AdminSettings settings = storage.loadAdminSettings();
             if (adminService.wouldExceedWorkloadLimitOnSelect(storage, target.getApplicantId(), job, settings)) {
-                redirectJobs(resp, req, listPath, "waitlist", jobId, "error=ta_workload_cap");
+                redirectJobs(resp, req, listPath, "waitlist", jobId, "error=ta_workload_cap", null);
                 return;
             }
             target.setStatus("SELECTED");
         } else if ("reject".equalsIgnoreCase(action)) {
             if (!"WAITLIST".equals(target.getStatus())) {
-                redirectJobs(resp, req, listPath, viewForStatus(target.getStatus()), jobId, "error=not_waitlist");
+                redirectJobs(resp, req, listPath, viewForStatus(target.getStatus()), jobId, "error=not_waitlist", null);
                 return;
             }
             target.setStatus("REJECTED");
         } else {
-            redirectJobs(resp, req, listPath, "pending", jobId, "error=invalid_action");
+            redirectJobs(resp, req, listPath, "pending", jobId, "error=invalid_action", null);
             return;
         }
         target.setNotes(notes != null ? notes.trim() : "");
@@ -176,7 +179,8 @@ public class SelectApplicantServlet extends HttpServlet {
         }
         Job jobAfter = storage.getJobById(jobId);
         String pathAfter = jobAfter != null ? JobActivity.listPathFor(jobAfter) : listPath;
-        redirectJobs(resp, req, pathAfter, view, jobId, extraQuery);
+        String expandAppId = "interview".equals(view) ? appId : null;
+        redirectJobs(resp, req, pathAfter, view, jobId, extraQuery, expandAppId);
     }
 
     private static String viewForStatus(String status) {

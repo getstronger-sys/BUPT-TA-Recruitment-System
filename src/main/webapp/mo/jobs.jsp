@@ -6,6 +6,8 @@
 <%@ page import="java.util.regex.Pattern" %>
 <%@ page import="java.util.Locale" %>
 <%@ page import="java.util.Map" %>
+<%@ page import="java.util.HashSet" %>
+<%@ page import="java.util.Set" %>
 <%@ page import="bupt.ta.model.AssignedModule" %>
 <%@ page import="bupt.ta.model.Job" %>
 <%@ page import="bupt.ta.model.Application" %>
@@ -36,6 +38,14 @@
    if (assignedModules == null) assignedModules = java.util.Collections.emptyList();
    java.util.Map<String, InterviewEvaluation> evaluationByApplicationId = (java.util.Map<String, InterviewEvaluation>) request.getAttribute("evaluationByApplicationId");
    if (evaluationByApplicationId == null) evaluationByApplicationId = java.util.Collections.emptyMap();
+   Set<String> moExpandAppIds = new HashSet<>();
+   String moExpandAppParam = request.getParameter("expandApp");
+   if (moExpandAppParam != null && !moExpandAppParam.isEmpty()) {
+       for (String part : moExpandAppParam.split(",")) {
+           String t = part.trim();
+           if (!t.isEmpty()) moExpandAppIds.add(t);
+       }
+   }
    request.setAttribute("moNavActive", moPastJobsPage ? "past" : "jobs");
 %>
 <!DOCTYPE html>
@@ -516,7 +526,7 @@
                                 || (a.getInterviewAssessment() != null && !a.getInterviewAssessment().isEmpty());
                     %>
                     <article class="applicant-card applicant-card--interview applicant-card--fold">
-                        <details class="mo-applicant-fold">
+                        <details class="mo-applicant-fold" data-application-id="<%= escHtml(a.getId()) %>"<%= moExpandAppIds.contains(a.getId()) ? " open" : "" %>>
                             <summary class="mo-applicant-fold__summary">
                                 <div class="mo-applicant-fold__leading">
                                     <span class="mo-applicant-fold__chev" aria-hidden="true"></span>
@@ -936,6 +946,64 @@
     });
 })();
 </script>
+<% if (!moJobListMode && "interview".equals(moView) && !moSelectedJobId.isEmpty()) { %>
+<script>
+(function () {
+    var jobId = "<%= escHtml(moSelectedJobId) %>";
+    var storageKey = "moInterviewExpanded:" + jobId;
+    var folds = document.querySelectorAll("details.mo-applicant-fold[data-application-id]");
+    if (!folds.length) return;
+
+    function readIds() {
+        try {
+            var raw = sessionStorage.getItem(storageKey);
+            if (!raw) return [];
+            var parsed = JSON.parse(raw);
+            return Array.isArray(parsed) ? parsed : [];
+        } catch (e) {
+            return [];
+        }
+    }
+
+    function writeIds(ids) {
+        try {
+            sessionStorage.setItem(storageKey, JSON.stringify(ids));
+        } catch (e) { /* ignore quota */ }
+    }
+
+    var expanded = new Set(readIds());
+    var params = new URLSearchParams(window.location.search);
+    var fromUrl = params.get("expandApp");
+    if (fromUrl) {
+        fromUrl.split(",").forEach(function (id) {
+            id = id.trim();
+            if (id) expanded.add(id);
+        });
+        params.delete("expandApp");
+        var qs = params.toString();
+        var cleanUrl = window.location.pathname + (qs ? "?" + qs : "") + window.location.hash;
+        history.replaceState(null, "", cleanUrl);
+    }
+
+    folds.forEach(function (el) {
+        var id = el.getAttribute("data-application-id");
+        if (id && expanded.has(id)) el.open = true;
+    });
+    writeIds(Array.from(expanded));
+
+    folds.forEach(function (el) {
+        el.addEventListener("toggle", function () {
+            var id = el.getAttribute("data-application-id");
+            if (!id) return;
+            var set = new Set(readIds());
+            if (el.open) set.add(id);
+            else set.delete(id);
+            writeIds(Array.from(set));
+        });
+    });
+})();
+</script>
+<% } %>
 <%@ include file="/WEB-INF/jspf/login-celebration.jspf" %>
 </body>
 </html>
