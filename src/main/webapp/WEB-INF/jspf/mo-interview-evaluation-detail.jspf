@@ -1,0 +1,39 @@
+<%@ page import="bupt.ta.model.InterviewEvaluation" %>
+<%
+    InterviewEvaluation evalDetail = (InterviewEvaluation) request.getAttribute("evalDetailEvaluation");
+%>
+<div class="mo-eval-detail">
+<% if (evalDetail == null) { %>
+    <p class="muted-inline">No interview evaluation on file.</p>
+<% } else { %>
+    <p class="section-copy mo-eval-detail__summary">
+        <strong>Total:</strong> <%= evalDetail.getTotalScore() %>/100
+        &middot; <strong>Recommendation:</strong> <%= escHtml(evalDetail.getRecommendationLabel()) %>
+    </p>
+    <dl class="mo-eval-detail__scores">
+        <div><dt>Technical</dt><dd><%= evalDetail.getTechnicalScore() %>/5</dd></div>
+        <div><dt>Teaching</dt><dd><%= evalDetail.getTeachingScore() %>/5</dd></div>
+        <div><dt>Communication</dt><dd><%= evalDetail.getCommunicationScore() %>/5</dd></div>
+        <div><dt>Availability</dt><dd><%= evalDetail.getAvailabilityScore() %>/5</dd></div>
+        <div><dt>Responsibility</dt><dd><%= evalDetail.getResponsibilityScore() %>/5</dd></div>
+    </dl>
+    <% if (evalDetail.getStrengths() != null && !evalDetail.getStrengths().trim().isEmpty()) { %>
+    <div class="mo-eval-detail__comment">
+        <strong>Strengths</strong>
+        <p class="pre-wrap section-copy"><%= escHtml(evalDetail.getStrengths()) %></p>
+    </div>
+    <% } %>
+    <% if (evalDetail.getConcerns() != null && !evalDetail.getConcerns().trim().isEmpty()) { %>
+    <div class="mo-eval-detail__comment">
+        <strong>Concerns / risks</strong>
+        <p class="pre-wrap section-copy"><%= escHtml(evalDetail.getConcerns()) %></p>
+    </div>
+    <% } %>
+    <% if (evalDetail.getInternalNotes() != null && !evalDetail.getInternalNotes().trim().isEmpty()) { %>
+    <div class="mo-eval-detail__comment">
+        <strong>Internal notes</strong>
+        <p class="pre-wrap section-copy"><%= escHtml(evalDetail.getInternalNotes()) %></p>
+    </div>
+    <% } %>
+<% } %>
+</div>

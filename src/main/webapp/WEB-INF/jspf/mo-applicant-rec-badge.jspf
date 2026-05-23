@@ -1,0 +1,13 @@
+<%@ page import="java.util.Locale" %>
+<%@ page import="bupt.ta.model.InterviewEvaluation" %>
+<%
+    InterviewEvaluation evRecBadge = (InterviewEvaluation) request.getAttribute("evRecBadge");
+    if (evRecBadge != null) {
+        String recBadgeLabel = evRecBadge.getRecommendationLabel();
+        String recBadgeMod = "rec-badge--none";
+        if (evRecBadge.getRecommendation() != null && !evRecBadge.getRecommendation().trim().isEmpty()) {
+            recBadgeMod = "rec-badge--" + evRecBadge.getRecommendation().trim().toLowerCase(Locale.ROOT);
+        }
+%>
+<span class="match-badge rec-badge <%= recBadgeMod %>" title="Recommendation"><%= escHtml(recBadgeLabel) %></span>
+<% } %>

@@ -39,6 +39,7 @@ public class SelectApplicantServlet extends HttpServlet {
             b.append("&").append(extraQuery);
         }
         MoJobsRedirectParams.appendExpandApp(b, view, expandAppId);
+        MoJobsRedirectParams.appendListControls(b, req);
         resp.sendRedirect(b.toString());
     }
 
@@ -179,7 +180,7 @@ public class SelectApplicantServlet extends HttpServlet {
         }
         Job jobAfter = storage.getJobById(jobId);
         String pathAfter = jobAfter != null ? JobActivity.listPathFor(jobAfter) : listPath;
-        String expandAppId = "interview".equals(view) ? appId : null;
+        String expandAppId = ("interview".equals(view) || "waitlist".equals(view) || "outcome".equals(view)) ? appId : null;
         redirectJobs(resp, req, pathAfter, view, jobId, extraQuery, expandAppId);
     }
 

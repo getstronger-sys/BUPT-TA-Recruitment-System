@@ -22,8 +22,16 @@
    String moSelectedJobId = (String) request.getAttribute("moSelectedJobId");
    if (moSelectedJobId == null) moSelectedJobId = "";
    String moJobIdQ = moSelectedJobId.isEmpty() ? "" : "&jobId=" + java.net.URLEncoder.encode(moSelectedJobId, "UTF-8");
+   bupt.ta.util.MoApplicantListControls moListControlsAttr = (bupt.ta.util.MoApplicantListControls) request.getAttribute("moListControls");
+   String moFilterQs = "";
    String moView = (String) request.getAttribute("moJobsView");
    if (moView == null) moView = "pending";
+   if (moListControlsAttr != null) {
+       String moFq = moListControlsAttr.toQueryString(moView);
+       if (moFq != null && !moFq.isEmpty()) moFilterQs = "&" + moFq;
+   }
+   String moJobIdQWithFilters = moJobIdQ + moFilterQs;
+   boolean moListEmptyDueToFilters = Boolean.TRUE.equals(request.getAttribute("moListEmptyDueToFilters"));
    int moCntP = request.getAttribute("moJobsCountPending") != null ? (Integer) request.getAttribute("moJobsCountPending") : 0;
    int moCntI = request.getAttribute("moJobsCountInterview") != null ? (Integer) request.getAttribute("moJobsCountInterview") : 0;
    int moCntWl = request.getAttribute("moJobsCountWaitlist") != null ? (Integer) request.getAttribute("moJobsCountWaitlist") : 0;
@@ -274,13 +282,13 @@
                 </p>
             </div>
             <nav class="mo-jobs-tabs" aria-label="Application views">
-                <a href="<%= moBase %>?view=pending<%= moJobIdQ %>" class="mo-jobs-tab <%= "pending".equals(moView) ? "active" : "" %>">Applicants<span class="tab-count"><%= moCntP %></span></a>
-                <a href="<%= moBase %>?view=interview<%= moJobIdQ %>" class="mo-jobs-tab <%= "interview".equals(moView) ? "active" : "" %>">Interview<span class="tab-count"><%= moCntI %></span></a>
-                <a href="<%= moBase %>?view=waitlist<%= moJobIdQ %>" class="mo-jobs-tab <%= "waitlist".equals(moView) ? "active" : "" %>">Waitlist<span class="tab-count"><%= moCntWl %></span></a>
-                <a href="<%= moBase %>?view=withdrawn<%= moJobIdQ %>" class="mo-jobs-tab <%= "withdrawn".equals(moView) ? "active" : "" %>">Withdrawn<span class="tab-count"><%= moCntW %></span></a>
-                <a href="<%= moBase %>?view=outcome<%= moJobIdQ %>" class="mo-jobs-tab <%= "outcome".equals(moView) ? "active" : "" %>">Outcomes<span class="tab-count"><%= moCntO %></span></a>
+                <a href="<%= moBase %>?view=pending<%= moJobIdQWithFilters %>" class="mo-jobs-tab <%= "pending".equals(moView) ? "active" : "" %>">Applicants<span class="tab-count"><%= moCntP %></span></a>
+                <a href="<%= moBase %>?view=interview<%= moJobIdQWithFilters %>" class="mo-jobs-tab <%= "interview".equals(moView) ? "active" : "" %>">Interview<span class="tab-count"><%= moCntI %></span></a>
+                <a href="<%= moBase %>?view=waitlist<%= moJobIdQWithFilters %>" class="mo-jobs-tab <%= "waitlist".equals(moView) ? "active" : "" %>">Waitlist<span class="tab-count"><%= moCntWl %></span></a>
+                <a href="<%= moBase %>?view=withdrawn<%= moJobIdQWithFilters %>" class="mo-jobs-tab <%= "withdrawn".equals(moView) ? "active" : "" %>">Withdrawn<span class="tab-count"><%= moCntW %></span></a>
+                <a href="<%= moBase %>?view=outcome<%= moJobIdQWithFilters %>" class="mo-jobs-tab <%= "outcome".equals(moView) ? "active" : "" %>">Outcomes<span class="tab-count"><%= moCntO %></span></a>
             </nav>
-            <p class="ai-hint mo-ai-hint"><strong>AI hint</strong>: Within each group, applicants are sorted by match score and workload.</p>
+            <p class="ai-hint mo-ai-hint"><strong>Tip</strong>: Use sort and filter above each applicant list. Tab counts show the full pipeline; the list may show a filtered subset.</p>
             <p><a href="${pageContext.request.contextPath}/mo/post-job" class="btn btn-primary">Post New Job</a></p>
 
             <% for (Object[] row : jobsWithApps) {
@@ -343,15 +351,17 @@
                     <div class="applicants-head">
                         <h4>
                             <% if ("pending".equals(moView)) { %>Applicants<% } else if ("interview".equals(moView)) { %>Interview<% } else if ("waitlist".equals(moView)) { %>Waitlist<% } else if ("withdrawn".equals(moView)) { %>Withdrawn<% } else { %>Outcomes<% } %>
-                            <span class="job-apps-count">(this posting: <%= "pending".equals(moView) ? pendingRecs.size() : "interview".equals(moView) ? interviewRecs.size() : "waitlist".equals(moView) ? waitlistRecs.size() : "withdrawn".equals(moView) ? withdrawnRecs.size() : outcomeRecs.size() %>)</span>
+                            <span class="job-apps-count">(this tab: <%= "pending".equals(moView) ? pendingRecs.size() : "interview".equals(moView) ? interviewRecs.size() : "waitlist".equals(moView) ? waitlistRecs.size() : "withdrawn".equals(moView) ? withdrawnRecs.size() : outcomeRecs.size() %>)</span>
                         </h4>
                     </div>
+                    <%@ include file="/WEB-INF/jspf/mo-applicant-list-controls.jspf" %>
 
                     <% if (totalApps == 0) { %>
                     <div class="empty-applicants-card">No applications yet.</div>
                     <% } else if ("pending".equals(moView)) { %>
                     <% if (!moReadOnly) { %><form id="<%= batchPendingFormId %>" action="${pageContext.request.contextPath}/mo/batch-applicants" method="post" class="batch-form-hidden">
                         <%@ include file="/WEB-INF/jspf/csrf-hidden.jspf" %>
+                        <%@ include file="/WEB-INF/jspf/mo-list-controls-hidden.jspf" %>
                         <input type="hidden" name="action" value="toInterview">
                         <input type="hidden" name="returnJobId" value="<%= j.getId() %>">
                     </form><% } %>
@@ -448,6 +458,7 @@
                             <% } else { %><div class="decision-bar">
                                 <form action="${pageContext.request.contextPath}/mo/select-applicant" method="post" class="decision-form decision-form-inline">
                                     <%@ include file="/WEB-INF/jspf/csrf-hidden.jspf" %>
+                                    <%@ include file="/WEB-INF/jspf/mo-list-controls-hidden.jspf" %>
                                     <input type="hidden" name="applicationId" value="<%= a.getId() %>">
                                     <input type="text" name="notes" placeholder="Optional notes" class="note-input">
                                     <div class="decision-buttons decision-buttons-inline">
@@ -485,11 +496,12 @@
                     <% if (!moReadOnly) { %><p class="batch-toolbar">
                         <button type="submit" class="btn btn-primary" form="<%= batchPendingFormId %>">Set selected to interview (batch)</button>
                     </p><% } %>
-                    <% } else { %><p class="muted-inline section-empty">No applicants for this posting.</p><% } %>
+                    <% } else { %><p class="muted-inline section-empty"><%= moListEmptyDueToFilters ? "No applicants match the current filters. Try Reset or broaden your criteria." : "No applicants for this posting." %></p><% } %>
                     <% } else if ("interview".equals(moView)) { %>
                     <% if (!interviewRecs.isEmpty()) { %>
                     <% if (!moReadOnly) { %><form id="<%= batchNoticeFormId %>" action="${pageContext.request.contextPath}/mo/batch-applicants" method="post" class="notice-form-fields">
                         <%@ include file="/WEB-INF/jspf/csrf-hidden.jspf" %>
+                        <%@ include file="/WEB-INF/jspf/mo-list-controls-hidden.jspf" %>
                         <input type="hidden" name="action" value="sendNotice">
                         <input type="hidden" name="returnJobId" value="<%= j.getId() %>">
                         <div class="notice-fields notice-fields--grid">
@@ -542,6 +554,7 @@
                                         <div class="mo-applicant-fold__badges">
                                             <span class="match-badge" title="<%= rec.matchResult.explanation %>"><%= (int)rec.matchResult.score %>% match</span>
                                             <% if (ev != null) { %><span class="match-badge evaluation-badge"><%= ev.getTotalScore() %>/100</span><% } else { %><span class="match-badge eval-badge eval-badge--none">No eval</span><% } %>
+                                            <% request.setAttribute("evRecBadge", ev); %><%@ include file="/WEB-INF/jspf/mo-applicant-rec-badge.jspf" %>
                                             <span class="status-pill status-pill-interview">INTERVIEW</span>
                                         </div>
                                     </div>
@@ -614,7 +627,7 @@
                         </details>
                     </article>
                     <% } %>
-                    <% } else { %><p class="muted-inline section-empty">No interviewees for this posting.</p><% } %>
+                    <% } else { %><p class="muted-inline section-empty"><%= moListEmptyDueToFilters ? "No interviewees match the current filters. Try Reset or broaden your criteria." : "No interviewees for this posting." %></p><% } %>
                     <% } else if ("waitlist".equals(moView)) { %>
                     <% if (!waitlistRecs.isEmpty()) { %>
                     <% for (AIMatchService.ApplicantRecommendation rec : waitlistRecs) {
@@ -629,12 +642,27 @@
                         boolean hasCv = hasProfile && rec.profile.getCvFilePath() != null && !rec.profile.getCvFilePath().isEmpty();
                         String profileStateText = !hasProfile ? "No profile submitted yet." : (hasCv ? "Profile available, CV uploaded." : "Profile available, CV missing.");
                     %>
-                    <article class="applicant-card">
-                        <div class="applicant-topline">
-                            <div class="applicant-title-group">
-                                <div class="applicant-name-row">
-                                    <h5><%= applicantName %></h5>
+                    <article class="applicant-card applicant-card--interview applicant-card--fold">
+                        <details class="mo-applicant-fold" data-application-id="<%= escHtml(a.getId()) %>"<%= moExpandAppIds.contains(a.getId()) ? " open" : "" %>>
+                            <summary class="mo-applicant-fold__summary">
+                                <div class="mo-applicant-fold__leading">
+                                    <span class="mo-applicant-fold__chev" aria-hidden="true"></span>
                                 </div>
+                                <div class="mo-applicant-fold__head">
+                                    <div class="mo-applicant-fold__title-row">
+                                        <h5><%= applicantName %></h5>
+                                        <div class="mo-applicant-fold__badges">
+                                            <span class="match-badge" title="<%= rec.matchResult.explanation %>"><%= (int)rec.matchResult.score %>% match</span>
+                                            <% if (ev != null) { %><span class="match-badge evaluation-badge"><%= ev.getTotalScore() %>/100</span><% } else { %><span class="match-badge eval-badge eval-badge--none">No eval</span><% } %>
+                                            <% request.setAttribute("evRecBadge", ev); %><%@ include file="/WEB-INF/jspf/mo-applicant-rec-badge.jspf" %>
+                                            <span class="status-pill status-pill-pending">WAITLIST</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </summary>
+                            <div class="mo-applicant-fold__body">
+                        <div class="applicant-topline applicant-topline--fold-body">
+                            <div class="applicant-title-group">
                                 <% if (!emailDisp.isEmpty()) { %>
                                 <p class="muted-inline applicant-email-line"><strong>Email:</strong> <%= emailDisp %></p>
                                 <% } %>
@@ -645,11 +673,6 @@
                                     <a href="${pageContext.request.contextPath}/view-cv?userId=<%= a.getApplicantId() %>&amp;download=1" class="mini-link">Download CV</a>
                                     <% } else { %><span class="muted-inline">CV not uploaded</span><% } %>
                                 </div>
-                            </div>
-                            <div class="applicant-score-area">
-                                <span class="match-badge" title="<%= rec.matchResult.explanation %>"><%= (int)rec.matchResult.score %>% match</span>
-                                <% if (ev != null) { %><span class="match-badge evaluation-badge"><%= ev.getTotalScore() %>/100 eval</span><% } %>
-                                <span class="status-pill status-pill-pending">WAITLIST</span>
                             </div>
                         </div>
                         <div class="applicant-sections applicant-sections-compact">
@@ -676,12 +699,18 @@
                                 <p class="section-copy"><strong>Applied:</strong> <%= appliedText %></p>
                             </section>
                         </div>
+                        <section class="applicant-section applicant-section--evaluation">
+                            <div class="section-label">Interview evaluation</div>
+                            <% request.setAttribute("evalDetailEvaluation", ev); %>
+                            <%@ include file="/WEB-INF/jspf/mo-interview-evaluation-detail.jspf" %>
+                        </section>
                         <div class="applicant-actions">
                             <% if (moReadOnly) { %>
                             <div class="decision-bar decision-bar-recorded"><p class="muted-inline">Read-only: no actions available for inactive postings.</p></div>
                             <% } else { %><div class="decision-bar">
                                 <form action="${pageContext.request.contextPath}/mo/select-applicant" method="post" class="decision-form decision-form-inline">
                                     <%@ include file="/WEB-INF/jspf/csrf-hidden.jspf" %>
+                                    <%@ include file="/WEB-INF/jspf/mo-list-controls-hidden.jspf" %>
                                     <input type="hidden" name="applicationId" value="<%= a.getId() %>">
                                     <input type="text" name="notes" placeholder="Optional notes" class="note-input">
                                     <input type="text" name="decisionReason" placeholder="Selection reason (required if selected)" class="note-input">
@@ -693,9 +722,11 @@
                                 </form>
                             </div><% } %>
                         </div>
+                            </div>
+                        </details>
                     </article>
                     <% } %>
-                    <% } else { %><p class="muted-inline section-empty">No waitlisted applicants for this posting.</p><% } %>
+                    <% } else { %><p class="muted-inline section-empty"><%= moListEmptyDueToFilters ? "No waitlisted applicants match the current filters. Try Reset or broaden your criteria." : "No waitlisted applicants for this posting." %></p><% } %>
                     <% } else if ("withdrawn".equals(moView)) { %>
                     <% for (AIMatchService.ApplicantRecommendation rec : withdrawnRecs) {
                         Application a = rec.application;
@@ -714,7 +745,7 @@
                         <p class="section-copy"><strong>Applied:</strong> <%= appliedText %></p>
                     </article>
                     <% } %>
-                    <% if (withdrawnRecs.isEmpty()) { %><p class="muted-inline section-empty">No withdrawn applications for this posting.</p><% } %>
+                    <% if (withdrawnRecs.isEmpty()) { %><p class="muted-inline section-empty"><%= moListEmptyDueToFilters ? "No withdrawn applications match the current filters." : "No withdrawn applications for this posting." %></p><% } %>
                     <% } else { %>
                     <% for (AIMatchService.ApplicantRecommendation rec : outcomeRecs) {
                         Application a = rec.application;
@@ -734,12 +765,27 @@
                         String taExpText = hasProfile && rec.profile.getTaExperience() != null && !rec.profile.getTaExperience().isEmpty() ? escHtml(rec.profile.getTaExperience()) : "Not provided.";
                         String templateId = "applicant-outcome-" + j.getId() + "-" + a.getId();
                     %>
-                    <article class="applicant-card">
-                        <div class="applicant-topline">
-                            <div class="applicant-title-group">
-                                <div class="applicant-name-row">
-                                    <h5><%= applicantName %></h5>
+                    <article class="applicant-card applicant-card--outcome applicant-card--fold">
+                        <details class="mo-applicant-fold" data-application-id="<%= escHtml(a.getId()) %>"<%= moExpandAppIds.contains(a.getId()) ? " open" : "" %>>
+                            <summary class="mo-applicant-fold__summary">
+                                <div class="mo-applicant-fold__leading">
+                                    <span class="mo-applicant-fold__chev" aria-hidden="true"></span>
                                 </div>
+                                <div class="mo-applicant-fold__head">
+                                    <div class="mo-applicant-fold__title-row">
+                                        <h5><%= applicantName %></h5>
+                                        <div class="mo-applicant-fold__badges">
+                                            <span class="match-badge" title="<%= rec.matchResult.explanation %>"><%= (int)rec.matchResult.score %>% match</span>
+                                            <% if (ev != null) { %><span class="match-badge evaluation-badge"><%= ev.getTotalScore() %>/100</span><% } %>
+                                            <% request.setAttribute("evRecBadge", ev); %><%@ include file="/WEB-INF/jspf/mo-applicant-rec-badge.jspf" %>
+                                            <span class="<%= statusPillClass %>"><%= a.getStatus() %></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </summary>
+                            <div class="mo-applicant-fold__body">
+                        <div class="applicant-topline applicant-topline--fold-body">
+                            <div class="applicant-title-group">
                                 <% if (!emailDisp.isEmpty()) { %>
                                 <p class="muted-inline applicant-email-line"><strong>Email:</strong> <%= emailDisp %></p>
                                 <% } %>
@@ -749,15 +795,8 @@
                                     <% if (hasCv) { %>
                                     <a href="${pageContext.request.contextPath}/view-cv?userId=<%= a.getApplicantId() %>" target="_blank" rel="noopener" class="mini-link">View CV</a>
                                     <a href="${pageContext.request.contextPath}/view-cv?userId=<%= a.getApplicantId() %>&amp;download=1" class="mini-link">Download CV</a>
-                                    <% } else { %>
-                                    <span class="muted-inline">CV not uploaded</span>
-                                    <% } %>
+                                    <% } else { %><span class="muted-inline">CV not uploaded</span><% } %>
                                 </div>
-                            </div>
-                            <div class="applicant-score-area">
-                                <span class="match-badge" title="<%= rec.matchResult.explanation %>"><%= (int)rec.matchResult.score %>% match</span>
-                                <% if (ev != null) { %><span class="match-badge evaluation-badge"><%= ev.getTotalScore() %>/100 eval</span><% } %>
-                                <span class="<%= statusPillClass %>"><%= a.getStatus() %></span>
                             </div>
                         </div>
                         <div class="applicant-sections applicant-sections-compact">
@@ -784,6 +823,13 @@
                                 <p class="section-copy"><strong>Applied:</strong> <%= appliedText %></p>
                             </section>
                         </div>
+                        <% if (ev != null) { %>
+                        <section class="applicant-section applicant-section--evaluation">
+                            <div class="section-label">Interview evaluation</div>
+                            <% request.setAttribute("evalDetailEvaluation", ev); %>
+                            <%@ include file="/WEB-INF/jspf/mo-interview-evaluation-detail.jspf" %>
+                        </section>
+                        <% } %>
                         <div class="applicant-actions">
                             <div class="decision-bar decision-bar-recorded">
                                 <div class="decision-bar-copy">
@@ -821,9 +867,11 @@
                                 </p>
                             </div>
                         </template>
+                            </div>
+                        </details>
                     </article>
                     <% } %>
-                    <% if (outcomeRecs.isEmpty()) { %><p class="muted-inline section-empty">No outcomes recorded for this posting yet.</p><% } %>
+                    <% if (outcomeRecs.isEmpty()) { %><p class="muted-inline section-empty"><%= moListEmptyDueToFilters ? "No outcomes match the current filters. Try Reset or broaden your criteria." : "No outcomes recorded for this posting yet." %></p><% } %>
                     <% } %>
                 </div>
             </div>
@@ -946,11 +994,75 @@
     });
 })();
 </script>
-<% if (!moJobListMode && "interview".equals(moView) && !moSelectedJobId.isEmpty()) { %>
+<% if (!moJobListMode && !moSelectedJobId.isEmpty()) { %>
 <script>
 (function () {
     var jobId = "<%= escHtml(moSelectedJobId) %>";
-    var storageKey = "moInterviewExpanded:" + jobId;
+    var moViewKey = "<%= escHtml(moView) %>";
+    var filterKeys = moViewKey === "outcome"
+        ? ["moOutcome"]
+        : ["moSort", "moRec", "moEvalMin", "moNotice", "moOutcome"];
+    var defaultSort = moViewKey === "outcome" ? "name_asc" : "eval_desc";
+    var filterStorageKey = "moListFilters:" + jobId + ":" + moViewKey;
+    var params = new URLSearchParams(window.location.search);
+    if (!params.get("jobId")) params.set("jobId", jobId);
+    if (!params.get("view")) params.set("view", moViewKey);
+
+    function readSavedFilters() {
+        try {
+            var raw = sessionStorage.getItem(filterStorageKey);
+            return raw ? JSON.parse(raw) : null;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    function writeSavedFilters() {
+        var o = {};
+        filterKeys.forEach(function (k) {
+            var v = params.get(k);
+            if (v) o[k] = v;
+        });
+        if (moViewKey !== "outcome" && !o.moSort) o.moSort = defaultSort;
+        try {
+            sessionStorage.setItem(filterStorageKey, JSON.stringify(o));
+        } catch (e) { /* ignore */ }
+    }
+
+    var hasFilterInUrl = filterKeys.some(function (k) { return params.get(k); });
+    if (hasFilterInUrl) {
+        writeSavedFilters();
+    } else {
+        var saved = readSavedFilters();
+        if (saved) {
+            filterKeys.forEach(function (k) {
+                if (saved[k] && !params.get(k)) params.set(k, saved[k]);
+            });
+        } else if (moViewKey !== "outcome" && !params.get("moSort")) {
+            params.set("moSort", defaultSort);
+        }
+        var qs = params.toString();
+        var next = window.location.pathname + (qs ? "?" + qs : "") + (window.location.hash || "");
+        if (next !== window.location.pathname + window.location.search + (window.location.hash || "")) {
+            window.location.replace(next);
+            return;
+        }
+    }
+    var resetBtn = document.getElementById("mo-list-filters-reset");
+    if (resetBtn) {
+        resetBtn.addEventListener("click", function () {
+            try { sessionStorage.removeItem(filterStorageKey); } catch (e) { /* ignore */ }
+        });
+    }
+})();
+</script>
+<% } %>
+<% if (!moJobListMode && ("interview".equals(moView) || "waitlist".equals(moView) || "outcome".equals(moView)) && !moSelectedJobId.isEmpty()) { %>
+<script>
+(function () {
+    var jobId = "<%= escHtml(moSelectedJobId) %>";
+    var moViewKey = "<%= escHtml(moView) %>";
+    var storageKey = "moJobsExpanded:" + jobId + ":" + moViewKey;
     var folds = document.querySelectorAll("details.mo-applicant-fold[data-application-id]");
     if (!folds.length) return;
 

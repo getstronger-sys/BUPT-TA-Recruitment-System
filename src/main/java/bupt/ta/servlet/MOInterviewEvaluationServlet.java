@@ -141,6 +141,7 @@ public class MOInterviewEvaluationServlet extends HttpServlet {
             url.append("&error=").append(URLEncoder.encode(error, StandardCharsets.UTF_8));
         }
         MoJobsRedirectParams.appendExpandApp(url, returnView, trim(req.getParameter("applicationId")));
+        MoJobsRedirectParams.appendListControls(url, req);
         resp.sendRedirect(url.toString());
     }
 

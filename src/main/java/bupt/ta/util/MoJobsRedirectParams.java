@@ -1,5 +1,6 @@
 package bupt.ta.util;
 
+import javax.servlet.http.HttpServletRequest;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
@@ -10,8 +11,30 @@ public final class MoJobsRedirectParams {
 
     private MoJobsRedirectParams() {}
 
+    /** Re-append sort/filter query params from the current request (GET or POST hidden fields). */
+    public static void appendListControls(StringBuilder url, HttpServletRequest req) {
+        if (req == null) {
+            return;
+        }
+        String view = req.getParameter("view");
+        if (view == null || view.isEmpty()) {
+            Object viewAttr = req.getAttribute("moJobsView");
+            if (viewAttr != null) {
+                view = viewAttr.toString();
+            }
+        }
+        String qs = MoApplicantListControls.fromRequest(req).toQueryString(view);
+        if (qs == null || qs.isEmpty()) {
+            return;
+        }
+        url.append('&').append(qs);
+    }
+
     public static void appendExpandApp(StringBuilder url, String view, String expandApp) {
-        if (expandApp == null || expandApp.isEmpty() || !"interview".equals(view)) {
+        if (expandApp == null || expandApp.isEmpty()) {
+            return;
+        }
+        if (!"interview".equals(view) && !"waitlist".equals(view) && !"outcome".equals(view)) {
             return;
         }
         url.append("&expandApp=").append(URLEncoder.encode(expandApp.trim(), StandardCharsets.UTF_8));

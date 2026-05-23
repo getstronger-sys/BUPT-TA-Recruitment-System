@@ -4,10 +4,12 @@ import bupt.ta.ai.AIMatchService;
 import bupt.ta.llm.DeepSeekClient;
 import bupt.ta.model.AssignedModule;
 import bupt.ta.model.Application;
+import bupt.ta.model.InterviewEvaluation;
 import bupt.ta.model.Job;
 import bupt.ta.model.TAProfile;
 import bupt.ta.storage.DataStorage;
 import bupt.ta.util.JobActivity;
+import bupt.ta.util.MoApplicantListControls;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.*;
@@ -39,6 +41,9 @@ public class MOPastJobsServlet extends HttpServlet {
                 .collect(Collectors.toList());
 
         List<Application> allApps = storage.loadApplications();
+        Map<String, InterviewEvaluation> evaluationByApplicationId = storage.loadInterviewEvaluations().stream()
+                .filter(e -> e != null && e.getApplicationId() != null)
+                .collect(Collectors.toMap(InterviewEvaluation::getApplicationId, e -> e, (a, b) -> a));
         Map<String, List<Application>> appsByJob = allApps.stream().collect(Collectors.groupingBy(Application::getJobId));
 
         List<Application> selectedApps = allApps.stream().filter(a -> "SELECTED".equals(a.getStatus())).collect(Collectors.toList());
@@ -75,9 +80,13 @@ public class MOPastJobsServlet extends HttpServlet {
             }
         }
 
+        MoApplicantListControls listControls = MoApplicantListControls.fromRequest(req);
+
         req.setAttribute("moPastJobsPage", Boolean.TRUE);
         req.setAttribute("moJobsBase", req.getContextPath() + JobActivity.PATH_INACTIVE);
         req.setAttribute("assignedModules", storage.loadAssignedModulesForMo(moId));
+        req.setAttribute("evaluationByApplicationId", evaluationByApplicationId);
+        req.setAttribute("moListControls", listControls);
         req.setAttribute("moJobPickList", enrichedAll);
         req.setAttribute("moJobListMode", jobListMode);
         req.setAttribute("moSelectedJobId", jobListMode ? "" : selectedJobId);
@@ -94,6 +103,7 @@ public class MOPastJobsServlet extends HttpServlet {
             List<Object[]> oneJob = enrichedAll.stream()
                     .filter(row -> selectedJobId.equals(((Job) row[0]).getId()))
                     .collect(Collectors.toList());
+            applyListControls(req, oneJob, view, evaluationByApplicationId, listControls);
             req.setAttribute("jobsWithApps", oneJob);
             int countPending = 0;
             int countInterview = 0;
@@ -175,5 +185,26 @@ public class MOPastJobsServlet extends HttpServlet {
             if (cmp != 0) return cmp;
             return Integer.compare(r1.currentWorkload, r2.currentWorkload);
         });
+    }
+
+    @SuppressWarnings("unchecked")
+    private static void applyListControls(HttpServletRequest req, List<Object[]> rows, String view,
+                                          Map<String, InterviewEvaluation> evaluationByApplicationId,
+                                          MoApplicantListControls controls) {
+        int idx = MoApplicantListControls.listIndexForView(view);
+        for (Object[] row : rows) {
+            List<AIMatchService.ApplicantRecommendation> full =
+                    (List<AIMatchService.ApplicantRecommendation>) row[idx];
+            int total = full != null ? full.size() : 0;
+            MoApplicantListControls.applyToJobRow(row, view, evaluationByApplicationId, controls);
+            List<AIMatchService.ApplicantRecommendation> shown =
+                    (List<AIMatchService.ApplicantRecommendation>) row[idx];
+            int showing = shown != null ? shown.size() : 0;
+            req.setAttribute("moListShowing", showing);
+            req.setAttribute("moListTotal", total);
+            req.setAttribute("moListFiltersActive",
+                    controls.hasActiveFilters(view) || showing != total);
+            req.setAttribute("moListEmptyDueToFilters", total > 0 && showing == 0);
+        }
     }
 }

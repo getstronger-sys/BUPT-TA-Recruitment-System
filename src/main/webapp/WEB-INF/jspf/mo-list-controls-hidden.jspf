@@ -1,0 +1,17 @@
+<%@ page import="bupt.ta.util.MoApplicantListControls" %>
+<%
+    if (request.getAttribute("moListControls") == null) {
+        request.setAttribute("moListControls", MoApplicantListControls.fromRequest(request));
+    }
+%>
+<% if ("outcome".equals(moView)) { %>
+<input type="hidden" name="moSort" value="<%= MoApplicantListControls.SORT_NAME_ASC %>">
+<input type="hidden" name="moOutcome" value="<%= escHtml(((MoApplicantListControls) request.getAttribute("moListControls")).getOutcomeStatus()) %>">
+<% } else { %>
+<input type="hidden" name="moSort" value="<%= escHtml(((MoApplicantListControls) request.getAttribute("moListControls")).getSort()) %>">
+<input type="hidden" name="moRec" value="<%= escHtml(((MoApplicantListControls) request.getAttribute("moListControls")).getRecommendation()) %>">
+<% if (((MoApplicantListControls) request.getAttribute("moListControls")).getEvalMin() != null) { %>
+<input type="hidden" name="moEvalMin" value="<%= ((MoApplicantListControls) request.getAttribute("moListControls")).getEvalMin() %>">
+<% } %>
+<input type="hidden" name="moNotice" value="<%= escHtml(((MoApplicantListControls) request.getAttribute("moListControls")).getNotice()) %>">
+<% } %>

@@ -36,17 +36,17 @@ public class MOBatchApplicantServlet extends HttpServlet {
         String ctx = req.getContextPath();
         DataStorage storage = new DataStorage(getServletContext());
         if (ids == null || ids.length == 0) {
-            resp.sendRedirect(moJobsUrl(ctx, moListPath(storage, returnJobId, moId), "pending", returnJobId, "error=batch_empty", null));
+            resp.sendRedirect(moJobsUrl(req, ctx, moListPath(storage, returnJobId, moId), "pending", returnJobId, "error=batch_empty", null));
             return;
         }
         if (!returnJobId.isEmpty()) {
             Job fixedJob = storage.getJobById(returnJobId);
             if (fixedJob == null || !moId.equals(fixedJob.getPostedBy())) {
-                resp.sendRedirect(moJobsUrl(ctx, JobActivity.PATH_ACTIVE, "pending", returnJobId, "error=invalid_job", null));
+                resp.sendRedirect(moJobsUrl(req, ctx, JobActivity.PATH_ACTIVE, "pending", returnJobId, "error=invalid_job", null));
                 return;
             }
             if (JobActivity.isInactive(fixedJob)) {
-                resp.sendRedirect(moJobsUrl(ctx, JobActivity.PATH_INACTIVE, "pending", returnJobId, "error=job_inactive", null));
+                resp.sendRedirect(moJobsUrl(req, ctx, JobActivity.PATH_INACTIVE, "pending", returnJobId, "error=job_inactive", null));
                 return;
             }
         }
@@ -72,7 +72,7 @@ public class MOBatchApplicantServlet extends HttpServlet {
             String jid = resolveReturnJobId(storage, idSet, returnJobId, moId);
             Job jref = jid.isEmpty() ? null : storage.getJobById(jid);
             String listPath = jref != null ? JobActivity.listPathFor(jref) : JobActivity.PATH_ACTIVE;
-            resp.sendRedirect(moJobsUrl(ctx, listPath, "interview", jid, "updated=1",
+            resp.sendRedirect(moJobsUrl(req, ctx, listPath, "interview", jid, "updated=1",
                     MoJobsRedirectParams.joinExpandApps(idSet)));
             return;
         }
@@ -87,7 +87,7 @@ public class MOBatchApplicantServlet extends HttpServlet {
                 String jid = resolveReturnJobId(storage, idSet, returnJobId, moId);
                 Job jref = jid.isEmpty() ? null : storage.getJobById(jid);
                 String listPath = jref != null ? JobActivity.listPathFor(jref) : moListPath(storage, returnJobId, moId);
-                resp.sendRedirect(moJobsUrl(ctx, listPath, "interview", jid, "error=invalid_notice_time",
+                resp.sendRedirect(moJobsUrl(req, ctx, listPath, "interview", jid, "error=invalid_notice_time",
                         MoJobsRedirectParams.joinExpandApps(idSet)));
                 return;
             }
@@ -115,12 +115,12 @@ public class MOBatchApplicantServlet extends HttpServlet {
             String jid = resolveReturnJobId(storage, idSet, returnJobId, moId);
             Job jref = jid.isEmpty() ? null : storage.getJobById(jid);
             String listPath = jref != null ? JobActivity.listPathFor(jref) : JobActivity.PATH_ACTIVE;
-            resp.sendRedirect(moJobsUrl(ctx, listPath, "interview", jid, "notice=1",
+            resp.sendRedirect(moJobsUrl(req, ctx, listPath, "interview", jid, "notice=1",
                     MoJobsRedirectParams.joinExpandApps(idSet)));
             return;
         }
 
-        resp.sendRedirect(moJobsUrl(ctx, moListPath(storage, returnJobId, moId), "pending", returnJobId, "error=invalid_action", null));
+        resp.sendRedirect(moJobsUrl(req, ctx, moListPath(storage, returnJobId, moId), "pending", returnJobId, "error=invalid_action", null));
     }
 
     private static Application findApp(DataStorage storage, String appId) throws IOException {
@@ -134,7 +134,8 @@ public class MOBatchApplicantServlet extends HttpServlet {
         return s != null ? s.trim() : "";
     }
 
-    private static String moJobsUrl(String ctx, String listPath, String view, String jobId, String extraQuery, String expandApp) {
+    private static String moJobsUrl(HttpServletRequest req, String ctx, String listPath, String view,
+                                  String jobId, String extraQuery, String expandApp) {
         StringBuilder b = new StringBuilder(ctx).append(listPath).append("?");
         if (jobId != null && !jobId.isEmpty()) {
             b.append("jobId=").append(URLEncoder.encode(jobId, StandardCharsets.UTF_8)).append("&");
@@ -144,6 +145,7 @@ public class MOBatchApplicantServlet extends HttpServlet {
             b.append("&").append(extraQuery);
         }
         MoJobsRedirectParams.appendExpandApp(b, view, expandApp);
+        MoJobsRedirectParams.appendListControls(b, req);
         return b.toString();
     }
 

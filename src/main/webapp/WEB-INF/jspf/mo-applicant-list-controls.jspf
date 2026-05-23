@@ -1,0 +1,100 @@
+<%@ page import="bupt.ta.util.MoApplicantListControls" %>
+<%
+    MoApplicantListControls moLc = (MoApplicantListControls) request.getAttribute("moListControls");
+    if (moLc == null) {
+        moLc = MoApplicantListControls.fromRequest(request);
+    }
+    String moLcSort = moLc.getSort();
+    String moLcRec = moLc.getRecommendation();
+    Integer moLcEvalMin = moLc.getEvalMin();
+    String moLcNotice = moLc.getNotice();
+    String moLcOutcome = moLc.getOutcomeStatus();
+    boolean moLcOutcomeOnly = "outcome".equals(moView);
+    boolean moLcShowEval = "interview".equals(moView) || "waitlist".equals(moView);
+    boolean moLcShowRec = moLcShowEval;
+    boolean moLcShowNotice = "interview".equals(moView);
+    boolean moLcShowOutcome = moLcOutcomeOnly;
+    Boolean moLcFiltersActive = (Boolean) request.getAttribute("moListFiltersActive");
+    Integer moLcShowing = (Integer) request.getAttribute("moListShowing");
+    Integer moLcTotal = (Integer) request.getAttribute("moListTotal");
+%>
+<form method="get" action="<%= moBase %>" class="mo-list-toolbar" aria-label="Sort and filter applicants">
+    <input type="hidden" name="jobId" value="<%= escHtml(moSelectedJobId) %>">
+    <input type="hidden" name="view" value="<%= escHtml(moView) %>">
+    <% if (moExpandAppParam != null && !moExpandAppParam.isEmpty()) { %>
+    <input type="hidden" name="expandApp" value="<%= escHtml(moExpandAppParam) %>">
+    <% } %>
+    <div class="mo-list-toolbar__row">
+        <% if (moLcOutcomeOnly) { %>
+        <input type="hidden" name="moSort" value="<%= MoApplicantListControls.SORT_NAME_ASC %>">
+        <% } else { %>
+        <label class="mo-list-toolbar__field">
+            <span class="mo-list-toolbar__label">Sort by</span>
+            <select name="moSort" class="mo-list-toolbar__select">
+                <option value="<%= MoApplicantListControls.SORT_MATCH_DESC %>"<%= MoApplicantListControls.SORT_MATCH_DESC.equals(moLcSort) ? " selected" : "" %>>Match score (high to low)</option>
+                <option value="<%= MoApplicantListControls.SORT_MATCH_ASC %>"<%= MoApplicantListControls.SORT_MATCH_ASC.equals(moLcSort) ? " selected" : "" %>>Match score (low to high)</option>
+                <% if (moLcShowEval) { %>
+                <option value="<%= MoApplicantListControls.SORT_EVAL_DESC %>"<%= MoApplicantListControls.SORT_EVAL_DESC.equals(moLcSort) ? " selected" : "" %>>Interview total (high to low)</option>
+                <option value="<%= MoApplicantListControls.SORT_EVAL_ASC %>"<%= MoApplicantListControls.SORT_EVAL_ASC.equals(moLcSort) ? " selected" : "" %>>Interview total (low to high)</option>
+                <option value="<%= MoApplicantListControls.SORT_REC %>"<%= MoApplicantListControls.SORT_REC.equals(moLcSort) ? " selected" : "" %>>Recommendation (best first)</option>
+                <% } %>
+                <option value="<%= MoApplicantListControls.SORT_NAME_ASC %>"<%= MoApplicantListControls.SORT_NAME_ASC.equals(moLcSort) ? " selected" : "" %>>Name (A to Z)</option>
+                <option value="<%= MoApplicantListControls.SORT_NAME_DESC %>"<%= MoApplicantListControls.SORT_NAME_DESC.equals(moLcSort) ? " selected" : "" %>>Name (Z to A)</option>
+                <option value="<%= MoApplicantListControls.SORT_APPLIED_DESC %>"<%= MoApplicantListControls.SORT_APPLIED_DESC.equals(moLcSort) ? " selected" : "" %>>Applied (newest)</option>
+                <option value="<%= MoApplicantListControls.SORT_APPLIED_ASC %>"<%= MoApplicantListControls.SORT_APPLIED_ASC.equals(moLcSort) ? " selected" : "" %>>Applied (oldest)</option>
+                <option value="<%= MoApplicantListControls.SORT_WORKLOAD_ASC %>"<%= MoApplicantListControls.SORT_WORKLOAD_ASC.equals(moLcSort) ? " selected" : "" %>>Workload (low to high)</option>
+                <option value="<%= MoApplicantListControls.SORT_WORKLOAD_DESC %>"<%= MoApplicantListControls.SORT_WORKLOAD_DESC.equals(moLcSort) ? " selected" : "" %>>Workload (high to low)</option>
+            </select>
+        </label>
+        <% } %>
+        <% if (moLcShowEval) { %>
+        <label class="mo-list-toolbar__field mo-list-toolbar__field--score">
+            <span class="mo-list-toolbar__label">Min score</span>
+            <input type="number" name="moEvalMin" class="mo-list-toolbar__input" min="0" max="100" step="1"
+                   placeholder="Any" value="<%= moLcEvalMin != null ? moLcEvalMin : "" %>"
+                   title="Minimum interview total score (0-100)">
+        </label>
+        <% } %>
+        <% if (moLcShowRec) { %>
+        <label class="mo-list-toolbar__field">
+            <span class="mo-list-toolbar__label">Recommendation</span>
+            <select name="moRec" class="mo-list-toolbar__select">
+                <option value="all"<%= "all".equalsIgnoreCase(moLcRec) ? " selected" : "" %>>All</option>
+                <option value="STRONG_HIRE"<%= "STRONG_HIRE".equalsIgnoreCase(moLcRec) ? " selected" : "" %>>Strong hire</option>
+                <option value="HIRE"<%= "HIRE".equalsIgnoreCase(moLcRec) ? " selected" : "" %>>Hire</option>
+                <option value="WAITLIST"<%= "WAITLIST".equalsIgnoreCase(moLcRec) ? " selected" : "" %>>Waitlist</option>
+                <option value="REJECT"<%= "REJECT".equalsIgnoreCase(moLcRec) ? " selected" : "" %>>Reject</option>
+                <option value="none"<%= "none".equalsIgnoreCase(moLcRec) ? " selected" : "" %>>Not set</option>
+            </select>
+        </label>
+        <% } %>
+        <% if (moLcShowNotice) { %>
+        <label class="mo-list-toolbar__field">
+            <span class="mo-list-toolbar__label">Interview notice</span>
+            <select name="moNotice" class="mo-list-toolbar__select">
+                <option value="all"<%= "all".equalsIgnoreCase(moLcNotice) ? " selected" : "" %>>All</option>
+                <option value="sent"<%= "sent".equalsIgnoreCase(moLcNotice) ? " selected" : "" %>>Notice saved</option>
+                <option value="unsent"<%= "unsent".equalsIgnoreCase(moLcNotice) ? " selected" : "" %>>No notice yet</option>
+            </select>
+        </label>
+        <% } %>
+        <% if (moLcShowOutcome) { %>
+        <label class="mo-list-toolbar__field">
+            <span class="mo-list-toolbar__label">Outcome status</span>
+            <select name="moOutcome" class="mo-list-toolbar__select">
+                <option value="all"<%= "all".equalsIgnoreCase(moLcOutcome) ? " selected" : "" %>>All</option>
+                <option value="SELECTED"<%= "SELECTED".equalsIgnoreCase(moLcOutcome) ? " selected" : "" %>>Selected</option>
+                <option value="REJECTED"<%= "REJECTED".equalsIgnoreCase(moLcOutcome) ? " selected" : "" %>>Rejected</option>
+                <option value="AUTO_CLOSED"<%= "AUTO_CLOSED".equalsIgnoreCase(moLcOutcome) ? " selected" : "" %>>Auto closed</option>
+            </select>
+        </label>
+        <% } %>
+        <div class="mo-list-toolbar__actions">
+            <button type="submit" class="btn btn-primary btn-sm">Apply</button>
+            <a href="<%= moBase %>?view=<%= escHtml(moView) %><%= moJobIdQ %>" class="btn btn-secondary btn-sm" id="mo-list-filters-reset">Reset</a>
+        </div>
+    </div>
+    <% if (Boolean.TRUE.equals(moLcFiltersActive) && moLcShowing != null && moLcTotal != null && moLcTotal > 0) { %>
+    <p class="mo-list-toolbar__summary muted-inline">Showing <strong><%= moLcShowing %></strong> of <strong><%= moLcTotal %></strong> in this tab.</p>
+    <% } %>
+</form>

@@ -980,6 +980,56 @@ tr:hover { background: #f8f7ff; }
     color: #5b7296;
     font-size: 0.92em;
 }
+.mo-list-toolbar {
+    margin: 0 0 16px;
+    padding: 14px 16px;
+    border: 1px solid #d9e6f4;
+    border-radius: 10px;
+    background: #f7fbff;
+}
+.mo-list-toolbar__row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 12px 16px;
+}
+.mo-list-toolbar__field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 140px;
+}
+.mo-list-toolbar__field--score {
+    min-width: 6.5rem;
+    flex: 0 0 auto;
+}
+.mo-list-toolbar__label {
+    font-size: 0.78em;
+    font-weight: 600;
+    color: #5b7296;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+}
+.mo-list-toolbar__select,
+.mo-list-toolbar__input {
+    padding: 6px 10px;
+    border: 1px solid #c9dced;
+    border-radius: 6px;
+    font-size: 0.9em;
+    background: #fff;
+    color: #1a3563;
+}
+.mo-list-toolbar__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    margin-left: auto;
+}
+.mo-list-toolbar__summary {
+    margin: 10px 0 0;
+}
 .empty-applicants-card {
     padding: 16px;
     border: 1px dashed #c9dced;
@@ -1486,6 +1536,36 @@ tr:hover { background: #f8f7ff; }
     color: #5a728f;
     border: 1px solid #c5d6e8;
 }
+.mo-applicant-fold__badges .rec-badge {
+    background: #f0f4fa;
+    color: #1a3563;
+    border: 1px solid #c5d6e8;
+}
+.mo-applicant-fold__badges .rec-badge--strong_hire {
+    background: #e6f6ec;
+    color: #0d5c2e;
+    border-color: #9fd4b0;
+}
+.mo-applicant-fold__badges .rec-badge--hire {
+    background: #e8f2ff;
+    color: #1452a3;
+    border-color: #a8c8f0;
+}
+.mo-applicant-fold__badges .rec-badge--waitlist {
+    background: #fff6e6;
+    color: #8a5a00;
+    border-color: #e8c878;
+}
+.mo-applicant-fold__badges .rec-badge--reject {
+    background: #fdecec;
+    color: #9b1c1c;
+    border-color: #e8a8a8;
+}
+.mo-applicant-fold__badges .rec-badge--none {
+    background: #f4f6f9;
+    color: #5a728f;
+    border-color: #d0dae8;
+}
 .mo-applicant-fold__badges .status-pill-interview {
     padding: 0 10px;
     background: linear-gradient(135deg, #eef2ff 0%, #e8eeff 100%);
@@ -1501,6 +1581,47 @@ tr:hover { background: #f8f7ff; }
 }
 .mo-applicant-fold__body {
     padding: 14px 16px 16px;
+}
+.mo-eval-detail {
+    margin-top: 8px;
+}
+.mo-eval-detail__summary {
+    margin: 0 0 10px;
+}
+.mo-eval-detail__scores {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 8px 14px;
+    margin: 0 0 12px;
+    padding: 0;
+}
+.mo-eval-detail__scores > div {
+    margin: 0;
+}
+.mo-eval-detail__scores dt {
+    margin: 0;
+    font-size: 0.76em;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #6780a3;
+}
+.mo-eval-detail__scores dd {
+    margin: 4px 0 0;
+    font-size: 0.95em;
+    color: #123b7a;
+    font-weight: 600;
+}
+.mo-eval-detail__comment {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed #dce6f2;
+}
+.mo-eval-detail__comment strong {
+    display: block;
+    margin-bottom: 4px;
+    color: #123b7a;
+    font-size: 0.88em;
 }
 .applicant-topline--fold-body {
     margin-bottom: 4px;
