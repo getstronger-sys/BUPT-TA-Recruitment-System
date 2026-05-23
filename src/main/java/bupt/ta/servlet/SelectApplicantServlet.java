@@ -19,7 +19,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 /**
- * MO action to select, reject, or waitlist an applicant and record the decision.
+ * MO pipeline actions: move to interview/waitlist, or final select/reject (waitlist only).
  */
 public class SelectApplicantServlet extends HttpServlet {
 
@@ -87,42 +87,41 @@ public class SelectApplicantServlet extends HttpServlet {
                 redirectJobs(resp, req, listPath, "interview", jobId, "error=not_interview");
                 return;
             }
+            if (storage.getInterviewEvaluationByApplicationId(target.getId()) == null) {
+                redirectJobs(resp, req, listPath, "interview", jobId, "error=evaluation_required");
+                return;
+            }
             target.setStatus("WAITLIST");
         } else if ("select".equalsIgnoreCase(action)) {
-            if (!"INTERVIEW".equals(target.getStatus()) && !"WAITLIST".equals(target.getStatus())) {
-                redirectJobs(resp, req, listPath, "interview", jobId, "error=not_interview");
+            if (!"WAITLIST".equals(target.getStatus())) {
+                redirectJobs(resp, req, listPath, viewForStatus(target.getStatus()), jobId, "error=not_waitlist");
                 return;
             }
             InterviewEvaluation evaluation = storage.getInterviewEvaluationByApplicationId(target.getId());
             if (evaluation == null) {
-                String fullView = "WAITLIST".equals(target.getStatus()) ? "waitlist" : "interview";
-                redirectJobs(resp, req, listPath, fullView, jobId, "error=evaluation_required");
+                redirectJobs(resp, req, listPath, "waitlist", jobId, "error=evaluation_required");
                 return;
             }
             if (decisionReason.isEmpty()) {
                 decisionReason = trim(notes);
             }
             if (decisionReason.isEmpty()) {
-                String fullView = "WAITLIST".equals(target.getStatus()) ? "waitlist" : "interview";
-                redirectJobs(resp, req, listPath, fullView, jobId, "error=decision_reason_required");
+                redirectJobs(resp, req, listPath, "waitlist", jobId, "error=decision_reason_required");
                 return;
             }
             if (!JobSelectionCapacity.hasVacancy(job, storage.getApplicationsByJobId(jobId), target.getId())) {
-                String fullView = "WAITLIST".equals(target.getStatus()) ? "waitlist" : "interview";
-                redirectJobs(resp, req, listPath, fullView, jobId, "error=capacity_reached");
+                redirectJobs(resp, req, listPath, "waitlist", jobId, "error=capacity_reached");
                 return;
             }
             AdminSettings settings = storage.loadAdminSettings();
             if (adminService.wouldExceedWorkloadLimitOnSelect(storage, target.getApplicantId(), job, settings)) {
-                String fullView = "WAITLIST".equals(target.getStatus()) ? "waitlist" : "interview";
-                redirectJobs(resp, req, listPath, fullView, jobId, "error=ta_workload_cap");
+                redirectJobs(resp, req, listPath, "waitlist", jobId, "error=ta_workload_cap");
                 return;
             }
             target.setStatus("SELECTED");
         } else if ("reject".equalsIgnoreCase(action)) {
-            if (!"PENDING".equals(target.getStatus()) && !"INTERVIEW".equals(target.getStatus())
-                    && !"WAITLIST".equals(target.getStatus())) {
-                redirectJobs(resp, req, listPath, "pending", jobId, "error=not_applicant");
+            if (!"WAITLIST".equals(target.getStatus())) {
+                redirectJobs(resp, req, listPath, viewForStatus(target.getStatus()), jobId, "error=not_waitlist");
                 return;
             }
             target.setStatus("REJECTED");
@@ -178,6 +177,22 @@ public class SelectApplicantServlet extends HttpServlet {
         Job jobAfter = storage.getJobById(jobId);
         String pathAfter = jobAfter != null ? JobActivity.listPathFor(jobAfter) : listPath;
         redirectJobs(resp, req, pathAfter, view, jobId, extraQuery);
+    }
+
+    private static String viewForStatus(String status) {
+        if ("INTERVIEW".equals(status)) {
+            return "interview";
+        }
+        if ("WAITLIST".equals(status)) {
+            return "waitlist";
+        }
+        if ("SELECTED".equals(status) || "REJECTED".equals(status) || "AUTO_CLOSED".equals(status)) {
+            return "outcome";
+        }
+        if ("WITHDRAWN".equals(status)) {
+            return "withdrawn";
+        }
+        return "pending";
     }
 
     private String trim(String value) {

@@ -72,10 +72,11 @@
             <% if (err != null) {
                    String errMsg = err;
                    if ("not_pending".equals(err)) errMsg = "Only pending applications can be moved to interview.";
-                   else if ("not_interview".equals(err)) errMsg = "Only interview-stage applications can be selected.";
+                   else if ("not_interview".equals(err)) errMsg = "Only interview-stage applications can be moved to the waitlist.";
+                   else if ("not_waitlist".equals(err)) errMsg = "Select or reject is only available for waitlisted applicants.";
                    else if ("capacity_reached".equals(err)) errMsg = "Planned recruit slots are already full for this posting.";
                    else if ("ta_workload_cap".equals(err)) errMsg = "This applicant has reached the admin workload cap and cannot be selected for another post.";
-                   else if ("evaluation_required".equals(err)) errMsg = "Save an interview evaluation before selecting this applicant.";
+                   else if ("evaluation_required".equals(err)) errMsg = "Save an interview evaluation before moving to the waitlist or selecting this applicant.";
                    else if ("decision_reason_required".equals(err)) errMsg = "Selection requires a decision reason.";
                    else if ("not_applicant".equals(err)) errMsg = "This action is not allowed for the current status.";
                    else if ("batch_empty".equals(err)) errMsg = "Select at least one row.";
@@ -255,7 +256,7 @@
             <% } %>
             <div class="context-card">
                 <strong>Workflow</strong>
-                <p>Use the tabs: Applicants &rarr; Interview &rarr; Waitlist &rarr; Withdrawn &rarr; Outcomes (selected, rejected, and other final states). This page shows only <strong>this posting</strong>.
+                <p>Use the tabs: Applicants &rarr; Interview (score, then move to waitlist) &rarr; Waitlist (select or reject) &rarr; Withdrawn &rarr; Outcomes. Waitlist means interview is complete; save an evaluation on the applicant profile before moving there. This page shows only <strong>this posting</strong>.
                 <% if (moPastJobsPage) { %><span class="muted-inline"> (Closed or past deadline; this page is read-only.)</span><% } %>
                 </p>
             </div>
@@ -438,7 +439,6 @@
                                     <input type="text" name="notes" placeholder="Optional notes" class="note-input">
                                     <div class="decision-buttons decision-buttons-inline">
                                         <button type="submit" name="action" value="interview" class="btn btn-primary decision-btn">Move to interview</button>
-                                        <button type="submit" name="action" value="reject" class="btn btn-danger decision-btn">Reject</button>
                                     </div>
                                 </form>
                             </div><% } %>
@@ -575,17 +575,19 @@
                             <% if (moReadOnly) { %>
                             <div class="decision-bar decision-bar-recorded"><p class="muted-inline">Read-only: no actions available for inactive postings.</p></div>
                             <% } else { %><div class="decision-bar">
+                                <% if (ev != null) { %>
                                 <form action="${pageContext.request.contextPath}/mo/select-applicant" method="post" class="decision-form decision-form-inline">
                                     <%@ include file="/WEB-INF/jspf/csrf-hidden.jspf" %>
                                     <input type="hidden" name="applicationId" value="<%= a.getId() %>">
                                     <input type="text" name="notes" placeholder="Optional notes" class="note-input">
-                                    <input type="text" name="decisionReason" placeholder="Selection reason (required if selected)" class="note-input">
-                                    <input type="text" name="applicantFeedback" placeholder="TA-visible feedback (optional)" class="note-input">
                                     <div class="decision-buttons decision-buttons-inline">
-                                        <button type="submit" name="action" value="select" class="btn btn-success decision-btn">Select</button>
-                                        <button type="submit" name="action" value="reject" class="btn btn-danger decision-btn">Reject</button>
+                                        <button type="submit" name="action" value="waitlist" class="btn btn-primary decision-btn">Move to waitlist</button>
                                     </div>
                                 </form>
+                                <p class="muted-inline">Evaluation saved (<%= ev.getTotalScore() %>/100). Select or reject on the Waitlist tab.</p>
+                                <% } else { %>
+                                <p class="muted-inline">Save an <a href="${pageContext.request.contextPath}/mo/applicant-detail?applicantId=<%= a.getApplicantId() %>">interview evaluation</a> before moving to waitlist.</p>
+                                <% } %>
                             </div><% } %>
                         </div>
                     </article>

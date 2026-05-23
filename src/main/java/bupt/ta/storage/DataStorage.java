@@ -999,7 +999,8 @@ public class DataStorage {
     }
 
     private static boolean blocksNewApplicationToJob(String status) {
-        return "PENDING".equals(status) || "INTERVIEW".equals(status) || "SELECTED".equals(status);
+        return "PENDING".equals(status) || "INTERVIEW".equals(status) || "WAITLIST".equals(status)
+                || "SELECTED".equals(status);
     }
 
     /** Inserts or replaces an application by id. */
