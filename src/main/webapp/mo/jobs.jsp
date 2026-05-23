@@ -92,7 +92,8 @@
                    String errMsg = err;
                    if ("not_pending".equals(err)) errMsg = "Only pending applications can be moved to interview.";
                    else if ("not_interview".equals(err)) errMsg = "Only interview-stage applications can be moved to the waitlist.";
-                   else if ("not_waitlist".equals(err)) errMsg = "Select or reject is only available for waitlisted applicants.";
+                   else if ("not_waitlist".equals(err)) errMsg = "Select is only available for waitlisted applicants.";
+                   else if ("not_rejectable".equals(err)) errMsg = "Reject is only available for pending or waitlisted applicants.";
                    else if ("capacity_reached".equals(err)) errMsg = "Planned recruit slots are already full for this posting.";
                    else if ("ta_workload_cap".equals(err)) errMsg = "This applicant has reached the admin workload cap and cannot be selected for another post.";
                    else if ("evaluation_required".equals(err)) errMsg = "Save an interview evaluation on the Interview tab before moving to the waitlist or selecting this applicant.";
@@ -277,7 +278,7 @@
             <% } %>
             <div class="context-card">
                 <strong>Workflow</strong>
-                <p>Use the tabs: Applicants &rarr; Interview (score on each card, then move to waitlist) &rarr; Waitlist (select or reject) &rarr; Withdrawn &rarr; Outcomes. Waitlist means interview is complete. This page shows only <strong>this posting</strong>.
+                <p>Use the tabs: Applicants (move to interview or reject) &rarr; Interview (score on each card, then move to waitlist) &rarr; Waitlist (select or reject) &rarr; Withdrawn &rarr; Outcomes. Waitlist means interview is complete. This page shows only <strong>this posting</strong>.
                 <% if (moPastJobsPage) { %><span class="muted-inline"> (Closed or past deadline; this page is read-only.)</span><% } %>
                 </p>
             </div>
@@ -461,8 +462,10 @@
                                     <%@ include file="/WEB-INF/jspf/mo-list-controls-hidden.jspf" %>
                                     <input type="hidden" name="applicationId" value="<%= a.getId() %>">
                                     <input type="text" name="notes" placeholder="Optional notes" class="note-input">
+                                    <input type="text" name="applicantFeedback" placeholder="TA-visible feedback (optional)" class="note-input">
                                     <div class="decision-buttons decision-buttons-inline">
                                         <button type="submit" name="action" value="interview" class="btn btn-primary decision-btn">Move to interview</button>
+                                        <button type="submit" name="action" value="reject" class="btn btn-danger decision-btn">Reject</button>
                                     </div>
                                 </form>
                             </div><% } %>

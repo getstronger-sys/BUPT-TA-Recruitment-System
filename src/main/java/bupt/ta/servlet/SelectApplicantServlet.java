@@ -20,7 +20,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 /**
- * MO pipeline actions: move to interview/waitlist, or final select/reject (waitlist only).
+ * MO pipeline actions: move to interview/waitlist, reject from pending or waitlist, select from waitlist.
  */
 public class SelectApplicantServlet extends HttpServlet {
 
@@ -124,8 +124,8 @@ public class SelectApplicantServlet extends HttpServlet {
             }
             target.setStatus("SELECTED");
         } else if ("reject".equalsIgnoreCase(action)) {
-            if (!"WAITLIST".equals(target.getStatus())) {
-                redirectJobs(resp, req, listPath, viewForStatus(target.getStatus()), jobId, "error=not_waitlist", null);
+            if (!"WAITLIST".equals(target.getStatus()) && !"PENDING".equals(target.getStatus())) {
+                redirectJobs(resp, req, listPath, viewForStatus(target.getStatus()), jobId, "error=not_rejectable", null);
                 return;
             }
             target.setStatus("REJECTED");
