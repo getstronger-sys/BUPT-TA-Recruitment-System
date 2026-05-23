@@ -88,7 +88,7 @@ public class CVUploadServlet extends HttpServlet {
             }
         } catch (Exception ex) {
             aiStatus = AI_STATUS_FAILED;
-            LOG.log(Level.WARNING, "CV text extraction or DeepSeek profile merge failed", ex);
+            LOG.log(Level.WARNING, "CV text extraction or LLM profile merge failed", ex);
         }
 
         storage.saveProfile(profile);

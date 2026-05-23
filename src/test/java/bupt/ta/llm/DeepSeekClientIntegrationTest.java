@@ -6,7 +6,7 @@ import org.junit.Test;
 import static org.junit.Assert.assertFalse;
 
 /**
- * Run with {@code DEEPSEEK_API_KEY} set to verify network + key (optional).
+ * Run with any supported LLM API key env var set to verify network + key (optional).
  * If the key is not set, the test is skipped (does not fail the build).
  */
 public class DeepSeekClientIntegrationTest {
@@ -14,7 +14,8 @@ public class DeepSeekClientIntegrationTest {
     @Test
     public void chatReturnsNonEmptyWhenConfigured() throws Exception {
         DeepSeekClient client = new DeepSeekClient();
-        Assume.assumeTrue("Set environment variable DEEPSEEK_API_KEY to run this test", client.isConfigured());
+        Assume.assumeTrue("Set TA_AI_API_KEY, LLM_API_KEY, MIMO_API_KEY, OPENAI_API_KEY, or DEEPSEEK_API_KEY to run this test",
+                client.isConfigured());
 
         String reply = client.chat(
                 "Reply with exactly one word: OK",

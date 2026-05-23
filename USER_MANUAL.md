@@ -22,6 +22,8 @@ Recommended Windows startup:
 .\run.cmd
 ```
 
+For optional LLM features, copy `ai.env.example` to `ai.env` and set an OpenAI-compatible API key before running `run.cmd` or `run-with-ai.ps1`.
+
 Alternative Maven Wrapper startup:
 
 ```powershell
@@ -517,7 +519,7 @@ If email is not configured, email-dependent features are disabled gracefully.
 
 ### 7.8 AI API Settings
 
-The AI API settings page configures optional LLM functionality. It supports DeepSeek-compatible or OpenAI-compatible endpoints.
+The AI API settings page configures optional LLM functionality. It supports OpenAI-compatible endpoints such as MIMO, DeepSeek, OpenAI, Moonshot, or Ollama-compatible services.
 
 Configurable fields:
 
@@ -535,7 +537,8 @@ Where AI is used:
 - MO applicant insight
 - MO applicant summary cards
 
-If no Admin AI key is saved, the system can fall back to environment variables such as `TA_AI_API_KEY`.
+If no Admin AI key is saved, the system can fall back to environment variables such as `TA_AI_API_KEY`, `LLM_API_KEY`, `MIMO_API_KEY`, `OPENAI_API_KEY`, or `DEEPSEEK_API_KEY`.
+Base URLs may be entered either as the provider root or with `/v1`; the application normalises them before calling `/v1/chat/completions`.
 
 ![1779350963139](images/user_mannual/1779350963139.png)
 

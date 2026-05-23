@@ -11,7 +11,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 /**
- * Admin page for configuring the DeepSeek-compatible LLM API.
+ * Admin page for configuring the OpenAI-compatible LLM API.
  * <p>
  * GET renders the form prefilled with values from {@code data/ai-api-settings.json}; POST
  * validates input and persists changes via {@link DataStorage#saveAiApiSettings(AiApiSettings)}.

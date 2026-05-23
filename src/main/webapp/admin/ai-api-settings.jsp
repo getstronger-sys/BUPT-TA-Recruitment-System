@@ -37,8 +37,8 @@
         <main class="main-panel admin-main admin-page">
             <header class="ta-page-header">
                 <p class="ta-page-kicker">Integration</p>
-                <h1>AI / LLM API (DeepSeek)</h1>
-                <p class="ta-page-lead">Configure the DeepSeek-compatible endpoint used for CV pre-fill, match insight and MO screening summaries.</p>
+                <h1>AI / LLM API</h1>
+                <p class="ta-page-lead">Configure the OpenAI-compatible endpoint used for CV pre-fill, match insight and MO screening summaries.</p>
             </header>
 
             <% boolean adminAiFlash = "1".equals(request.getParameter("saved"));
@@ -78,11 +78,11 @@
                         Enable streaming responses (insight and summary text appears token-by-token instead of after the full response)
                     </label>
                     <label for="admin-ai-provider">Provider <span class="muted-inline">(label only)</span></label>
-                    <input id="admin-ai-provider" type="text" name="provider" value="<%= escHtml(settings.getProvider()) %>" placeholder="deepseek / openai / moonshot / ollama ...">
+                    <input id="admin-ai-provider" type="text" name="provider" value="<%= escHtml(settings.getProvider()) %>" placeholder="mimo / deepseek / openai / moonshot / ollama ...">
                     <label for="admin-ai-base">API Base URL</label>
-                    <input id="admin-ai-base" type="text" name="baseUrl" value="<%= escHtml(settings.getBaseUrl()) %>" placeholder="https://api.deepseek.com (any OpenAI-compatible endpoint)">
+                    <input id="admin-ai-base" type="text" name="baseUrl" value="<%= escHtml(settings.getBaseUrl()) %>" placeholder="https://api.deepseek.com or another OpenAI-compatible endpoint">
                     <label for="admin-ai-model">Model name</label>
-                    <input id="admin-ai-model" type="text" name="model" value="<%= escHtml(settings.getModel()) %>" placeholder="deepseek-chat / gpt-4o-mini / qwen2.5 ...">
+                    <input id="admin-ai-model" type="text" name="model" value="<%= escHtml(settings.getModel()) %>" placeholder="mimo-v2.5-pro / deepseek-chat / gpt-4o-mini ...">
                     <label for="admin-ai-key">API key</label>
                     <input id="admin-ai-key" type="password" name="apiKey" value="" autocomplete="off" placeholder="(unchanged if empty)">
                     <button type="submit" class="btn btn-primary">Save AI API settings</button>
@@ -99,7 +99,7 @@
             <div class="widget-card ta-widget-card">
                 <div class="widget-title">Tips</div>
                 <p class="widget-line">Uncheck "Enable LLM features" to pause AI calls without clearing your saved key.</p>
-                <p class="widget-line">Leave Base URL / Model empty to use DeepSeek defaults.</p>
+                <p class="widget-line">Leave Base URL / Model empty to use the built-in defaults.</p>
             </div>
         </aside>
     </div>
