@@ -23,6 +23,9 @@ public final class MoJobsRedirectParams {
                 view = viewAttr.toString();
             }
         }
+        if (!MoApplicantListControls.usesListToolbar(view)) {
+            return;
+        }
         String qs = MoApplicantListControls.fromRequest(req).toQueryString(view);
         if (qs == null || qs.isEmpty()) {
             return;
@@ -34,7 +37,7 @@ public final class MoJobsRedirectParams {
         if (expandApp == null || expandApp.isEmpty()) {
             return;
         }
-        if (!"interview".equals(view) && !"waitlist".equals(view) && !"outcome".equals(view)) {
+        if (!"pending".equals(view) && !"interview".equals(view) && !"waitlist".equals(view) && !"outcome".equals(view)) {
             return;
         }
         url.append("&expandApp=").append(URLEncoder.encode(expandApp.trim(), StandardCharsets.UTF_8));

@@ -191,6 +191,9 @@ public class MOPastJobsServlet extends HttpServlet {
     private static void applyListControls(HttpServletRequest req, List<Object[]> rows, String view,
                                           Map<String, InterviewEvaluation> evaluationByApplicationId,
                                           MoApplicantListControls controls) {
+        if (!MoApplicantListControls.usesListToolbar(view)) {
+            return;
+        }
         int idx = MoApplicantListControls.listIndexForView(view);
         for (Object[] row : rows) {
             List<AIMatchService.ApplicantRecommendation> full =

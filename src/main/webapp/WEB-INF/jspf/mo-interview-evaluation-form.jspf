@@ -38,7 +38,6 @@
         <input type="hidden" name="returnJobId" value="<%= escHtml(evalReturnJobId) %>">
         <input type="hidden" name="returnView" value="interview">
         <input type="hidden" name="returnBase" value="<%= escHtml(evalReturnBase) %>">
-        <%@ include file="/WEB-INF/jspf/mo-list-controls-hidden.jspf" %>
         <div class="evaluation-score-grid">
             <label>Technical <input type="number" name="technicalScore" min="1" max="5" value="<%= tech %>" required class="note-input"></label>
             <label>Teaching <input type="number" name="teachingScore" min="1" max="5" value="<%= teach %>" required class="note-input"></label>
@@ -71,7 +70,6 @@
     <form action="${pageContext.request.contextPath}/mo/select-applicant" method="post" class="mo-eval-waitlist-form">
         <%@ include file="/WEB-INF/jspf/csrf-hidden.jspf" %>
         <input type="hidden" name="applicationId" value="<%= escHtml(evalAppId) %>">
-        <%@ include file="/WEB-INF/jspf/mo-list-controls-hidden.jspf" %>
         <div class="mo-eval-actions mo-eval-actions--waitlist">
             <input type="text" name="notes" placeholder="Optional notes" class="note-input mo-eval-notes-input">
             <button type="submit" name="action" value="waitlist" class="btn btn-primary btn-sm">Move to waitlist</button>

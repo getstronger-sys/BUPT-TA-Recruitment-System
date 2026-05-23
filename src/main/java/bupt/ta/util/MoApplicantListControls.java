@@ -130,6 +130,11 @@ public final class MoApplicantListControls {
         return "interview".equals(view) || "waitlist".equals(view);
     }
 
+    /** Sort/filter toolbar applies to waitlist and outcomes only. */
+    public static boolean usesListToolbar(String view) {
+        return "waitlist".equals(view) || "outcome".equals(view);
+    }
+
     public String toQueryString() {
         return toQueryString(null);
     }
