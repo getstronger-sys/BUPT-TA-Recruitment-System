@@ -6,6 +6,11 @@ import bupt.ta.model.Job;
 import bupt.ta.storage.DataStorage;
 
 import java.io.IOException;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Helper for writing application audit timeline events consistently.
@@ -30,6 +35,34 @@ public class ApplicationTimelineService {
     public static final String TYPE_WITHDRAWN = "WITHDRAWN";
     /** Waitlisted applicant auto-promoted to selected. */
     public static final String TYPE_AUTO_PROMOTED = "AUTO_PROMOTED";
+
+    /** Whether the applicant may see this event on the TA timeline (MO internal scoring is hidden). */
+    public static boolean isVisibleToApplicant(ApplicationEvent event) {
+        return event != null && !TYPE_EVALUATION_SAVED.equals(event.getEventType());
+    }
+
+    /** Returns timeline events safe to show on the TA applications page. */
+    public static List<ApplicationEvent> filterForApplicantView(List<ApplicationEvent> events) {
+        if (events == null || events.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return events.stream()
+                .filter(ApplicationTimelineService::isVisibleToApplicant)
+                .collect(Collectors.toList());
+    }
+
+    /** Filters grouped timeline events for the TA applications page. */
+    public static Map<String, List<ApplicationEvent>> filterForApplicantView(
+            Map<String, List<ApplicationEvent>> byApplicationId) {
+        if (byApplicationId == null || byApplicationId.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        Map<String, List<ApplicationEvent>> filtered = new LinkedHashMap<>();
+        for (Map.Entry<String, List<ApplicationEvent>> entry : byApplicationId.entrySet()) {
+            filtered.put(entry.getKey(), filterForApplicantView(entry.getValue()));
+        }
+        return filtered;
+    }
 
     /**
      * Appends one timeline event for an application.

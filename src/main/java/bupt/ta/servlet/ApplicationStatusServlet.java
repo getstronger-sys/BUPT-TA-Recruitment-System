@@ -5,6 +5,7 @@ import bupt.ta.model.ApplicationEvent;
 import bupt.ta.model.InterviewSlot;
 import bupt.ta.model.Job;
 import bupt.ta.service.AdminService;
+import bupt.ta.service.ApplicationTimelineService;
 import bupt.ta.storage.DataStorage;
 
 import javax.servlet.ServletException;
@@ -58,7 +59,8 @@ public class ApplicationStatusServlet extends HttpServlet {
 
         int points = selectedCount * 100 + pendingCount * 20 + interviewCount * 40 + waitlistCount * 30;
         req.setAttribute("applications", enriched);
-        req.setAttribute("eventsByApplicationId", storage.getApplicationEventsByApplicationIds(applicationIds));
+        req.setAttribute("eventsByApplicationId", ApplicationTimelineService.filterForApplicantView(
+                storage.getApplicationEventsByApplicationIds(applicationIds)));
         req.setAttribute("selectedCount", selectedCount);
         req.setAttribute("pendingCount", pendingCount);
         req.setAttribute("interviewCount", interviewCount);
