@@ -63,12 +63,13 @@
         </div>
         <main class="main-panel mo-main mo-page mo-page--mo-jobs">
             <% String err = request.getParameter("error");
-               boolean moJobsFlash = "1".equals(request.getParameter("success")) || "1".equals(request.getParameter("updated")) || "1".equals(request.getParameter("notice")) || err != null;
+               boolean moJobsFlash = "1".equals(request.getParameter("success")) || "1".equals(request.getParameter("updated")) || "1".equals(request.getParameter("notice")) || "1".equals(request.getParameter("evaluationSaved")) || err != null;
                if (moJobsFlash) { %>
             <div class="ta-page-flashes">
             <% if ("1".equals(request.getParameter("success"))) { %><p class="success">Job posted successfully!</p><% } %>
             <% if ("1".equals(request.getParameter("updated"))) { %><p class="success">Applicant status updated.</p><% } %>
             <% if ("1".equals(request.getParameter("notice"))) { %><p class="success">Interview notice saved (in-app message).</p><% } %>
+            <% if ("1".equals(request.getParameter("evaluationSaved"))) { %><p class="success">Interview evaluation saved.</p><% } %>
             <% if (err != null) {
                    String errMsg = err;
                    if ("not_pending".equals(err)) errMsg = "Only pending applications can be moved to interview.";
@@ -76,7 +77,9 @@
                    else if ("not_waitlist".equals(err)) errMsg = "Select or reject is only available for waitlisted applicants.";
                    else if ("capacity_reached".equals(err)) errMsg = "Planned recruit slots are already full for this posting.";
                    else if ("ta_workload_cap".equals(err)) errMsg = "This applicant has reached the admin workload cap and cannot be selected for another post.";
-                   else if ("evaluation_required".equals(err)) errMsg = "Save an interview evaluation before moving to the waitlist or selecting this applicant.";
+                   else if ("evaluation_required".equals(err)) errMsg = "Save an interview evaluation on the Interview tab before moving to the waitlist or selecting this applicant.";
+                   else if ("evaluation_status".equals(err)) errMsg = "Interview evaluations can only be saved while the applicant is in the interview stage.";
+                   else if ("evaluation_invalid".equals(err)) errMsg = "Please choose a valid recommendation.";
                    else if ("decision_reason_required".equals(err)) errMsg = "Selection requires a decision reason.";
                    else if ("not_applicant".equals(err)) errMsg = "This action is not allowed for the current status.";
                    else if ("batch_empty".equals(err)) errMsg = "Select at least one row.";
@@ -256,7 +259,7 @@
             <% } %>
             <div class="context-card">
                 <strong>Workflow</strong>
-                <p>Use the tabs: Applicants &rarr; Interview (score, then move to waitlist) &rarr; Waitlist (select or reject) &rarr; Withdrawn &rarr; Outcomes. Waitlist means interview is complete; save an evaluation on the applicant profile before moving there. This page shows only <strong>this posting</strong>.
+                <p>Use the tabs: Applicants &rarr; Interview (score on each card, then move to waitlist) &rarr; Waitlist (select or reject) &rarr; Withdrawn &rarr; Outcomes. Waitlist means interview is complete. This page shows only <strong>this posting</strong>.
                 <% if (moPastJobsPage) { %><span class="muted-inline"> (Closed or past deadline; this page is read-only.)</span><% } %>
                 </p>
             </div>
@@ -490,9 +493,10 @@
                             <label class="notice-field notice-field--full">Assessment <textarea name="interviewAssessment" rows="2" placeholder="Scope, format, etc." class="note-input notice-textarea"></textarea></label>
                         </div>
                     </form>
-                    <p class="batch-toolbar">
+                    <div class="mo-batch-toolbar">
                         <button type="submit" class="btn btn-success" form="<%= batchNoticeFormId %>">Send/update in-app interview notice</button>
-                    </p>
+                        <p class="mo-batch-toolbar-hint">Select one or more applicants using the <strong>checkbox</strong> on each row below, then send.</p>
+                    </div>
                     <% } else { %>
                     <p class="muted-inline section-empty">Read-only: interview notices and decisions are disabled for inactive postings.</p>
                     <% } %>
@@ -511,16 +515,34 @@
                                 || (a.getInterviewLocation() != null && !a.getInterviewLocation().isEmpty())
                                 || (a.getInterviewAssessment() != null && !a.getInterviewAssessment().isEmpty());
                     %>
-                    <article class="applicant-card">
-                        <% if (!moReadOnly) { %><label class="batch-check-label">
-                            <input type="checkbox" name="applicationId" value="<%= a.getId() %>" class="batch-checkbox" form="<%= batchNoticeFormId %>">
-                            <span class="batch-check-hint">Select for notice</span>
-                        </label><% } %>
-                        <div class="applicant-topline">
-                            <div class="applicant-title-group">
-                                <div class="applicant-name-row">
-                                    <h5><%= applicantName %></h5>
+                    <article class="applicant-card applicant-card--interview applicant-card--fold">
+                        <details class="mo-applicant-fold">
+                            <summary class="mo-applicant-fold__summary">
+                                <div class="mo-applicant-fold__leading">
+                                    <span class="mo-applicant-fold__chev" aria-hidden="true"></span>
+                                    <% if (!moReadOnly) { %>
+                                    <label class="mo-applicant-fold__batch" onclick="event.stopPropagation();" title="Select for interview notice">
+                                        <input type="checkbox" name="applicationId" value="<%= a.getId() %>" class="batch-checkbox mo-fold-checkbox" form="<%= batchNoticeFormId %>" aria-label="Select for interview notice">
+                                    </label>
+                                    <% } %>
                                 </div>
+                                <div class="mo-applicant-fold__head">
+                                    <div class="mo-applicant-fold__title-row">
+                                        <h5><%= applicantName %></h5>
+                                        <div class="mo-applicant-fold__badges">
+                                            <span class="match-badge" title="<%= rec.matchResult.explanation %>"><%= (int)rec.matchResult.score %>% match</span>
+                                            <% if (ev != null) { %><span class="match-badge evaluation-badge"><%= ev.getTotalScore() %>/100</span><% } else { %><span class="match-badge eval-badge eval-badge--none">No eval</span><% } %>
+                                            <span class="status-pill status-pill-interview">INTERVIEW</span>
+                                        </div>
+                                    </div>
+                                    <% if (hasNotice) { %>
+                                    <p class="muted-inline mo-applicant-fold__notice-hint"><strong>Notice:</strong> <%= a.getInterviewTime() != null ? a.getInterviewTime() : "&mdash;" %><% if (a.getInterviewLocation() != null && !a.getInterviewLocation().isEmpty()) { %> &middot; <%= escHtml(a.getInterviewLocation()) %><% } %></p>
+                                    <% } %>
+                                </div>
+                            </summary>
+                            <div class="mo-applicant-fold__body">
+                        <div class="applicant-topline applicant-topline--fold-body">
+                            <div class="applicant-title-group">
                                 <% if (!emailDisp.isEmpty()) { %>
                                 <p class="muted-inline applicant-email-line"><strong>Email:</strong> <%= emailDisp %></p>
                                 <% } %>
@@ -531,11 +553,6 @@
                                     <a href="${pageContext.request.contextPath}/view-cv?userId=<%= a.getApplicantId() %>&amp;download=1" class="mini-link">Download CV</a>
                                     <% } else { %><span class="muted-inline">CV not uploaded</span><% } %>
                                 </div>
-                            </div>
-                            <div class="applicant-score-area">
-                                <span class="match-badge" title="<%= rec.matchResult.explanation %>"><%= (int)rec.matchResult.score %>% match</span>
-                                <% if (ev != null) { %><span class="match-badge evaluation-badge"><%= ev.getTotalScore() %>/100 eval</span><% } %>
-                                <span class="status-pill status-pill-interview">INTERVIEW</span>
                             </div>
                         </div>
                         <% if (hasNotice) { %>
@@ -571,25 +588,20 @@
                                 <p class="section-copy"><strong>Applied:</strong> <%= appliedText %></p>
                             </section>
                         </div>
-                        <div class="applicant-actions">
-                            <% if (moReadOnly) { %>
-                            <div class="decision-bar decision-bar-recorded"><p class="muted-inline">Read-only: no actions available for inactive postings.</p></div>
-                            <% } else { %><div class="decision-bar">
-                                <% if (ev != null) { %>
-                                <form action="${pageContext.request.contextPath}/mo/select-applicant" method="post" class="decision-form decision-form-inline">
-                                    <%@ include file="/WEB-INF/jspf/csrf-hidden.jspf" %>
-                                    <input type="hidden" name="applicationId" value="<%= a.getId() %>">
-                                    <input type="text" name="notes" placeholder="Optional notes" class="note-input">
-                                    <div class="decision-buttons decision-buttons-inline">
-                                        <button type="submit" name="action" value="waitlist" class="btn btn-primary decision-btn">Move to waitlist</button>
-                                    </div>
-                                </form>
-                                <p class="muted-inline">Evaluation saved (<%= ev.getTotalScore() %>/100). Select or reject on the Waitlist tab.</p>
-                                <% } else { %>
-                                <p class="muted-inline">Save an <a href="${pageContext.request.contextPath}/mo/applicant-detail?applicantId=<%= a.getApplicantId() %>">interview evaluation</a> before moving to waitlist.</p>
-                                <% } %>
-                            </div><% } %>
-                        </div>
+                        <section class="applicant-section applicant-section--evaluation">
+                            <div class="section-label">Interview evaluation</div>
+                            <%
+                                request.setAttribute("evalFormApplicationId", a.getId());
+                                request.setAttribute("evalFormEvaluation", ev);
+                                request.setAttribute("evalFormReturnJobId", j.getId());
+                                request.setAttribute("evalFormReturnBase", moBase);
+                                request.setAttribute("evalFormReadOnly", Boolean.valueOf(moReadOnly));
+                                request.setAttribute("evalFormCanWaitlist", Boolean.valueOf(!moReadOnly && ev != null));
+                            %>
+                            <%@ include file="/WEB-INF/jspf/mo-interview-evaluation-form.jspf" %>
+                        </section>
+                            </div>
+                        </details>
                     </article>
                     <% } %>
                     <% } else { %><p class="muted-inline section-empty">No interviewees for this posting.</p><% } %>

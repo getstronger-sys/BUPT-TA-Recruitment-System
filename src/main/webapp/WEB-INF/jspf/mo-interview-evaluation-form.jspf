@@ -1,0 +1,83 @@
+<%@ page import="bupt.ta.model.InterviewEvaluation" %>
+<%
+    String evalAppId = (String) request.getAttribute("evalFormApplicationId");
+    InterviewEvaluation evalEv = (InterviewEvaluation) request.getAttribute("evalFormEvaluation");
+    String evalReturnJobId = (String) request.getAttribute("evalFormReturnJobId");
+    if (evalReturnJobId == null) evalReturnJobId = "";
+    String evalReturnBase = (String) request.getAttribute("evalFormReturnBase");
+    if (evalReturnBase == null) evalReturnBase = request.getContextPath() + "/mo/jobs";
+    Boolean evalReadOnlyAttr = (Boolean) request.getAttribute("evalFormReadOnly");
+    boolean evalReadOnly = evalReadOnlyAttr != null && evalReadOnlyAttr.booleanValue();
+    Boolean evalCanWaitlistAttr = (Boolean) request.getAttribute("evalFormCanWaitlist");
+    boolean evalCanWaitlist = evalCanWaitlistAttr != null && evalCanWaitlistAttr.booleanValue();
+    if (evalAppId == null || evalAppId.isEmpty()) return;
+    int tech = evalEv != null ? evalEv.getTechnicalScore() : 3;
+    int teach = evalEv != null ? evalEv.getTeachingScore() : 3;
+    int comm = evalEv != null ? evalEv.getCommunicationScore() : 3;
+    int avail = evalEv != null ? evalEv.getAvailabilityScore() : 3;
+    int resp = evalEv != null ? evalEv.getResponsibilityScore() : 3;
+    String evalRecommendation = evalEv != null && evalEv.getRecommendation() != null ? evalEv.getRecommendation() : "HIRE";
+%>
+<div class="mo-inline-evaluation">
+<% if (evalReadOnly) { %>
+    <% if (evalEv != null) { %>
+    <p class="section-copy"><strong>Score:</strong> <%= evalEv.getTotalScore() %>/100 | <strong>Recommendation:</strong> <%= escHtml(evalEv.getRecommendationLabel()) %></p>
+    <% if (evalEv.getStrengths() != null && !evalEv.getStrengths().isEmpty()) { %>
+    <p class="section-copy muted-inline"><strong>Strengths:</strong> <%= escHtml(evalEv.getStrengths()) %></p>
+    <% } %>
+    <% } else { %>
+    <p class="muted-inline">No interview evaluation recorded.</p>
+    <% } %>
+<% } else { %>
+    <% if (evalEv != null) { %>
+    <p class="section-copy muted-inline">Current: <%= evalEv.getTotalScore() %>/100 &mdash; <%= escHtml(evalEv.getRecommendationLabel()) %></p>
+    <% } %>
+    <form action="${pageContext.request.contextPath}/mo/interview-evaluation" method="post" class="mo-inline-evaluation-form">
+        <%@ include file="/WEB-INF/jspf/csrf-hidden.jspf" %>
+        <input type="hidden" name="applicationId" value="<%= escHtml(evalAppId) %>">
+        <input type="hidden" name="returnJobId" value="<%= escHtml(evalReturnJobId) %>">
+        <input type="hidden" name="returnView" value="interview">
+        <input type="hidden" name="returnBase" value="<%= escHtml(evalReturnBase) %>">
+        <div class="evaluation-score-grid">
+            <label>Technical <input type="number" name="technicalScore" min="1" max="5" value="<%= tech %>" required class="note-input"></label>
+            <label>Teaching <input type="number" name="teachingScore" min="1" max="5" value="<%= teach %>" required class="note-input"></label>
+            <label>Communication <input type="number" name="communicationScore" min="1" max="5" value="<%= comm %>" required class="note-input"></label>
+            <label>Availability <input type="number" name="availabilityScore" min="1" max="5" value="<%= avail %>" required class="note-input"></label>
+            <label>Responsibility <input type="number" name="responsibilityScore" min="1" max="5" value="<%= resp %>" required class="note-input"></label>
+        </div>
+        <label class="mo-eval-field">Recommendation
+            <select name="recommendation" required class="note-input">
+                <option value="STRONG_HIRE" <%= "STRONG_HIRE".equals(evalRecommendation) ? "selected" : "" %>>Strong hire</option>
+                <option value="HIRE" <%= "HIRE".equals(evalRecommendation) ? "selected" : "" %>>Hire</option>
+                <option value="WAITLIST" <%= "WAITLIST".equals(evalRecommendation) ? "selected" : "" %>>Waitlist</option>
+                <option value="REJECT" <%= "REJECT".equals(evalRecommendation) ? "selected" : "" %>>Reject</option>
+            </select>
+        </label>
+        <label class="mo-eval-field">Strengths
+            <textarea name="strengths" rows="2" class="note-input"><%= evalEv != null && evalEv.getStrengths() != null ? escHtml(evalEv.getStrengths()) : "" %></textarea>
+        </label>
+        <label class="mo-eval-field">Concerns / risks
+            <textarea name="concerns" rows="2" class="note-input"><%= evalEv != null && evalEv.getConcerns() != null ? escHtml(evalEv.getConcerns()) : "" %></textarea>
+        </label>
+        <label class="mo-eval-field">Internal notes
+            <textarea name="internalNotes" rows="2" class="note-input"><%= evalEv != null && evalEv.getInternalNotes() != null ? escHtml(evalEv.getInternalNotes()) : "" %></textarea>
+        </label>
+        <div class="mo-eval-actions">
+            <button type="submit" class="btn btn-primary btn-sm">Save evaluation</button>
+        </div>
+    </form>
+    <% if (evalCanWaitlist) { %>
+    <form action="${pageContext.request.contextPath}/mo/select-applicant" method="post" class="mo-eval-waitlist-form">
+        <%@ include file="/WEB-INF/jspf/csrf-hidden.jspf" %>
+        <input type="hidden" name="applicationId" value="<%= escHtml(evalAppId) %>">
+        <div class="mo-eval-actions mo-eval-actions--waitlist">
+            <input type="text" name="notes" placeholder="Optional notes" class="note-input mo-eval-notes-input">
+            <button type="submit" name="action" value="waitlist" class="btn btn-primary btn-sm">Move to waitlist</button>
+        </div>
+        <p class="muted-inline mo-eval-hint">Then select or reject on the Waitlist tab.</p>
+    </form>
+    <% } else { %>
+    <p class="muted-inline mo-eval-hint">Save the evaluation above, then move to waitlist.</p>
+    <% } %>
+<% } %>
+</div>
