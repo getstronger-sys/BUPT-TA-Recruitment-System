@@ -97,7 +97,7 @@
 
             <div class="ta-panel ta-panel--tip">
                 <strong class="ta-panel__title">How it works</strong>
-                <p class="ta-panel__body">Pending &rarr; Interview (book a slot if the module organiser opens one) &rarr; Selected or rejected. Interview notices stay in-app, and email reminders can be enabled by system configuration.</p>
+                <p class="ta-panel__body">Pending &rarr; Interview (book a slot if the module organiser opens one) &rarr; Waitlist &rarr; Selected or rejected. You may withdraw while pending, in interview, or on the waitlist. Progress reflects how far each application has moved through this pipeline.</p>
             </div>
 
             <div class="stats-row ta-dash-stats ta-dash-stats--v2 ta-apps-stats">
@@ -140,11 +140,13 @@
                     Job j = (Job) row[1];
                     boolean jobInactive = j == null || JobActivity.isInactive(j);
                     String statusClass = "status-pending";
-                    int progress = 40;
+                    int progress = 25;
                     if ("SELECTED".equals(a.getStatus())) { statusClass = "status-selected"; progress = 100; }
                     else if ("REJECTED".equals(a.getStatus())) { statusClass = "status-rejected"; progress = 100; }
                     else if ("WITHDRAWN".equals(a.getStatus())) { statusClass = "status-rejected"; progress = 100; }
-                    else if ("INTERVIEW".equals(a.getStatus())) { statusClass = "status-pending"; progress = 75; }
+                    else if ("AUTO_CLOSED".equals(a.getStatus())) { statusClass = "status-rejected"; progress = 100; }
+                    else if ("WAITLIST".equals(a.getStatus())) { statusClass = "status-pending"; progress = 90; }
+                    else if ("INTERVIEW".equals(a.getStatus())) { statusClass = "status-pending"; progress = 60; }
                     boolean hasNotice = (a.getInterviewTime() != null && !a.getInterviewTime().isEmpty())
                             || (a.getInterviewLocation() != null && !a.getInterviewLocation().isEmpty())
                             || (a.getInterviewAssessment() != null && !a.getInterviewAssessment().isEmpty());
@@ -238,7 +240,7 @@
                         </template>
                     </td>
                     <td class="col-action">
-                        <% if ("PENDING".equals(a.getStatus()) || "INTERVIEW".equals(a.getStatus())) { %>
+                        <% if ("PENDING".equals(a.getStatus()) || "INTERVIEW".equals(a.getStatus()) || "WAITLIST".equals(a.getStatus())) { %>
                         <% if (jobInactive) { %>
                         <span class="muted-inline">Unavailable (posting inactive)</span>
                         <% } else { %>
@@ -267,7 +269,7 @@
             </div>
             <div class="widget-card ta-widget-card">
                 <div class="widget-title">Reminders</div>
-                <p class="widget-line">Pending applications can be withdrawn.</p>
+                <p class="widget-line">Pending, interview, and waitlist applications can be withdrawn.</p>
                 <p class="widget-line">Processed records are archived.</p>
             </div>
         </aside>

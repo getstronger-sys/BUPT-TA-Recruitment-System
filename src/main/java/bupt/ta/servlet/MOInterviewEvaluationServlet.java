@@ -5,6 +5,8 @@ import bupt.ta.model.InterviewEvaluation;
 import bupt.ta.model.Job;
 import bupt.ta.service.ApplicationTimelineService;
 import bupt.ta.storage.DataStorage;
+import bupt.ta.util.JobActivity;
+import bupt.ta.util.MoJobsRedirectParams;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -19,7 +21,7 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Saves or updates an MO interview evaluation and recommendation for an applicant.
+ * Saves or updates an MO interview evaluation for an applicant in INTERVIEW stage.
  */
 public class MOInterviewEvaluationServlet extends HttpServlet {
     private static final Set<String> RECOMMENDATIONS = new HashSet<>(
@@ -33,31 +35,35 @@ public class MOInterviewEvaluationServlet extends HttpServlet {
         String evaluatorName = (String) req.getSession().getAttribute("realName");
 
         if (applicationId.isEmpty()) {
-            resp.sendRedirect(req.getContextPath() + "/mo/jobs?error=invalid");
+            redirectToJobs(req, resp, null, "interview", "invalid");
             return;
         }
 
         DataStorage storage = new DataStorage(getServletContext());
         Application app = findApplication(storage.loadApplications(), applicationId);
         if (app == null) {
-            resp.sendRedirect(req.getContextPath() + "/mo/jobs?error=not_found");
+            redirectToJobs(req, resp, null, "interview", "not_found");
             return;
         }
 
         Job job = storage.getJobById(app.getJobId());
         if (job == null || !moId.equals(job.getPostedBy())) {
-            resp.sendRedirect(req.getContextPath() + "/mo/jobs?error=forbidden");
+            redirectToJobs(req, resp, app.getJobId(), "interview", "forbidden");
+            return;
+        }
+        if (JobActivity.isInactive(job)) {
+            redirectToJobs(req, resp, app.getJobId(), "interview", "job_inactive");
             return;
         }
 
-        if (!isEvaluableStatus(app.getStatus())) {
-            redirectToApplicant(req, resp, app.getApplicantId(), "evaluation_status");
+        if (!"INTERVIEW".equals(app.getStatus())) {
+            redirectToJobs(req, resp, app.getJobId(), "interview", "evaluation_status");
             return;
         }
 
         String recommendation = trim(req.getParameter("recommendation")).toUpperCase();
         if (!RECOMMENDATIONS.contains(recommendation)) {
-            redirectToApplicant(req, resp, app.getApplicantId(), "evaluation_invalid");
+            redirectToJobs(req, resp, app.getJobId(), "interview", "evaluation_invalid");
             return;
         }
 
@@ -86,7 +92,7 @@ public class MOInterviewEvaluationServlet extends HttpServlet {
                 "Score " + evaluation.getTotalScore() + "/100, recommendation: " + evaluation.getRecommendationLabel(),
                 app.getStatus(), app.getStatus());
 
-        redirectToApplicant(req, resp, app.getApplicantId(), null);
+        redirectToJobs(req, resp, app.getJobId(), "interview", null);
     }
 
     private Application findApplication(List<Application> apps, String applicationId) {
@@ -96,11 +102,6 @@ public class MOInterviewEvaluationServlet extends HttpServlet {
             }
         }
         return null;
-    }
-
-    private boolean isEvaluableStatus(String status) {
-        return "INTERVIEW".equals(status) || "WAITLIST".equals(status)
-                || "SELECTED".equals(status) || "REJECTED".equals(status);
     }
 
     private int score(HttpServletRequest req, String name) {
@@ -114,14 +115,33 @@ public class MOInterviewEvaluationServlet extends HttpServlet {
         }
     }
 
-    private void redirectToApplicant(HttpServletRequest req, HttpServletResponse resp, String applicantId, String error) throws IOException {
-        StringBuilder url = new StringBuilder(req.getContextPath())
-                .append("/mo/applicant-detail?applicantId=")
-                .append(URLEncoder.encode(applicantId, StandardCharsets.UTF_8))
-                .append("&evaluationSaved=1");
-        if (error != null && !error.isEmpty()) {
+    private void redirectToJobs(HttpServletRequest req, HttpServletResponse resp, String jobId, String view, String error)
+            throws IOException {
+        String returnBase = trim(req.getParameter("returnBase"));
+        if (returnBase.isEmpty() || !returnBase.startsWith(req.getContextPath())) {
+            returnBase = req.getContextPath() + "/mo/jobs";
+        }
+        String returnJobId = trim(req.getParameter("returnJobId"));
+        if (jobId != null && !jobId.isEmpty()) {
+            returnJobId = jobId;
+        }
+        String returnView = trim(req.getParameter("returnView"));
+        if (returnView.isEmpty()) {
+            returnView = view != null && !view.isEmpty() ? view : "interview";
+        }
+
+        StringBuilder url = new StringBuilder(returnBase).append("?");
+        if (!returnJobId.isEmpty()) {
+            url.append("jobId=").append(URLEncoder.encode(returnJobId, StandardCharsets.UTF_8)).append("&");
+        }
+        url.append("view=").append(URLEncoder.encode(returnView, StandardCharsets.UTF_8));
+        if (error == null || error.isEmpty()) {
+            url.append("&evaluationSaved=1");
+        } else {
             url.append("&error=").append(URLEncoder.encode(error, StandardCharsets.UTF_8));
         }
+        MoJobsRedirectParams.appendExpandApp(url, returnView, trim(req.getParameter("applicationId")));
+        MoJobsRedirectParams.appendListControls(url, req);
         resp.sendRedirect(url.toString());
     }
 

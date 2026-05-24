@@ -980,6 +980,56 @@ tr:hover { background: #f8f7ff; }
     color: #5b7296;
     font-size: 0.92em;
 }
+.mo-list-toolbar {
+    margin: 0 0 16px;
+    padding: 14px 16px;
+    border: 1px solid #d9e6f4;
+    border-radius: 10px;
+    background: #f7fbff;
+}
+.mo-list-toolbar__row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 12px 16px;
+}
+.mo-list-toolbar__field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 140px;
+}
+.mo-list-toolbar__field--score {
+    min-width: 6.5rem;
+    flex: 0 0 auto;
+}
+.mo-list-toolbar__label {
+    font-size: 0.78em;
+    font-weight: 600;
+    color: #5b7296;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+}
+.mo-list-toolbar__select,
+.mo-list-toolbar__input {
+    padding: 6px 10px;
+    border: 1px solid #c9dced;
+    border-radius: 6px;
+    font-size: 0.9em;
+    background: #fff;
+    color: #1a3563;
+}
+.mo-list-toolbar__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    margin-left: auto;
+}
+.mo-list-toolbar__summary {
+    margin: 10px 0 0;
+}
 .empty-applicants-card {
     padding: 16px;
     border: 1px dashed #c9dced;
@@ -1336,6 +1386,249 @@ tr:hover { background: #f8f7ff; }
     border-left: 4px solid #c5006b;
     box-shadow: 0 2px 12px rgba(8, 59, 132, 0.05);
 }
+.applicant-card--fold {
+    padding: 0;
+    overflow: hidden;
+}
+.mo-applicant-fold {
+    display: block;
+}
+.mo-applicant-fold > .mo-applicant-fold__summary {
+    list-style: none;
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 16px;
+    cursor: pointer;
+    background: #fbfdff;
+    user-select: none;
+}
+.mo-applicant-fold > .mo-applicant-fold__summary::-webkit-details-marker {
+    display: none;
+}
+.mo-applicant-fold[open] > .mo-applicant-fold__summary {
+    border-bottom: 1px solid #e0e8f2;
+    background: #f5f9ff;
+}
+.mo-applicant-fold > .mo-applicant-fold__summary:focus {
+    outline: 2px solid #1452a3;
+    outline-offset: -2px;
+}
+.mo-applicant-fold__leading {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+    margin-top: 0.15em;
+}
+.mo-applicant-fold__chev {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.25rem;
+    height: 1.25rem;
+    flex-shrink: 0;
+    color: #1452a3;
+    font-size: 0.85rem;
+    line-height: 1;
+    transition: transform 0.15s ease;
+}
+.mo-applicant-fold__chev::before {
+    content: "\25B8";
+    display: block;
+    line-height: 1;
+}
+.mo-applicant-fold[open] > .mo-applicant-fold__summary .mo-applicant-fold__chev {
+    transform: rotate(90deg);
+}
+.mo-applicant-fold__batch {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    padding: 2px;
+    line-height: 0;
+    cursor: pointer;
+}
+.mo-fold-checkbox {
+    appearance: none;
+    -webkit-appearance: none;
+    box-sizing: border-box;
+    width: 1.125rem;
+    height: 1.125rem;
+    margin: 0;
+    border: 2px solid #8fa8c8;
+    border-radius: 4px;
+    background: #ffffff;
+    cursor: pointer;
+    vertical-align: middle;
+    flex-shrink: 0;
+    transition: background 0.12s ease, border-color 0.12s ease;
+}
+.mo-fold-checkbox:hover {
+    border-color: #1452a3;
+}
+.mo-fold-checkbox:checked {
+    border-color: #1452a3;
+    background-color: #1452a3;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath fill='none' stroke='%23fff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' d='M2 6l3 3 5-5'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 0.75rem 0.75rem;
+}
+.mo-fold-checkbox:focus-visible {
+    outline: 2px solid #1452a3;
+    outline-offset: 2px;
+}
+.mo-applicant-fold__head {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+.mo-applicant-fold__title-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px 16px;
+}
+.mo-applicant-fold__title-row h5 {
+    margin: 0;
+    color: #123b7a;
+    font-size: 1.05em;
+    line-height: 1.35;
+}
+.mo-applicant-fold__badges {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
+    min-height: 1.625rem;
+}
+/* Uniform pill row in fold summary (match / eval / status) */
+.mo-applicant-fold__badges .match-badge,
+.mo-applicant-fold__badges .status-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    height: 1.625rem;
+    min-width: 0;
+    margin: 0;
+    padding: 0 10px;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+    flex-shrink: 0;
+    vertical-align: middle;
+}
+.mo-applicant-fold__badges .match-badge {
+    background: #1452a3;
+    color: #ffffff;
+    border: 1px solid #1452a3;
+}
+.mo-applicant-fold__badges .eval-badge--none {
+    background: #e8eef5;
+    color: #5a728f;
+    border: 1px solid #c5d6e8;
+}
+.mo-applicant-fold__badges .rec-badge {
+    background: #f0f4fa;
+    color: #1a3563;
+    border: 1px solid #c5d6e8;
+}
+.mo-applicant-fold__badges .rec-badge--strong_hire {
+    background: #e6f6ec;
+    color: #0d5c2e;
+    border-color: #9fd4b0;
+}
+.mo-applicant-fold__badges .rec-badge--hire {
+    background: #e8f2ff;
+    color: #1452a3;
+    border-color: #a8c8f0;
+}
+.mo-applicant-fold__badges .rec-badge--waitlist {
+    background: #fff6e6;
+    color: #8a5a00;
+    border-color: #e8c878;
+}
+.mo-applicant-fold__badges .rec-badge--reject {
+    background: #fdecec;
+    color: #9b1c1c;
+    border-color: #e8a8a8;
+}
+.mo-applicant-fold__badges .rec-badge--none {
+    background: #f4f6f9;
+    color: #5a728f;
+    border-color: #d0dae8;
+}
+.mo-applicant-fold__badges .status-pill-interview {
+    padding: 0 10px;
+    background: linear-gradient(135deg, #eef2ff 0%, #e8eeff 100%);
+    color: #1e3a6e;
+    border: 1px solid #b8c8f0;
+    box-shadow: none;
+    text-transform: none;
+}
+.mo-applicant-fold__notice-hint {
+    margin: 6px 0 0;
+    font-size: 0.88em;
+    line-height: 1.45;
+}
+.mo-applicant-fold__body {
+    padding: 14px 16px 16px;
+}
+.mo-eval-detail {
+    margin-top: 8px;
+}
+.mo-eval-detail__summary {
+    margin: 0 0 10px;
+}
+.mo-eval-detail__scores {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 8px 14px;
+    margin: 0 0 12px;
+    padding: 0;
+}
+.mo-eval-detail__scores > div {
+    margin: 0;
+}
+.mo-eval-detail__scores dt {
+    margin: 0;
+    font-size: 0.76em;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #6780a3;
+}
+.mo-eval-detail__scores dd {
+    margin: 4px 0 0;
+    font-size: 0.95em;
+    color: #123b7a;
+    font-weight: 600;
+}
+.mo-eval-detail__comment {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed #dce6f2;
+}
+.mo-eval-detail__comment strong {
+    display: block;
+    margin-bottom: 4px;
+    color: #123b7a;
+    font-size: 0.88em;
+}
+.applicant-topline--fold-body {
+    margin-bottom: 4px;
+}
+.applicant-topline--fold-body .applicant-title-group {
+    width: 100%;
+}
 
 .notice-preview {
     margin: 12px 0 14px;
@@ -1440,6 +1733,56 @@ tr:hover { background: #f8f7ff; }
 }
 .ai-summary-result {
     margin-top: 8px;
+}
+.applicant-section--evaluation {
+    margin-top: 14px;
+}
+.mo-inline-evaluation {
+    margin-top: 8px;
+}
+.mo-inline-evaluation-form .evaluation-score-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 10px;
+    margin: 10px 0;
+}
+.mo-inline-evaluation-form label {
+    display: block;
+    font-size: 0.88em;
+    color: #2a476d;
+}
+.mo-inline-evaluation-form .note-input {
+    margin-top: 4px;
+}
+.mo-eval-field {
+    display: block;
+    margin: 10px 0 0;
+    font-size: 0.9em;
+    color: #2a476d;
+}
+.mo-eval-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    margin-top: 12px;
+}
+.mo-eval-actions--waitlist {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px dashed #d4e0ed;
+}
+.mo-eval-notes-input {
+    flex: 1 1 160px;
+    max-width: 280px;
+    min-width: 120px;
+}
+.mo-eval-hint {
+    margin: 8px 0 0;
+    font-size: 0.88em;
+}
+.mo-eval-waitlist-form {
+    margin-top: 0;
 }
 .applicant-actions {
     margin-top: 14px;
